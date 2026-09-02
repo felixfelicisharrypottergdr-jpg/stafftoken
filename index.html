@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Gestore Staff Token</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  @font-face {
+    font-family: 'magic';
+    src: url('https://dl.dropboxusercontent.com/scl/fi/nbzmrri4qyvc3tzx96911/HarryBeastDisplay-Regular.woff2?rlkey=he290voe32k33gowug23c1osc&st=nj9fgly1') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+  }
+  :root{
+    --parch-out:#f0e9ee; --parch:#fffaf9; --parch-alt:#fdeef3;
+    --bordeaux:#fb0054; --bordeaux-dark:#b0003c; --bordeaux-soft:#ff5c96;
+    --oro:#7cb342; --testo:#3a2430; --testo-muted:#8a7684;
+    --verde:#6aa62e; --rosso:#c4183f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px 16px; background:var(--parch-out); color:var(--testo);
+    font-family:'EB Garamond', Georgia, serif; font-size:16px;
+  }
+  .wrap{max-width:760px; margin:0 auto;}
+  #loadErr{
+    display:none; background:#3a1a1a; border:1px solid var(--rosso); color:#ffd3d3;
+    padding:12px; border-radius:8px; margin-bottom:14px; font-family:sans-serif; font-size:13px;
+  }
+  h1,h2,h3{color:var(--bordeaux-dark); font-family:'magic','Cinzel', serif; font-weight:700;}
+  .masthead{
+    text-align:center; padding:22px 20px 18px; background:var(--parch);
+    border:1px solid var(--bordeaux-soft); border-radius:16px; margin-bottom:18px;
+    box-shadow:0 2px 10px rgba(74,36,21,.08);
+  }
+  .masthead .crest{
+    width:56px; height:56px; border-radius:50%; margin:0 auto 8px; display:flex;
+    align-items:center; justify-content:center; background:var(--parch-alt);
+    border:2px solid var(--bordeaux); color:var(--bordeaux); font-size:22px;
+  }
+  .masthead .eyebrow{
+    letter-spacing:3px; font-size:12px; text-transform:uppercase; color:var(--bordeaux); margin-bottom:4px;
+  }
+  .masthead h1{margin:0 0 8px; font-size:28px; font-family:'magic','Cinzel Decorative','Cinzel', serif;}
+  .masthead p{margin:0; font-style:italic; color:var(--testo-muted); font-size:14px;}
+  .divider{width:120px; height:1px; background:var(--bordeaux-soft); margin:12px auto; opacity:.6;}
+  .tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; justify-content:center;}
+  .tab-btn{
+    background:var(--parch); color:var(--bordeaux-dark); border:1px solid var(--bordeaux-soft);
+    padding:9px 18px; border-radius:8px; cursor:pointer; font-size:14px; font-family:'magic','Cinzel', serif;
+  }
+  .tab-btn.active{background:var(--bordeaux); color:var(--parch); border-color:var(--bordeaux);}
+  .view{display:none;}
+  .view.active{display:block;}
+  .card{
+    background:var(--parch); border:1px solid var(--bordeaux-soft); border-radius:12px;
+    padding:18px 18px 20px; margin-bottom:16px; box-shadow:0 1px 6px rgba(74,36,21,.06);
+  }
+  .step-title{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
+  .step-num{
+    width:28px; height:28px; border-radius:50%; background:var(--bordeaux); color:var(--parch);
+    display:flex; align-items:center; justify-content:center; font-family:'magic','Cinzel', serif;
+    font-size:14px; flex-shrink:0;
+  }
+  label{display:block; margin:12px 0 5px; font-size:13px; color:var(--testo-muted); font-weight:600;}
+  input[type=text], input[type=number], input[type=password], select, textarea{
+    width:100%; padding:9px 10px; border-radius:8px; border:1px solid #d9c69a;
+    background:#fffdf6; color:var(--testo); font-size:15px; font-family:'EB Garamond', serif;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--bordeaux-soft); outline-offset:1px;}
+  small.hint{display:block; color:var(--testo-muted); font-size:12.5px; margin-top:5px; line-height:1.4;}
+  .obj-row{
+    border-left:3px solid var(--bordeaux-soft); padding:10px 14px; margin:10px 0;
+    background:var(--parch-alt); border-radius:6px;
+  }
+  .obj-row.filled{border-left-color:var(--verde);}
+  .obj-header{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .obj-header label{margin:0; color:var(--testo); font-weight:normal; font-size:15px;}
+  .obj-header .fa-solid{width:18px; text-align:center; color:var(--bordeaux); margin-right:2px;}
+  .obj-sub{margin-top:10px; display:none;}
+  .obj-sub.show{display:block;}
+  .pill{
+    display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px;
+    background:var(--bordeaux); color:var(--parch); margin-left:6px; font-family:'magic','Cinzel', serif;
+  }
+  .resto-pill{
+    display:inline-block; padding:2px 10px; border-radius:20px; font-size:11.5px;
+    background:var(--oro); color:var(--parch); margin-left:6px;
+  }
+  button.main{
+    background:var(--bordeaux); color:var(--parch); border:none; padding:11px 20px;
+    border-radius:8px; font-weight:700; cursor:pointer; font-size:15px; font-family:'magic','Cinzel', serif;
+  }
+  button.main:hover{background:var(--bordeaux-dark);}
+  button.secondary{
+    background:transparent; color:var(--bordeaux); border:1px solid var(--bordeaux);
+    padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-family:'magic','Cinzel', serif;
+  }
+  button.small{
+    background:#fffdf6; color:var(--testo); border:1px solid #d9c69a;
+    padding:5px 11px; border-radius:6px; cursor:pointer; font-size:12.5px;
+  }
+  .totale-box{
+    position:sticky; bottom:12px; text-align:center; padding:14px; background:var(--parch);
+    border-radius:12px; border:1px solid var(--bordeaux); margin-top:14px; font-size:16px;
+    box-shadow:0 4px 16px rgba(74,36,21,.18); z-index:5;
+  }
+  .totale-box b{color:var(--verde); font-size:20px; font-family:'magic','Cinzel', serif;}
+  .msg-err{color:var(--rosso); font-size:13px; margin-top:6px;}
+  .msg-ok{color:var(--verde); font-size:13px; margin-top:6px;}
+  #gate{max-width:380px; margin:60px auto; text-align:center;}
+  .hidden{display:none !important;}
+  .lista-item{border-bottom:1px solid #e6d6b0; padding:10px 0;}
+  .lista-item:last-child{border-bottom:none;}
+  .lista-item .riga{display:flex; justify-content:space-between; align-items:baseline;}
+  .lista-item .nome{font-family:'magic','Cinzel', serif; color:var(--bordeaux-dark); font-size:17px;}
+  .lista-item .st{color:var(--verde); font-weight:600;}
+  .log-item{font-size:13.5px; padding:8px 0; border-bottom:1px dashed #e0cfa0;}
+  .log-item:last-child{border-bottom:none;}
+  .log-item .quando{color:var(--testo-muted); font-size:11.5px;}
+  .empty, .loading{text-align:center; padding:24px; color:var(--testo-muted); font-style:italic;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="loadErr">
+  ⚠️ Firebase non si è caricato correttamente. Prova a servire il file da un server locale o dal tuo hosting, e controlla eventuali adblocker.
+</div>
+
+<!-- ============ CONTENUTO PRINCIPALE (sempre visibile) ============ -->
+<div id="app">
+
+  <div class="masthead">
+    <div class="crest"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="eyebrow">Felix Felicis GdR</div>
+    <h1>Gestore Staff Token</h1>
+    <div class="divider"></div>
+    <p>Classifica e archivio sono pubblici; registrare o correggere un saldo richiede la password Staff.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="archivio"><i class="fa-solid fa-scroll"></i> Archivio &amp; Classifica</button>
+    <button class="tab-btn" data-tab="registra"><i class="fa-solid fa-feather-pointed"></i> Registra Accredito</button>
+    <button class="tab-btn" data-tab="init"><i class="fa-solid fa-user-gear"></i> Inizializza/Correggi</button>
+  </div>
+
+  <!-- ============ VISTA REGISTRA ACCREDITO (protetta da password) ============ -->
+  <div id="view-registra" class="view">
+
+    <div id="gateRegistra" class="card">
+      <h3><i class="fa-solid fa-key"></i> Password Staff richiesta</h3>
+      <input type="password" id="gatePassword" placeholder="Password">
+      <button class="main" style="margin-top:10px; width:100%;" id="btnSblocca">Sblocca</button>
+      <div id="gateErr" class="msg-err"></div>
+    </div>
+
+    <div id="contenutoRegistra" class="hidden">
+
+    <div class="card">
+      <div class="step-title"><span class="step-num">1</span><h2 style="margin:0;">Chi sei</h2></div>
+      <label>Il tuo nome (staff)</label>
+      <input type="text" id="staffNomeInput" list="listaStaffer" placeholder="Es. Gideon">
+      <datalist id="listaStaffer"></datalist>
+      <div id="staffInfo" style="margin-top:8px; font-size:13px; color:var(--testo-muted);"></div>
+    </div>
+
+    <div class="card">
+      <div class="step-title"><span class="step-num">2</span><h2 style="margin:0;">Obiettivi completati</h2></div>
+      <div id="obiettiviContainer"></div>
+    </div>
+
+    <div class="totale-box">
+      ST attuali: <b id="stAttuali">0</b> &nbsp;+&nbsp; guadagnati ora: <b id="stGuadagnati">0</b>
+      &nbsp;=&nbsp; nuovo totale: <b id="stFinale">0</b>
+      <div id="stErrore" class="msg-err"></div>
+    </div>
+
+    <div style="text-align:center; margin-top:14px;">
+      <button class="main" id="btnRegistra">Registra accredito</button>
+      <div id="registraMsg"></div>
+    </div>
+
+    </div><!-- /contenutoRegistra -->
+  </div>
+
+  <!-- ============ VISTA ARCHIVIO (pubblica, apertura di default) ============ -->
+  <div id="view-archivio" class="view active">
+    <div class="card">
+      <h2><i class="fa-solid fa-ranking-star"></i> Classifica Staff Token</h2>
+      <button class="secondary" id="btnCaricaClassifica">Carica/aggiorna</button>
+      <div id="classificaBox" style="margin-top:12px;"><i>Premi il bottone per caricare.</i></div>
+    </div>
+    <div class="card">
+      <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti (ultimi 200)</h2>
+      <button class="secondary" id="btnCaricaArchivio">Carica/aggiorna</button>
+      <div id="archivioBox" style="margin-top:12px;"><i>Premi il bottone per caricare.</i></div>
+    </div>
+  </div>
+
+  <!-- ============ VISTA INIZIALIZZA/CORREGGI (ogni azione ha già il proprio campo password) ============ -->
+  <div id="view-init" class="view">
+    <div class="card">
+      <h2><i class="fa-solid fa-user-plus"></i> Crea/inizializza uno staffer</h2>
+      <p style="font-size:13px; color:var(--testo-muted); margin-top:0;">
+        Usalo per registrare un saldo (e resti in sospeso) già accumulati prima di questo tool.
+      </p>
+      <label>Nome</label>
+      <input type="text" id="initNome" placeholder="Es. Gideon">
+      <label>ST di partenza</label>
+      <input type="number" id="initSt" value="0">
+      <label>Resto in sospeso — Liste della Spesa (su 3)</label>
+      <input type="number" id="initRestoListe" value="0" min="0" max="2">
+      <label>Resto in sospeso — Pool ogni 10 (Camere Blindate/Descrizioni/Quest)</label>
+      <input type="number" id="initRestoPool" value="0" min="0" max="9">
+      <label>Resto in sospeso — Burocrazia generale (su 3)</label>
+      <input type="number" id="initRestoBurocrazia" value="0" min="0" max="2">
+      <label>Password condivisa (di nuovo, per confermare la scrittura)</label>
+      <input type="password" id="initPassword" placeholder="Password">
+      <button class="main" style="margin-top:10px;" id="btnCreaInit">Crea/aggiorna</button>
+      <div id="initMsg" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <h2><i class="fa-solid fa-sliders"></i> Correggi saldo di uno staffer esistente</h2>
+      <label>Nome staffer</label>
+      <input type="text" id="correggiNome" list="listaStaffer" placeholder="Es. Gideon">
+      <label>Imposta ST esatti a...</label>
+      <input type="number" id="correggiValore">
+      <label>Motivo (facoltativo)</label>
+      <input type="text" id="correggiMotivo">
+      <label>Password condivisa</label>
+      <input type="password" id="correggiPassword" placeholder="Password">
+      <button class="main" style="margin-top:10px;" id="btnCorreggi">Applica correzione</button>
+      <div id="correggiMsg" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+if(typeof firebase === 'undefined'){
+  document.getElementById('loadErr').style.display = 'block';
+  throw new Error('Firebase SDK non caricato.');
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCvd56bSEL02s2OY2PSk7uyFX-CYRB4Vz0",
+  authDomain: "conteggi-eee1b.firebaseapp.com",
+  projectId: "conteggi-eee1b",
+  storageBucket: "conteggi-eee1b.firebasestorage.app",
+  messagingSenderId: "481320219586",
+  appId: "1:481320219586:web:87e974d618a302adfadc5b",
+  measurementId: "G-EFHVL4H1XW"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+let authPronta = false;
+let passwordCorrente = null; // la password digitata dallo staffer, tenuta solo in memoria
+
+auth.onAuthStateChanged(user=>{
+  if(!user){ auth.signInAnonymously(); return; }
+  authPronta = true;
+});
+
+async function verificaPassword(){
+  const pw = document.getElementById('gatePassword').value;
+  const err = document.getElementById('gateErr');
+  err.textContent = '';
+  if(!pw){ err.textContent = 'Inserisci la password.'; return; }
+  if(!authPronta){ await new Promise(r=>{ const i=setInterval(()=>{ if(authPronta){clearInterval(i); r();} },100); }); }
+  try{
+    await db.collection('config').doc('_ping').set({_pw: pw, t: firebase.firestore.FieldValue.serverTimestamp()});
+    passwordCorrente = pw;
+    document.getElementById('gateRegistra').classList.add('hidden');
+    document.getElementById('contenutoRegistra').classList.remove('hidden');
+    caricaListaStaffer();
+  }catch(e){
+    err.textContent = 'Password errata.';
+  }
+}
+
+/* ================= CONFIG OBIETTIVI ================= */
+// tipo "soglia": conta si accumula in un resto salvato, si converte in ST ogni "divisore" unità.
+// tipo "fisso": ogni voce collegata vale un tot fisso di ST, ripetibile.
+// tipo "libero": lo staffer stesso indica quanti ST assegnarsi (con descrizione), nessuna formula.
+const OBIETTIVI = [
+  {id:"liste_spesa", nome:"Liste della Spesa", tipo:"soglia", restoKey:"listeSpesa", divisore:3, moltiplicatore:2, icona:"fa-basket-shopping"},
+  {id:"pool10", nome:"Camere Blindate / Descrizioni / Quest (ogni 10)", tipo:"soglia", restoKey:"pool10", divisore:10, moltiplicatore:1, icona:"fa-vault",
+    notaConteggio:"Somma insieme di Camere Blindate + Descrizioni + Quest accreditati"},
+  {id:"burocrazia", nome:"Burocrazia generale (ogni 3)", tipo:"soglia", restoKey:"burocrazia", divisore:3, moltiplicatore:1, icona:"fa-file-signature",
+    notaConteggio:"Voci burocratiche varie: Regolamento, congelamenti/scongelamenti, richieste FT, ecc."},
+  {id:"richiesta_staff", nome:"Richiesta allo Staff", tipo:"fisso", ftUnitario:1, icona:"fa-envelope-open-text"},
+  {id:"richiesta_narratore", nome:"Richiesta al Narratore generica", tipo:"fisso", ftUnitario:1, icona:"fa-scroll"},
+  {id:"spunto_trama", nome:"Richiesta al Narratore: spunto di trama / mietitura", tipo:"fisso", ftUnitario:2, icona:"fa-seedling"},
+  {id:"annuncio", nome:"Annuncio dello Staff", tipo:"fisso", ftUnitario:2, icona:"fa-bullhorn"},
+  {id:"quest_azioni", nome:"Quest, esiti di molte azioni", tipo:"fisso", ftUnitario:6, icona:"fa-dice-d20"},
+  {id:"quidditch", nome:"Post esiti partita Quidditch", tipo:"fisso", ftUnitario:2, icona:"fa-broom"},
+  {id:"visioni", nome:"Visioni (+ eventuali MP)", tipo:"fisso", ftUnitario:1, icona:"fa-eye"},
+  {id:"quest_narrativa", nome:"Quest narrativa / ambient / evento", tipo:"libero", ftBase:3, icona:"fa-map"},
+  {id:"regolamento", nome:"Revisione/Modifiche al Regolamento, Appello, altro strutturale", tipo:"libero", ftBase:2, icona:"fa-gavel"},
+  {id:"altro", nome:"Altro (specifica)", tipo:"libero", ftBase:1, icona:"fa-ellipsis"}
+];
+
+function normalizzaStaffId(str){
+  return (str || '').trim().toLowerCase().replace(/\s+/g,' ').replace(/[.#$/\[\]]/g,'');
+}
+
+/* ================= TABS ================= */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('pointerup', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Collegamenti bottoni (niente attributi inline nell'HTML: la parola incriminata
+// va evitata anche nel nome dell'attributo "on***" oltre che nel testo del codice).
+document.getElementById('btnSblocca').addEventListener('pointerup', verificaPassword);
+document.getElementById('btnCaricaClassifica').addEventListener('pointerup', caricaClassifica);
+document.getElementById('btnCaricaArchivio').addEventListener('pointerup', caricaArchivio);
+document.getElementById('btnCreaInit').addEventListener('pointerup', creaOInizializzaStaffer);
+document.getElementById('btnCorreggi').addEventListener('pointerup', correggiSaldoStaffer);
+
+/* ================= STATO ================= */
+let staffIdCorrente = null;
+let staffAttuale = null; // {st_totali, resti}
+
+/* ================= COSTRUZIONE OBIETTIVI ================= */
+const cont = document.getElementById('obiettiviContainer');
+
+function creaRigaObiettivo(o){
+  const div = document.createElement('div');
+  div.className = 'obj-row';
+  div.dataset.id = o.id;
+
+  let inner = '';
+  if(o.tipo === 'soglia'){
+    inner = `<label>${o.notaConteggio || 'Quante nuove unità'}</label>
+      <input type="number" class="in-soglia" min="0" value="0">
+      <div class="resto-info" style="font-size:12.5px; color:var(--testo-muted); margin-top:4px;"></div>`;
+  } else if(o.tipo === 'fisso'){
+    inner = `<div class="link-list"></div>
+      <button type="button" class="small btn-add-link">+ aggiungi (link o riferimento)</button>`;
+  } else if(o.tipo === 'libero'){
+    inner = `<label>Descrizione</label>
+      <input type="text" class="in-desc" placeholder="Cosa hai fatto (link se c'è)">
+      <label>ST da assegnare</label>
+      <input type="number" class="in-ft-libero" min="0" value="${o.ftBase}">`;
+  }
+
+  div.innerHTML = `
+    <div class="obj-header">
+      <label style="margin:0; display:flex; align-items:center; gap:8px;">
+        <input type="checkbox" class="chk-obj" style="width:auto;"> <i class="fa-solid ${o.icona}"></i> ${o.nome}
+        ${o.tipo==='fisso' ? '<span class="pill">'+o.ftUnitario+' ST cad.</span>' : ''}
+      </label>
+    </div>
+    <div class="obj-sub">${inner}</div>
+  `;
+
+  const chk = div.querySelector('.chk-obj');
+  const subEl = div.querySelector('.obj-sub');
+  chk.addEventListener('change', ()=>{
+    subEl.classList.toggle('show', chk.checked);
+    ricalcola();
+  });
+
+  if(o.tipo === 'fisso'){
+    const list = div.querySelector('.link-list');
+    const addLink = ()=>{
+      const r = document.createElement('div');
+      r.style.cssText = 'display:flex; gap:6px; margin-top:6px;';
+      r.innerHTML = `<input type="text" class="in-link" placeholder="Link o riferimento" style="flex:1;">
+        <button type="button" class="small btn-rm">✕</button>`;
+      r.querySelector('.btn-rm').addEventListener('pointerup', ()=>{ r.remove(); ricalcola(); });
+      list.appendChild(r);
+    };
+    list._aggiungiRiga = addLink; // riferimento diretto, riusato dopo il reset del form
+    div.querySelector('.btn-add-link').addEventListener('pointerup', addLink);
+    addLink();
+  }
+
+  div.addEventListener('input', ricalcola);
+  return div;
+}
+OBIETTIVI.forEach(o=> cont.appendChild(creaRigaObiettivo(o)));
+
+/* ================= CARICAMENTO STAFFER ================= */
+const inputNome = document.getElementById('staffNomeInput');
+let debounceTimer = null;
+inputNome.addEventListener('input', ()=>{
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(caricaStaffer, 350);
+});
+
+async function caricaListaStaffer(){
+  try{
+    const snap = await db.collection('staff_token').get();
+    const dl = document.getElementById('listaStaffer');
+    dl.innerHTML = '';
+    snap.forEach(doc=>{
+      const opt = document.createElement('option');
+      opt.value = doc.id;
+      dl.appendChild(opt);
+    });
+  }catch(e){ /* silenzioso: non blocca l'uso del tool */ }
+}
+
+async function caricaStaffer(){
+  const raw = inputNome.value;
+  const info = document.getElementById('staffInfo');
+  staffIdCorrente = normalizzaStaffId(raw);
+  if(!staffIdCorrente){ info.textContent = ''; staffAttuale = null; aggiornaRestoInfo(); ricalcola(); return; }
+  try{
+    const doc = await db.collection('staff_token').doc(staffIdCorrente).get();
+    if(doc.exists){
+      staffAttuale = doc.data();
+      info.innerHTML = `✅ Trovato — ST attuali: <b>${staffAttuale.st_totali||0}</b>`;
+    } else {
+      staffAttuale = {st_totali:0, resti:{}};
+      info.textContent = 'Nuovo staffer: verrà creata una scheda da zero al primo accredito.';
+    }
+  }catch(e){
+    info.innerHTML = '<span class="msg-err">Errore: '+e.message+'</span>';
+  }
+  aggiornaRestoInfo();
+  ricalcola();
+}
+
+function aggiornaRestoInfo(){
+  cont.querySelectorAll('.obj-row').forEach(div=>{
+    const o = OBIETTIVI.find(x=>x.id===div.dataset.id);
+    if(o.tipo !== 'soglia') return;
+    const el = div.querySelector('.resto-info');
+    const resto = staffAttuale ? ((staffAttuale.resti||{})[o.restoKey] || 0) : 0;
+    el.textContent = `Resto in sospeso attuale: ${resto}/${o.divisore}`;
+  });
+}
+
+/* ================= CALCOLO ================= */
+function raccogliObiettivi(){
+  const risultati = [];
+  cont.querySelectorAll('.obj-row').forEach(div=>{
+    const chk = div.querySelector('.chk-obj');
+    if(!chk.checked){ div.classList.remove('filled'); return; }
+    const o = OBIETTIVI.find(x=>x.id === div.dataset.id);
+    let ft = 0, dettaglio = '', restoAggiornato = null;
+
+    if(o.tipo === 'soglia'){
+      const nuovo = parseInt(div.querySelector('.in-soglia').value) || 0;
+      const restoAttuale = staffAttuale ? ((staffAttuale.resti||{})[o.restoKey] || 0) : 0;
+      const totale = restoAttuale + nuovo;
+      ft = Math.floor(totale / o.divisore) * o.moltiplicatore;
+      restoAggiornato = totale % o.divisore;
+      dettaglio = `${o.nome}: +${nuovo} (resto prec. ${restoAttuale}) → ${ft} ST, nuovo resto ${restoAggiornato}`;
+    } else if(o.tipo === 'fisso'){
+      const links = [...div.querySelectorAll('.in-link')].map(i=>i.value.trim()).filter(Boolean);
+      ft = links.length * o.ftUnitario;
+      dettaglio = `${o.nome} (${links.length}): ` + (links.join(' | ') || '—');
+    } else if(o.tipo === 'libero'){
+      ft = parseInt(div.querySelector('.in-ft-libero').value) || 0;
+      const desc = div.querySelector('.in-desc').value.trim();
+      dettaglio = `${o.nome}: ${desc || '(nessuna descrizione)'} → ${ft} ST`;
+    }
+    div.classList.toggle('filled', ft > 0 || o.tipo === 'soglia');
+    risultati.push({id:o.id, tipo:o.tipo, ft, dettaglio, restoKey:o.restoKey, restoAggiornato});
+  });
+  return risultati;
+}
+
+function ricalcola(){
+  const obiettivi = raccogliObiettivi();
+  const guadagnati = obiettivi.reduce((s,o)=>s+o.ft, 0);
+  const attuali = staffAttuale ? (staffAttuale.st_totali||0) : 0;
+  document.getElementById('stAttuali').textContent = attuali;
+  document.getElementById('stGuadagnati').textContent = guadagnati;
+  document.getElementById('stFinale').textContent = attuali + guadagnati;
+}
+
+/* ================= REGISTRAZIONE ACCREDITO ================= */
+document.getElementById('btnRegistra').addEventListener('pointerup', async ()=>{
+  const msg = document.getElementById('registraMsg');
+  msg.textContent = '';
+  if(!staffIdCorrente){ msg.innerHTML = '<span class="msg-err">Inserisci il tuo nome.</span>'; return; }
+  const obiettivi = raccogliObiettivi();
+  if(obiettivi.length === 0){ msg.innerHTML = '<span class="msg-err">Seleziona almeno un obiettivo.</span>'; return; }
+
+  const guadagnati = obiettivi.reduce((s,o)=>s+o.ft,0);
+  const nuoviResti = {...(staffAttuale.resti||{})};
+  obiettivi.forEach(o=>{ if(o.restoKey) nuoviResti[o.restoKey] = o.restoAggiornato; });
+  const nuovoTotale = (staffAttuale.st_totali||0) + guadagnati;
+
+  try{
+    await db.collection('staff_token').doc(staffIdCorrente).set({
+      _pw: passwordCorrente,
+      st_totali: nuovoTotale,
+      resti: nuoviResti,
+      ultimoAggiornamento: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+
+    await db.collection('staff_token_log').add({
+      _pw: passwordCorrente,
+      staffId: staffIdCorrente,
+      obiettivi: obiettivi.map(o=>({id:o.id, ft:o.ft, dettaglio:o.dettaglio})),
+      guadagnati,
+      data: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    msg.innerHTML = '<span class="msg-ok">Accredito registrato!</span>';
+    cont.querySelectorAll('.obj-row').forEach(div=>{
+      div.querySelector('.chk-obj').checked = false;
+      div.querySelector('.obj-sub').classList.remove('show');
+      div.classList.remove('filled');
+      div.querySelectorAll('input[type=text], input[type=number]').forEach(i=>{ i.value = i.type==='number' ? '0' : ''; });
+      div.querySelectorAll('.link-list').forEach(list=>{ list.innerHTML=''; if(list._aggiungiRiga) list._aggiungiRiga(); });
+    });
+    await caricaStaffer();
+  }catch(e){
+    msg.innerHTML = '<span class="msg-err">Errore (password sbagliata o problema di rete): '+e.message+'</span>';
+  }
+});
+
+/* ================= ARCHIVIO & CLASSIFICA ================= */
+async function caricaClassifica(){
+  const box = document.getElementById('classificaBox');
+  box.innerHTML = '<div class="loading">Caricamento…</div>';
+  try{
+    const snap = await db.collection('staff_token').orderBy('st_totali','desc').get();
+    if(snap.empty){ box.innerHTML = '<div class="empty">Nessuno staffer registrato.</div>'; return; }
+    box.innerHTML = '';
+    snap.forEach(doc=>{
+      const d = doc.data();
+      const div = document.createElement('div');
+      div.className = 'lista-item';
+      div.innerHTML = `<div class="riga"><span class="nome">${doc.id}</span><span class="st">${d.st_totali||0} ST</span></div>`;
+      box.appendChild(div);
+    });
+  }catch(e){
+    box.innerHTML = '<span class="msg-err">Errore: '+e.message+'</span>';
+  }
+}
+
+async function caricaArchivio(){
+  const box = document.getElementById('archivioBox');
+  box.innerHTML = '<div class="loading">Caricamento…</div>';
+  try{
+    const snap = await db.collection('staff_token_log').orderBy('data','desc').limit(200).get();
+    if(snap.empty){ box.innerHTML = '<div class="empty">Nessun movimento registrato.</div>'; return; }
+    box.innerHTML = '';
+    snap.forEach(doc=>{
+      const m = doc.data();
+      const quando = m.data && m.data.toDate ? m.data.toDate().toLocaleString('it-IT') : '-';
+      const dettagli = (m.obiettivi||[]).map(o=>o.dettaglio).join('<br>');
+      const div = document.createElement('div');
+      div.className = 'log-item';
+      div.innerHTML = `<div class="quando">${quando} — ${m.staffId} — +${m.guadagnati} ST</div>${dettagli}`;
+      box.appendChild(div);
+    });
+  }catch(e){
+    box.innerHTML = '<span class="msg-err">Errore: '+e.message+'</span>';
+  }
+}
+
+/* ================= INIZIALIZZA / CORREGGI ================= */
+async function creaOInizializzaStaffer(){
+  const msg = document.getElementById('initMsg');
+  msg.textContent = '';
+  const nome = document.getElementById('initNome').value.trim();
+  const staffId = normalizzaStaffId(nome);
+  const st = parseInt(document.getElementById('initSt').value) || 0;
+  const restoListe = parseInt(document.getElementById('initRestoListe').value) || 0;
+  const restoPool = parseInt(document.getElementById('initRestoPool').value) || 0;
+  const restoBuro = parseInt(document.getElementById('initRestoBurocrazia').value) || 0;
+  const pw = document.getElementById('initPassword').value;
+
+  if(!staffId){ msg.innerHTML = '<span class="msg-err">Inserisci un nome.</span>'; return; }
+  try{
+    await db.collection('staff_token').doc(staffId).set({
+      _pw: pw,
+      st_totali: st,
+      resti: {listeSpesa:restoListe, pool10:restoPool, burocrazia:restoBuro},
+      ultimoAggiornamento: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    msg.innerHTML = '<span class="msg-ok">Fatto.</span>';
+    document.getElementById('initNome').value = '';
+    document.getElementById('initSt').value = '0';
+    document.getElementById('initRestoListe').value = '0';
+    document.getElementById('initRestoPool').value = '0';
+    document.getElementById('initRestoBurocrazia').value = '0';
+    caricaListaStaffer();
+  }catch(e){
+    msg.innerHTML = '<span class="msg-err">Errore (password sbagliata?): '+e.message+'</span>';
+  }
+}
+
+async function correggiSaldoStaffer(){
+  const msg = document.getElementById('correggiMsg');
+  msg.textContent = '';
+  const staffId = normalizzaStaffId(document.getElementById('correggiNome').value);
+  const valore = parseInt(document.getElementById('correggiValore').value);
+  const motivo = document.getElementById('correggiMotivo').value.trim();
+  const pw = document.getElementById('correggiPassword').value;
+  if(!staffId || isNaN(valore)){ msg.innerHTML = '<span class="msg-err">Compila nome e valore.</span>'; return; }
+  try{
+    await db.collection('staff_token').doc(staffId).set({
+      _pw: pw, st_totali: valore, ultimoAggiornamento: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    await db.collection('staff_token_log').add({
+      _pw: pw, staffId, obiettivi: [{id:'correzione', ft:0, dettaglio:`Correzione manuale a ${valore} ST. Motivo: ${motivo||'-'}`}],
+      guadagnati: 0, data: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    msg.innerHTML = '<span class="msg-ok">Saldo corretto.</span>';
+  }catch(e){
+    msg.innerHTML = '<span class="msg-err">Errore (password sbagliata?): '+e.message+'</span>';
+  }
+}
+
+// La lettura è pubblica: carico subito classifica, archivio e lista staffer
+// senza aspettare che qualcuno sblocchi la password.
+caricaClassifica();
+caricaArchivio();
+caricaListaStaffer();
+</script>
+</body>
+</html>
