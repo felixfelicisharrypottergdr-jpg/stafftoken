@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -138,11 +139,11 @@
     <div class="eyebrow">Felix Felicis GdR</div>
     <h1>Gestore Staff Token</h1>
     <div class="divider"></div>
-    <p>Classifica e archivio sono pubblici; registrare o correggere un saldo richiede la password Staff.</p>
+    <p>L'archivio è pubblico; registrare o correggere un saldo richiede la password Staff.</p>
   </div>
 
   <div class="tabs">
-    <button class="tab-btn active" data-tab="archivio"><i class="fa-solid fa-scroll"></i> Archivio &amp; Classifica</button>
+    <button class="tab-btn active" data-tab="archivio"><i class="fa-solid fa-scroll"></i> Archivio</button>
     <button class="tab-btn" data-tab="registra"><i class="fa-solid fa-feather-pointed"></i> Registra Accredito</button>
     <button class="tab-btn" data-tab="init"><i class="fa-solid fa-user-gear"></i> Inizializza/Correggi</button>
   </div>
@@ -188,11 +189,6 @@
 
   <!-- ============ VISTA ARCHIVIO (pubblica, apertura di default) ============ -->
   <div id="view-archivio" class="view active">
-    <div class="card">
-      <h2><i class="fa-solid fa-ranking-star"></i> Classifica Staff Token</h2>
-      <button class="secondary" id="btnCaricaClassifica">Carica/aggiorna</button>
-      <div id="classificaBox" style="margin-top:12px;"><i>Premi il bottone per caricare.</i></div>
-    </div>
     <div class="card">
       <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti (ultimi 200)</h2>
       <button class="secondary" id="btnCaricaArchivio">Carica/aggiorna</button>
@@ -327,7 +323,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 // Collegamenti bottoni (niente attributi inline nell'HTML: la parola incriminata
 // va evitata anche nel nome dell'attributo "on***" oltre che nel testo del codice).
 document.getElementById('btnSblocca').addEventListener('pointerup', verificaPassword);
-document.getElementById('btnCaricaClassifica').addEventListener('pointerup', caricaClassifica);
 document.getElementById('btnCaricaArchivio').addEventListener('pointerup', caricaArchivio);
 document.getElementById('btnCreaInit').addEventListener('pointerup', creaOInizializzaStaffer);
 document.getElementById('btnCorreggi').addEventListener('pointerup', correggiSaldoStaffer);
@@ -532,25 +527,6 @@ document.getElementById('btnRegistra').addEventListener('pointerup', async ()=>{
 });
 
 /* ================= ARCHIVIO & CLASSIFICA ================= */
-async function caricaClassifica(){
-  const box = document.getElementById('classificaBox');
-  box.innerHTML = '<div class="loading">Caricamento…</div>';
-  try{
-    const snap = await db.collection('staff_token').orderBy('st_totali','desc').get();
-    if(snap.empty){ box.innerHTML = '<div class="empty">Nessuno staffer registrato.</div>'; return; }
-    box.innerHTML = '';
-    snap.forEach(doc=>{
-      const d = doc.data();
-      const div = document.createElement('div');
-      div.className = 'lista-item';
-      div.innerHTML = `<div class="riga"><span class="nome">${doc.id}</span><span class="st">${d.st_totali||0} ST</span></div>`;
-      box.appendChild(div);
-    });
-  }catch(e){
-    box.innerHTML = '<span class="msg-err">Errore: '+e.message+'</span>';
-  }
-}
-
 async function caricaArchivio(){
   const box = document.getElementById('archivioBox');
   box.innerHTML = '<div class="loading">Caricamento…</div>';
@@ -628,7 +604,6 @@ async function correggiSaldoStaffer(){
 
 // La lettura è pubblica: carico subito classifica, archivio e lista staffer
 // senza aspettare che qualcuno sblocchi la password.
-caricaClassifica();
 caricaArchivio();
 caricaListaStaffer();
 </script>
