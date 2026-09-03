@@ -468,6 +468,13 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .log-st.neutral{color:var(--muted)}
 .log-details{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--ink)}
 .log-details .line{padding:2px 0}
+.log-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+.log-actions .why-disabled{font-size:11px;color:var(--muted);font-style:italic;margin-right:auto}
+.log-item.cancelled{background:#f7f4f5;opacity:.78;border-style:dashed}
+.log-item.cancelled .log-details{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#b8a8ae}
+.cancel-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;background:var(--red-soft);color:var(--red);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-left:5px}
+.danger.cancel-credit{background:#fff;color:var(--red);border-color:#df9cab}
+.danger.cancel-credit:hover{background:var(--red-soft)}
 .empty,.loading{text-align:center;padding:22px;color:var(--muted);font-style:italic}
 .admin-section{border-left:3px solid var(--accent-soft)}
 .separator{height:1px;background:var(--line);margin:16px 0}
@@ -548,9 +555,9 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 
   <div class="nav-shell">
     <nav class="tabs" aria-label="Sezioni Gestore Staff Token">
-      <button class="tab-btn" data-tab="registra"><i class="fa-solid fa-pen-nib"></i>Nuovo accredito</button>
+      <button class="tab-btn active" data-tab="registra"><i class="fa-solid fa-pen-nib"></i>Nuovo accredito</button>
       <button class="tab-btn" data-tab="gestione"><i class="fa-solid fa-user-gear"></i>Gestione saldi</button>
-      <button class="tab-btn active" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico</button>
+      <button class="tab-btn" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico</button>
     </nav>
   </div>
 
@@ -577,7 +584,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   </div>
 
   <main>
-    <section id="view-registro" class="view active">
+    <section id="view-registro" class="view">
       <div class="card">
         <div class="card-title">
           <div>
@@ -593,7 +600,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
         <div class="card-title">
           <div>
             <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti</h2>
-            <p>Ultimi 300 movimenti registrati dal gestore.</p>
+            <p>Ultimi 300 movimenti. In modalità Staff puoi annullare il movimento più recente di uno Staffer quando è un accredito registrato per errore.</p>
           </div>
         </div>
         <div class="public-toolbar">
@@ -603,13 +610,15 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             <option value="accredito">Accrediti</option>
             <option value="correzione">Correzioni</option>
             <option value="inizializzazione">Inizializzazioni</option>
+            <option value="annullato">Annullati</option>
           </select>
         </div>
+        <div id="archivioActionMsg" aria-live="polite"></div>
         <div id="archivioBox" class="log-list"><div class="loading">Caricamento registro…</div></div>
       </div>
     </section>
 
-    <section id="view-registra" class="view">
+    <section id="view-registra" class="view active">
       <div id="contenutoRegistra" class="protected hidden">
         <div class="history-toolbar">
           <div class="history-copy"><b>Modifiche dell’accredito</b><br>Puoi annullare un inserimento o ripristinarlo senza toccare il registro già salvato.</div>
@@ -847,6 +856,7 @@ function syncProtected(){
   const serveAccesso=tabAttivo==='registra'||tabAttivo==='gestione';
   document.getElementById('staffAccess').classList.toggle('hidden',!serveAccesso||!!passwordCorrente);
   document.getElementById('staffUnlocked').classList.toggle('hidden',!serveAccesso||!passwordCorrente);
+  if(document.getElementById('archivioBox')?.dataset.loaded)renderArchivio();
 }
 
 function attivaTab(tab){
@@ -1332,11 +1342,13 @@ async function registraAccredito(){
       const prima=numeroIntero(stato.st_totali);
       const dopo=prima+calc.totale;
       const dettagli=calc.righe.map(r=>({id:r.id,nome:r.nome,ft:r.st,dettaglio:creaDettaglioLog(r),formula:r.formula,riferimenti:r.riferimenti||'',descrizione:r.descrizione||''}));
+      const restiPrima={...((stato&&stato.resti)||{})};
       tx.set(staffRef,{
         _pw:passwordCorrente,
         nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
         st_totali:dopo,
         resti:calc.nuoviResti,
+        ultimoMovimentoId:logRef.id,
         ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
       tx.set(logRef,{
@@ -1349,6 +1361,7 @@ async function registraAccredito(){
         delta:calc.totale,
         saldoPrima:prima,
         saldoDopo:dopo,
+        restiPrima,
         restiDopo:calc.nuoviResti,
         data:firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -1620,12 +1633,121 @@ async function caricaPubblico(forza=false){
   }
 }
 
+function tipoMovimento(m){
+  if(m.annullato)return'annullato';
+  return m.tipo||(m.obiettivi?.some(o=>o.id==='correzione')?'correzione':'accredito');
+}
+
+function ultimiMovimentiAttiviPerStaff(){
+  const map={};
+  archivioMovimenti.forEach(m=>{
+    if(m.annullato)return;
+    const key=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+    if(key&&!map[key])map[key]=m.id;
+  });
+  return map;
+}
+
+function movimentoPrecedenteAttivo(staffId,movimentoId){
+  let trovato=false;
+  for(const m of archivioMovimenti){
+    if((m.staffId||'')!==staffId||m.annullato)continue;
+    if(!trovato){if(m.id===movimentoId)trovato=true;continue}
+    return m.id;
+  }
+  return null;
+}
+
+function restiPrimaDaMovimento(m,statoCorrente){
+  if(m.restiPrima&&typeof m.restiPrima==='object')return{...m.restiPrima};
+  const prima={...((statoCorrente&&statoCorrente.resti)||{})};
+  const progressivi={
+    liste_spesa:{key:'listeSpesa'},
+    camere_blindate:{key:'camereBlindate',legacy:'pool10'},
+    burocrazia:{key:'burocrazia'}
+  };
+  for(const o of (m.obiettivi||[])){
+    const cfg=progressivi[o.id];
+    if(!cfg)continue;
+    const testo=String(o.formula||o.dettaglio||'');
+    const match=testo.match(/(?:^|:\s*)(\d+)\s+già\s+in\s+sospeso/i);
+    if(!match)throw new Error(`Non riesco a ricostruire il resto precedente di “${o.nome||o.id}”. Per sicurezza questo accredito storico non viene annullato automaticamente.`);
+    const valore=numeroIntero(match[1]);
+    prima[cfg.key]=valore;
+    if(cfg.legacy)prima[cfg.legacy]=valore;
+  }
+  return prima;
+}
+
+function messaggioArchivio(html){
+  const box=document.getElementById('archivioActionMsg');
+  if(!box)return;
+  box.innerHTML=html;
+  if(html)setTimeout(()=>{if(box.innerHTML===html)box.innerHTML=''},7000);
+}
+
+async function cancellaMovimentoAccredito(id){
+  const m=archivioMovimenti.find(x=>x.id===id);
+  if(!m||m.annullato||tipoMovimento(m)!=='accredito')return;
+  if(!passwordCorrente){messaggioArchivio('<div class="msg-err">Sblocca la modalità Staff da “Nuovo accredito” o “Gestione saldi” prima di annullare un accredito.</div>');return}
+  const staffId=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+  const ultimi=ultimiMovimentiAttiviPerStaff();
+  if(ultimi[staffId]!==id){
+    messaggioArchivio('<div class="msg-err">Questo accredito non è l’ultimo movimento dello Staffer. Per non rendere incoerenti saldi e resti, puoi annullare direttamente solo il movimento più recente.</div>');
+    return;
+  }
+  const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+  const saldoPrima=Number.isFinite(Number(m.saldoPrima))?numeroIntero(m.saldoPrima):null;
+  const nome=m.nomeVisualizzato||m.staffId||'Staffer';
+  const ok=window.confirm(`Annullare questo accredito di ${nome}?\n\nVerranno stornati ${delta} ST e ripristinati saldo e resti precedenti.`);
+  if(!ok)return;
+  messaggioArchivio('<div class="loading">Annullamento accredito…</div>');
+  try{
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc(id);
+    const precedenteId=movimentoPrecedenteAttivo(staffId,id);
+    await db.runTransaction(async tx=>{
+      const [staffSnap,logSnap]=await Promise.all([tx.get(staffRef),tx.get(logRef)]);
+      if(!logSnap.exists)throw new Error('Il movimento non esiste più.');
+      const log=logSnap.data();
+      if(log.annullato)throw new Error('Questo accredito è già stato annullato.');
+      const stato=staffSnap.exists?staffSnap.data():{st_totali:0,resti:{}};
+      if(stato.ultimoMovimentoId&&stato.ultimoMovimentoId!==id)throw new Error('Nel frattempo è stato registrato un movimento successivo. Aggiorna il registro e riprova.');
+      if(!stato.ultimoMovimentoId&&Number.isFinite(Number(log.saldoDopo))&&numeroIntero(stato.st_totali)!==numeroIntero(log.saldoDopo)){
+        throw new Error('Il saldo attuale non coincide con il saldo prodotto da questo accredito: esiste probabilmente un movimento successivo.');
+      }
+      const nuovoSaldo=saldoPrima!==null?saldoPrima:numeroIntero(stato.st_totali)-delta;
+      const restiPrima=restiPrimaDaMovimento(log,stato);
+      tx.set(staffRef,{
+        _pw:passwordCorrente,
+        st_totali:nuovoSaldo,
+        resti:restiPrima,
+        ultimoMovimentoId:precedenteId||null,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      tx.set(logRef,{
+        _pw:passwordCorrente,
+        annullato:true,
+        annullatoIl:firebase.firestore.FieldValue.serverTimestamp(),
+        saldoRipristinato:nuovoSaldo,
+        restiRipristinati:restiPrima
+      },{merge:true});
+    });
+    messaggioArchivio(`<div class="msg-ok">Accredito annullato. Il saldo di ${escapeHtml(nome)} è stato ripristinato automaticamente.</div>`);
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){
+    messaggioArchivio(`<div class="msg-err">Accredito non annullato: ${escapeHtml(e.message)}</div>`);
+  }
+}
+
 function renderArchivio(){
   const box=document.getElementById('archivioBox');
   const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
   const tipo=document.getElementById('filtroTipo').value;
+  const ultimi=ultimiMovimentiAttiviPerStaff();
   const filtered=archivioMovimenti.filter(m=>{
-    const mtipo=m.tipo||(m.obiettivi?.some(o=>o.id==='correzione')?'correzione':'accredito');
+    const mtipo=tipoMovimento(m);
     if(tipo&&mtipo!==tipo)return false;
     if(!q)return true;
     const hay=[m.staffId,m.nomeVisualizzato,mtipo,...(m.obiettivi||[]).flatMap(o=>[o.nome,o.dettaglio])].join(' ').toLowerCase();
@@ -1633,13 +1755,24 @@ function renderArchivio(){
   });
   if(!filtered.length){box.innerHTML='<div class="empty">Nessun movimento corrisponde ai filtri.</div>';return}
   box.innerHTML=filtered.map(m=>{
-    const mtipo=m.tipo||(m.obiettivi?.some(o=>o.id==='correzione')?'correzione':'accredito');
+    const mtipo=tipoMovimento(m);
     const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
-    const cls=delta<0?'negative':delta===0?'neutral':'';
-    const label=mtipo==='correzione'?'Correzione':mtipo==='inizializzazione'?'Allineamento':'Accredito';
+    const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
+    const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione':mtipo==='inizializzazione'?'Allineamento':'Accredito';
     const details=(m.obiettivi||[]).map(o=>`<div class="line">${linkifySafe(o.dettaglio||o.nome||'Movimento')}</div>`).join('');
-    return`<article class="log-item"><div class="log-head"><div><div><b>${escapeHtml(m.nomeVisualizzato||m.staffId||'—')}</b> · ${label}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}</div></div><div class="log-st ${cls}">${formatDelta(delta)}</div></div><div class="log-details">${details}</div></article>`;
+    const staffKey=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+    const cancellabile=passwordCorrente&&mtipo==='accredito'&&!m.annullato&&ultimi[staffKey]===m.id;
+    const haSuccessivi=!m.annullato&&mtipo==='accredito'&&ultimi[staffKey]!==m.id;
+    const actions=m.annullato
+      ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-rotate-left"></i> Saldo ripristinato${m.saldoRipristinato!==undefined?` a ${numeroIntero(m.saldoRipristinato)} ST`:''}.</span></div>`
+      :cancellabile
+        ?`<div class="log-actions"><span class="why-disabled">Solo l’ultimo movimento può essere annullato automaticamente.</span><button type="button" class="danger cancel-credit" data-cancel-id="${escapeHtml(m.id)}"><i class="fa-solid fa-trash-can-arrow-up"></i> Cancella accredito</button></div>`
+        :haSuccessivi&&passwordCorrente
+          ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-lock"></i> Non cancellabile: esistono movimenti successivi.</span></div>`
+          :'';
+    return`<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div><div><b>${escapeHtml(m.nomeVisualizzato||m.staffId||'—')}</b> · ${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined&&!m.annullato?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}</div></div><div class="log-details">${details}</div>${actions}</article>`;
   }).join('');
+  box.querySelectorAll('[data-cancel-id]').forEach(btn=>btn.addEventListener('click',()=>cancellaMovimentoAccredito(btn.dataset.cancelId)));
 }
 document.getElementById('filtroArchivio').addEventListener('input',renderArchivio);
 document.getElementById('filtroTipo').addEventListener('change',renderArchivio);
@@ -1664,7 +1797,7 @@ async function creaOInizializzaStaffer(){
       const snap=await tx.get(staffRef);
       const prima=snap.exists?numeroIntero(snap.data().st_totali):0;
       const resti={...((snap.exists&&snap.data().resti)||{}),listeSpesa:restoListe,camereBlindate:restoCamere,pool10:restoCamere,burocrazia:restoBuro};
-      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:nome,st_totali:st,resti,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:nome,st_totali:st,resti,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
       tx.set(logRef,{_pw:passwordCorrente,tipo:'inizializzazione',staffId,nomeVisualizzato:nome,delta:st-prima,guadagnati:st-prima,saldoPrima:prima,saldoDopo:st,restiDopo:resti,obiettivi:[{id:'inizializzazione',nome:'Allineamento stato storico',ft:st-prima,dettaglio:`Saldo impostato a ${st} ST; resti: Liste ${restoListe}/3, Camere ${restoCamere}/10, Burocrazia ${restoBuro}/3. ${nota||''}`.trim()}],data:firebase.firestore.FieldValue.serverTimestamp()});
     });
     msg.innerHTML='<div class="msg-ok">Stato salvato e registrato nell’archivio.</div>';
@@ -1691,7 +1824,7 @@ async function correggiSaldoStaffer(){
       const stato=snap.exists?snap.data():{st_totali:0,resti:{}};
       const prima=numeroIntero(stato.st_totali);
       const delta=valore-prima;
-      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:stato.nomeVisualizzato||nome,st_totali:valore,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:stato.nomeVisualizzato||nome,st_totali:valore,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
       tx.set(logRef,{_pw:passwordCorrente,tipo:'correzione',staffId,nomeVisualizzato:stato.nomeVisualizzato||nome,delta,guadagnati:delta,saldoPrima:prima,saldoDopo:valore,obiettivi:[{id:'correzione',nome:'Correzione saldo',ft:delta,dettaglio:`Correzione da ${prima} a ${valore} ST (${formatDelta(delta)}). Motivo: ${motivo}`}],data:firebase.firestore.FieldValue.serverTimestamp()});
     });
     msg.innerHTML='<div class="msg-ok">Saldo corretto e movimento registrato.</div>';
@@ -1705,7 +1838,7 @@ caricaListaStaffer();
 caricaPubblico(true);
 mostraStaffInfo();
 ricalcola();
-syncProtected();
+attivaTab('registra');
 </script>
 </body>
 </html>
