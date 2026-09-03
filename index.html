@@ -441,36 +441,55 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   margin-bottom:12px;
 }
 .public-toolbar input,.public-toolbar select{max-width:280px}
-.balance-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.balance-grid{display:grid;grid-template-columns:1fr;gap:8px}
 .balance-card{
   border:1px solid var(--line);
+  border-left:4px solid var(--accent);
   background:#fff;
-  border-radius:13px;
-  padding:13px;
-}
-.balance-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.balance-name{font-family:'Cinzel',serif;font-weight:700;color:var(--accent-dark);font-size:15px}
-.balance-st{font-family:'Cinzel',serif;font-weight:700;color:var(--green);font-size:18px}
-.balance-st.negative{color:var(--red)}
-.balance-resti{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.resto-chip{padding:4px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:10.8px;border:1px solid var(--line)}
-.log-list{display:flex;flex-direction:column;gap:8px}
-.log-item{
-  border:1px solid var(--line);
   border-radius:12px;
-  background:#fff;
-  padding:11px 12px;
+  padding:11px 13px;
 }
-.log-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-.log-meta{font-size:11.5px;color:var(--muted)}
-.log-st{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--green);white-space:nowrap}
+.balance-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.balance-name{font-family:'Cinzel',serif;font-weight:700;color:var(--accent-dark);font-size:15px}
+.balance-st{font-family:'Cinzel',serif;font-weight:700;color:var(--green-dark);font-size:18px;white-space:nowrap}
+.balance-st.negative{color:var(--red)}
+.balance-resti{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.resto-chip{padding:3px 7px;border-radius:999px;background:var(--green-soft);color:var(--green-dark);font-size:10.8px;border:1px solid #cfe99f;font-weight:700}
+.balance-updated{font-size:10.8px;color:var(--muted);margin-top:4px}
+.log-list{display:flex;flex-direction:column;gap:10px}
+.staff-ledger{border:1px solid var(--line);border-radius:13px;background:#fff;overflow:hidden}
+.staff-ledger[open]{border-color:var(--accent-soft);box-shadow:0 5px 16px rgba(95,0,34,.07)}
+.staff-ledger summary{list-style:none;cursor:pointer;padding:13px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff}
+.staff-ledger summary::-webkit-details-marker{display:none}
+.staff-ledger summary:hover{background:var(--surface-2)}
+.ledger-person{display:flex;align-items:center;gap:9px;min-width:0}
+.ledger-chevron{color:var(--accent);font-size:11px;transition:transform .16s ease}
+.staff-ledger[open] .ledger-chevron{transform:rotate(90deg)}
+.ledger-name{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ledger-latest{display:block;font-family:'EB Garamond',serif;font-weight:400;color:var(--muted);font-size:11px;margin-top:2px}
+.ledger-balance{font-family:'Cinzel',serif;font-weight:700;color:var(--green-dark);font-size:17px;white-space:nowrap}
+.ledger-balance.negative{color:var(--red)}
+.staff-ledger-body{padding:0 14px 12px;border-top:1px solid var(--line);background:#fffdfd}
+.log-item{border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;padding:12px 0}
+.log-item:last-child{border-bottom:0;padding-bottom:2px}
+.log-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
+.log-marker{width:30px;height:30px;border-radius:9px;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
+.log-marker.negative{background:var(--red-soft);color:var(--red)}
+.log-marker.neutral{background:#f1edef;color:var(--muted)}
+.log-title{font-weight:700;color:var(--ink);font-size:13.5px}
+.log-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.log-st{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--green-dark);white-space:nowrap}
 .log-st.negative{color:var(--red)}
 .log-st.neutral{color:var(--muted)}
-.log-details{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--ink)}
-.log-details .line{padding:2px 0}
+.log-details{margin:7px 0 0 40px;font-size:12.6px;line-height:1.45;color:var(--ink)}
+.log-details .line{display:flex;align-items:flex-start;gap:7px;padding:3px 0}
+.log-details .line-text{min-width:0;flex:1}
+.ref-icons{display:inline-flex;gap:4px;flex:0 0 auto;margin-top:-1px}
+.ref-icon{width:25px;height:25px;border-radius:7px;border:1px solid var(--accent-soft);display:inline-flex;align-items:center;justify-content:center;color:var(--accent-dark);background:#fff;text-decoration:none;font-size:10px;transition:.15s ease}
+.ref-icon:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px)}
 .log-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
 .log-actions .why-disabled{font-size:11px;color:var(--muted);font-style:italic;margin-right:auto}
-.log-item.cancelled{background:#f7f4f5;opacity:.78;border-style:dashed}
+.log-item.cancelled{opacity:.68}
 .log-item.cancelled .log-details{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#b8a8ae}
 .cancel-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;background:var(--red-soft);color:var(--red);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-left:5px}
 .danger.cancel-credit{background:#fff;color:var(--red);border-color:#df9cab}
@@ -540,6 +559,58 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .import-line .score{justify-self:start}
 }
 
+
+
+/* ===== v10: selezione Staffer a pulsanti ===== */
+.staffer-picker{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.staffer-choice{
+  position:relative;
+  min-height:48px;
+  padding:10px 12px;
+  border:1px solid rgba(251,0,84,.28);
+  border-radius:12px;
+  background:rgba(255,255,255,.72);
+  color:var(--text);
+  cursor:pointer;
+  font-family:'magic','Cinzel',serif;
+  font-weight:700;
+  font-size:15px;
+  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+.staffer-choice:hover{
+  transform:translateY(-1px);
+  border-color:var(--accent);
+  box-shadow:0 5px 14px rgba(151,0,51,.10);
+}
+.staffer-choice.active{
+  background:var(--green);
+  border-color:#76b900;
+  color:#182100;
+  box-shadow:0 0 0 3px rgba(158,234,0,.20),0 5px 14px rgba(91,135,0,.14);
+}
+.staffer-choice.active::after{
+  content:'✓';
+  position:absolute;
+  top:5px;
+  right:8px;
+  font-family:Arial,sans-serif;
+  font-size:12px;
+  font-weight:900;
+}
+.staffer-picker-help{
+  margin-top:8px;
+  font-size:12.5px;
+  color:var(--text-muted);
+}
+@media(max-width:600px){
+  .staffer-picker{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
 </style>
 </head>
 <body>
@@ -600,7 +671,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
         <div class="card-title">
           <div>
             <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti</h2>
-            <p>Ultimi 300 movimenti. In modalità Staff puoi annullare il movimento più recente di uno Staffer quando è un accredito registrato per errore.</p>
+            <p>Uno Staffer per blocco, come nel registro storico. Gli Staffer e i movimenti sono ordinati dal più recente al meno recente.</p>
           </div>
         </div>
         <div class="public-toolbar">
@@ -649,9 +720,15 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
               <p>Seleziona chi riceve l'accredito. Saldo e resti vengono caricati automaticamente.</p>
             </div>
           </div>
-          <label>Nome Staffer</label>
-          <input type="text" id="staffNomeInput" list="listaStaffer" placeholder="Es. Gideon G. Greengrass" autocomplete="off">
-          <datalist id="listaStaffer"></datalist>
+          <label>Chi riceve l’accredito?</label>
+          <div class="staffer-picker" id="pickerAccredito" data-input="staffNomeInput">
+            <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu</button>
+            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon</button>
+            <button type="button" class="staffer-choice" data-value="Noah" data-aliases="noah|noah fisher">Noah</button>
+            <button type="button" class="staffer-choice" data-value="Odette" data-aliases="odette">Odette</button>
+          </div>
+          <input type="hidden" id="staffNomeInput" value="">
+          <div class="staffer-picker-help">Un solo clic seleziona lo Staffer e carica subito saldo e resti in sospeso.</div>
           <div id="staffInfo" style="margin-top:10px"></div>
         </div>
 
@@ -705,8 +782,14 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
                 <p>Per inizializzare un nuovo staffer o allineare saldo e resti già esistenti nel registro precedente.</p>
               </div>
             </div>
-            <label>Nome Staffer</label>
-            <input type="text" id="initNome" list="listaStaffer" placeholder="Es. Gideon G. Greengrass">
+            <label>Staffer</label>
+            <div class="staffer-picker" id="pickerInit" data-input="initNome">
+              <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu</button>
+              <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon</button>
+              <button type="button" class="staffer-choice" data-value="Noah" data-aliases="noah|noah fisher">Noah</button>
+              <button type="button" class="staffer-choice" data-value="Odette" data-aliases="odette">Odette</button>
+            </div>
+            <input type="hidden" id="initNome" value="">
             <label>Saldo ST esatto</label>
             <input type="number" id="initSt" value="0" step="1">
             <div class="grid-3">
@@ -736,8 +819,14 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
                 <p>La correzione viene registrata come movimento con la differenza rispetto al saldo precedente.</p>
               </div>
             </div>
-            <label>Nome Staffer</label>
-            <input type="text" id="correggiNome" list="listaStaffer" placeholder="Es. Gideon G. Greengrass">
+            <label>Staffer</label>
+            <div class="staffer-picker" id="pickerCorreggi" data-input="correggiNome">
+              <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu</button>
+              <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon</button>
+              <button type="button" class="staffer-choice" data-value="Noah" data-aliases="noah|noah fisher">Noah</button>
+              <button type="button" class="staffer-choice" data-value="Odette" data-aliases="odette">Odette</button>
+            </div>
+            <input type="hidden" id="correggiNome" value="">
             <label>Nuovo saldo ST esatto</label>
             <input type="number" id="correggiValore" step="1">
             <label>Motivo della correzione</label>
@@ -791,6 +880,7 @@ let passwordCorrente=null;
 let staffIdCorrente=null;
 let staffAttuale=null;
 let archivioMovimenti=[];
+let staffPubblici=[];
 let ultimoBBCode='';
 
 const OBIETTIVI=[
@@ -846,7 +936,46 @@ function formatDelta(n){return`${n>=0?'+':''}${n} ST`}
 function dataIt(ts){return ts&&ts.toDate?ts.toDate().toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}):'—'}
 function linkifySafe(text){
   const safe=escapeHtml(text||'');
-  return safe.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  return safe.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i></a>');
+}
+function timestampMs(ts){
+  if(!ts)return 0;
+  if(typeof ts.toMillis==='function')return ts.toMillis();
+  if(typeof ts.toDate==='function')return ts.toDate().getTime();
+  if(typeof ts.seconds==='number')return ts.seconds*1000;
+  const d=new Date(ts);return Number.isNaN(d.getTime())?0:d.getTime();
+}
+function normalizzaRiferimento(ref){
+  ref=String(ref||'').trim().replace(/^\[URL=/i,'').replace(/\]x?\[\/URL\]$/i,'');
+  ref=ref.replace(/[),.;]+$/,'');
+  if(/^\?t=\d+/i.test(ref))return 'https://felixfelicisharrypottergdr.forumfree.it/'+ref;
+  if(/^https?:\/\//i.test(ref))return ref;
+  return '';
+}
+function riferimentiDaObiettivo(o){
+  const sorgenti=[o?.riferimenti||'',o?.dettaglio||''].join('\n');
+  const trovati=[];
+  const regex=/(https?:\/\/[^\s\]<>]+|\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?)/gi;
+  let m;
+  while((m=regex.exec(sorgenti))){
+    const url=normalizzaRiferimento(m[1]);
+    if(url&&!trovati.includes(url))trovati.push(url);
+  }
+  return trovati;
+}
+function iconeRiferimenti(o){
+  const refs=riferimentiDaObiettivo(o);
+  if(!refs.length)return '';
+  return `<span class="ref-icons">${refs.map((url,i)=>`<a class="ref-icon" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" title="Apri riferimento ${i+1}" aria-label="Apri riferimento ${i+1}"><i class="fa-solid fa-link"></i></a>`).join('')}</span>`;
+}
+function testoObiettivoRegistro(o){
+  if(o?.nome&&o?.formula){
+    return `${o.nome}: ${o.formula}${o.descrizione?' — '+o.descrizione:''}`;
+  }
+  let t=String(o?.dettaglio||o?.nome||'Movimento');
+  t=t.split(/\s+Riferimento\s*:/i)[0];
+  t=t.replace(/https?:\/\/[^\s\]<>]+/g,'').replace(/\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?/gi,'');
+  return t.replace(/\s{2,}/g,' ').trim();
 }
 
 function syncProtected(){
@@ -1119,30 +1248,57 @@ function ricalcola(){
 }
 
 const inputNome=document.getElementById('staffNomeInput');
-let debounceTimer=null;
-inputNome.addEventListener('input',()=>{
-  clearTimeout(debounceTimer);
-  debounceTimer=setTimeout(caricaStaffer,300);
-});
-inputNome.addEventListener('change',caricaStaffer);
+
+function normalizzaEtichettaStaffer(v){
+  return (v||'').toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+}
+function nomeCanonicoStaffer(raw){
+  const cercato=normalizzaEtichettaStaffer(raw);
+  if(!cercato)return '';
+  const btn=[...document.querySelectorAll('#pickerAccredito .staffer-choice')].find(b=>
+    (b.dataset.aliases||b.dataset.value||'').split('|').map(normalizzaEtichettaStaffer).includes(cercato)
+  );
+  return btn ? (btn.dataset.value||btn.textContent.trim()) : raw;
+}
+
+function sincronizzaPicker(picker){
+  if(!picker)return;
+  const input=document.getElementById(picker.dataset.input);
+  const corrente=normalizzaEtichettaStaffer(input?input.value:'');
+  picker.querySelectorAll('.staffer-choice').forEach(btn=>{
+    const alias=(btn.dataset.aliases||btn.dataset.value||'').split('|').map(normalizzaEtichettaStaffer);
+    btn.classList.toggle('active',!!corrente&&alias.includes(corrente));
+    btn.setAttribute('aria-pressed',btn.classList.contains('active')?'true':'false');
+  });
+}
+function sincronizzaTuttiPicker(){
+  document.querySelectorAll('.staffer-picker').forEach(sincronizzaPicker);
+}
+function collegaPickerStaffer(){
+  document.querySelectorAll('.staffer-picker').forEach(picker=>{
+    picker.querySelectorAll('.staffer-choice').forEach(btn=>{
+      btn.addEventListener('click',async()=>{
+        const input=document.getElementById(picker.dataset.input);
+        if(!input)return;
+        input.value=btn.dataset.value||btn.textContent.trim();
+        sincronizzaPicker(picker);
+        if(input.id==='staffNomeInput') await caricaStaffer();
+      });
+    });
+  });
+}
+collegaPickerStaffer();
 
 async function caricaListaStaffer(){
-  try{
-    const snap=await db.collection('staff_token').get();
-    const dl=document.getElementById('listaStaffer');
-    dl.innerHTML='';
-    const items=[];
-    snap.forEach(doc=>items.push({id:doc.id,...doc.data()}));
-    items.sort((a,b)=>nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
-    items.forEach(s=>{
-      const opt=document.createElement('option');
-      opt.value=nomeDaDoc(s.id,s);
-      dl.appendChild(opt);
-    });
-  }catch(e){}
+  // v10: gli Staffer sono quattro e vengono scelti dai pulsanti fissi.
+  // Mantengo la funzione come hook per non alterare i flussi già esistenti.
+  return;
 }
 
 async function caricaStaffer(){
+  const canonico=nomeCanonicoStaffer(inputNome.value.trim());
+  if(canonico) inputNome.value=canonico;
+  sincronizzaPicker(document.getElementById('pickerAccredito'));
   const raw=inputNome.value.trim();
   const id=normalizzaStaffId(raw);
   staffIdCorrente=id||null;
@@ -1173,14 +1329,13 @@ function resetFormAccredito(mantieniStaffer=true){
   });
   document.getElementById('successBox').classList.add('hidden');
   document.getElementById('registraMsg').textContent='';
-  if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;mostraStaffInfo()}
+  if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;sincronizzaPicker(document.getElementById('pickerAccredito'));mostraStaffInfo()}
   ricalcola();
 }
 
 function creaDettaglioLog(r){
   let t=`${r.nome}: ${r.formula}`;
-  if(r.descrizione)t+=` ${r.descrizione}`;
-  if(r.riferimenti)t+=` Riferimento: ${r.riferimenti}`;
+  if(r.descrizione)t+=` — ${r.descrizione}`;
   return t;
 }
 
@@ -1260,6 +1415,7 @@ async function applicaSnapshotAccredito(snap){
   if(!snap)return;
   applicandoSnapshot=true;
   inputNome.value=snap.staffNome||'';
+  sincronizzaPicker(document.getElementById('pickerAccredito'));
   await caricaStaffer();
   cont.querySelectorAll('.activity').forEach(div=>{
     const data=snap.attivita?.[div.dataset.id]||{};
@@ -1476,6 +1632,7 @@ async function analizzaTesto(){
     const candidato=mNome[1].replace(/staff token posseduti.*$/i,'').trim();
     if(candidato&&!/staff token|felix token|richiesta/i.test(candidato)){
       inputNome.value=candidato;
+      sincronizzaPicker(document.getElementById('pickerAccredito'));
       await caricaStaffer();
     }
   }
@@ -1613,18 +1770,24 @@ async function caricaPubblico(forza=false){
       db.collection('staff_token_log').orderBy('data','desc').limit(300).get()
     ]);
     const staff=[];snapStaff.forEach(doc=>staff.push({id:doc.id,...doc.data()}));
-    staff.sort((a,b)=>nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    staff.sort((a,b)=>timestampMs(b.ultimoAggiornamento)-timestampMs(a.ultimoAggiornamento)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    staffPubblici=staff;
     if(!staff.length)saldi.innerHTML='<div class="empty">Nessuno Staffer registrato.</div>';
     else saldi.innerHTML=staff.map(s=>{
       const rl=getResto(s,OBIETTIVI.find(o=>o.id==='liste_spesa'));
       const rc=getResto(s,OBIETTIVI.find(o=>o.id==='camere_blindate'));
       const rb=getResto(s,OBIETTIVI.find(o=>o.id==='burocrazia'));
       const st=numeroIntero(s.st_totali);
-      return`<div class="balance-card"><div class="balance-top"><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div><div class="balance-resti"><span class="resto-chip">Liste ${rl}/3</span><span class="resto-chip">Camere ${rc}/10</span><span class="resto-chip">Burocrazia ${rb}/3</span></div></div>`;
+      const chips=[];
+      if(rl)chips.push(`<span class="resto-chip">Liste ${rl}/3</span>`);
+      if(rc)chips.push(`<span class="resto-chip">Camere ${rc}/10</span>`);
+      if(rb)chips.push(`<span class="resto-chip">Burocrazia ${rb}/3</span>`);
+      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}</div>${s.ultimoAggiornamento?`<div class="balance-updated">Aggiornato ${escapeHtml(dataIt(s.ultimoAggiornamento))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
     }).join('');
     saldi.dataset.loaded='1';
 
     archivioMovimenti=[];snapLog.forEach(doc=>archivioMovimenti.push({id:doc.id,...doc.data()}));
+    archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
     archivio.dataset.loaded='1';
     renderArchivio();
   }catch(e){
@@ -1746,31 +1909,58 @@ function renderArchivio(){
   const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
   const tipo=document.getElementById('filtroTipo').value;
   const ultimi=ultimiMovimentiAttiviPerStaff();
-  const filtered=archivioMovimenti.filter(m=>{
+  const saldoMap={};
+  staffPubblici.forEach(s=>saldoMap[s.id]={saldo:numeroIntero(s.st_totali),nome:nomeDaDoc(s.id,s)});
+
+  const gruppi=new Map();
+  archivioMovimenti.forEach(m=>{
     const mtipo=tipoMovimento(m);
-    if(tipo&&mtipo!==tipo)return false;
-    if(!q)return true;
-    const hay=[m.staffId,m.nomeVisualizzato,mtipo,...(m.obiettivi||[]).flatMap(o=>[o.nome,o.dettaglio])].join(' ').toLowerCase();
-    return hay.includes(q);
+    if(tipo&&mtipo!==tipo)return;
+    const key=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+    const nome=m.nomeVisualizzato||saldoMap[key]?.nome||m.staffId||'—';
+    const testoMov=[mtipo,...(m.obiettivi||[]).flatMap(o=>[o.nome,o.dettaglio,o.formula,o.descrizione])].join(' ').toLowerCase();
+    const nomeMatch=!q||nome.toLowerCase().includes(q);
+    if(q&&!nomeMatch&&!testoMov.includes(q))return;
+    if(!gruppi.has(key))gruppi.set(key,{key,nome,movimenti:[]});
+    gruppi.get(key).movimenti.push(m);
   });
-  if(!filtered.length){box.innerHTML='<div class="empty">Nessun movimento corrisponde ai filtri.</div>';return}
-  box.innerHTML=filtered.map(m=>{
-    const mtipo=tipoMovimento(m);
-    const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
-    const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
-    const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione':mtipo==='inizializzazione'?'Allineamento':'Accredito';
-    const details=(m.obiettivi||[]).map(o=>`<div class="line">${linkifySafe(o.dettaglio||o.nome||'Movimento')}</div>`).join('');
-    const staffKey=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
-    const cancellabile=passwordCorrente&&mtipo==='accredito'&&!m.annullato&&ultimi[staffKey]===m.id;
-    const haSuccessivi=!m.annullato&&mtipo==='accredito'&&ultimi[staffKey]!==m.id;
-    const actions=m.annullato
-      ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-rotate-left"></i> Saldo ripristinato${m.saldoRipristinato!==undefined?` a ${numeroIntero(m.saldoRipristinato)} ST`:''}.</span></div>`
-      :cancellabile
-        ?`<div class="log-actions"><span class="why-disabled">Solo l’ultimo movimento può essere annullato automaticamente.</span><button type="button" class="danger cancel-credit" data-cancel-id="${escapeHtml(m.id)}"><i class="fa-solid fa-trash-can-arrow-up"></i> Cancella accredito</button></div>`
-        :haSuccessivi&&passwordCorrente
-          ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-lock"></i> Non cancellabile: esistono movimenti successivi.</span></div>`
-          :'';
-    return`<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div><div><b>${escapeHtml(m.nomeVisualizzato||m.staffId||'—')}</b> · ${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined&&!m.annullato?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}</div></div><div class="log-details">${details}</div>${actions}</article>`;
+
+  const lista=[...gruppi.values()].map(g=>{
+    g.movimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+    g.ultimo=timestampMs(g.movimenti[0]?.data);
+    return g;
+  }).sort((a,b)=>b.ultimo-a.ultimo||a.nome.localeCompare(b.nome,'it'));
+
+  if(!lista.length){box.innerHTML='<div class="empty">Nessun movimento corrisponde ai filtri.</div>';return}
+
+  box.innerHTML=lista.map((g,idx)=>{
+    const saldoDoc=saldoMap[g.key];
+    const primo=g.movimenti[0];
+    const saldo=saldoDoc?saldoDoc.saldo:(primo?.annullato&&primo?.saldoRipristinato!==undefined?numeroIntero(primo.saldoRipristinato):numeroIntero(primo?.saldoDopo));
+    const movHtml=g.movimenti.map(m=>{
+      const mtipo=tipoMovimento(m);
+      const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+      const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
+      const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione saldo':mtipo==='inizializzazione'?'Allineamento saldo':'Accredito';
+      const icon=mtipo==='correzione'?'fa-pen-to-square':mtipo==='inizializzazione'?'fa-scale-balanced':m.annullato?'fa-ban':delta<0?'fa-minus':'fa-plus';
+      const details=(m.obiettivi||[]).map(o=>{
+        const testo=testoObiettivoRegistro(o);
+        const refs=iconeRiferimenti(o);
+        return `<div class="line"><div class="line-text">${escapeHtml(testo)}</div>${refs}</div>`;
+      }).join('');
+      const staffKey=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+      const cancellabile=passwordCorrente&&mtipo==='accredito'&&!m.annullato&&ultimi[staffKey]===m.id;
+      const haSuccessivi=!m.annullato&&mtipo==='accredito'&&ultimi[staffKey]!==m.id;
+      const actions=m.annullato
+        ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-rotate-left"></i> Saldo ripristinato${m.saldoRipristinato!==undefined?` a ${numeroIntero(m.saldoRipristinato)} ST`:''}.</span></div>`
+        :cancellabile
+          ?`<div class="log-actions"><span class="why-disabled">Ultimo movimento dello Staffer.</span><button type="button" class="danger cancel-credit" data-cancel-id="${escapeHtml(m.id)}"><i class="fa-solid fa-trash-can-arrow-up"></i> Cancella accredito</button></div>`
+          :haSuccessivi&&passwordCorrente
+            ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-lock"></i> Non cancellabile: esistono movimenti successivi.</span></div>`
+            :'';
+      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined&&!m.annullato?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
+    }).join('');
+    return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
   box.querySelectorAll('[data-cancel-id]').forEach(btn=>btn.addEventListener('click',()=>cancellaMovimentoAccredito(btn.dataset.cancelId)));
 }
@@ -1788,7 +1978,7 @@ async function creaOInizializzaStaffer(){
   const restoCamere=numeroIntero(document.getElementById('initRestoCamere').value);
   const restoBuro=numeroIntero(document.getElementById('initRestoBurocrazia').value);
   const nota=document.getElementById('initNota').value.trim();
-  if(!staffId){msg.innerHTML='<div class="msg-err">Inserisci un nome.</div>';return}
+  if(!staffId){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer.</div>';return}
   if(restoListe<0||restoListe>2||restoCamere<0||restoCamere>9||restoBuro<0||restoBuro>2){msg.innerHTML='<div class="msg-err">Controlla i resti: Liste 0–2, Camere 0–9, Burocrazia 0–2.</div>';return}
   try{
     const staffRef=db.collection('staff_token').doc(staffId);
@@ -1814,7 +2004,7 @@ async function correggiSaldoStaffer(){
   const rawVal=document.getElementById('correggiValore').value;
   const valore=parseInt(rawVal,10);
   const motivo=document.getElementById('correggiMotivo').value.trim();
-  if(!staffId||!Number.isFinite(valore)){msg.innerHTML='<div class="msg-err">Compila nome e nuovo saldo.</div>';return}
+  if(!staffId||!Number.isFinite(valore)){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer e indica il nuovo saldo.</div>';return}
   if(!motivo){msg.innerHTML='<div class="msg-err">Indica il motivo: la correzione deve essere leggibile nel registro pubblico.</div>';return}
   try{
     const staffRef=db.collection('staff_token').doc(staffId);
@@ -1836,6 +2026,7 @@ document.getElementById('btnCorreggi').addEventListener('click',correggiSaldoSta
 
 caricaListaStaffer();
 caricaPubblico(true);
+sincronizzaTuttiPicker();
 mostraStaffInfo();
 ricalcola();
 attivaTab('registra');
