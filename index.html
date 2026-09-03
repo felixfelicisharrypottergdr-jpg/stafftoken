@@ -1,240 +1,710 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestore Staff Token</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
-  @font-face {
-    font-family: 'magic';
-    src: url('https://dl.dropboxusercontent.com/scl/fi/nbzmrri4qyvc3tzx96911/HarryBeastDisplay-Regular.woff2?rlkey=he290voe32k33gowug23c1osc&st=nj9fgly1') format('woff2');
-    font-weight: normal;
-    font-style: normal;
-  }
-  :root{
-    --parch-out:#f0e9ee; --parch:#fffaf9; --parch-alt:#fdeef3;
-    --bordeaux:#fb0054; --bordeaux-dark:#b0003c; --bordeaux-soft:#ff5c96;
-    --oro:#7cb342; --testo:#3a2430; --testo-muted:#8a7684;
-    --verde:#6aa62e; --rosso:#c4183f;
-  }
-  *{box-sizing:border-box;}
-  body{
-    margin:0; padding:24px 16px; background:var(--parch-out); color:var(--testo);
-    font-family:'EB Garamond', Georgia, serif; font-size:16px;
-  }
-  .wrap{max-width:760px; margin:0 auto;}
-  #loadErr{
-    display:none; background:#3a1a1a; border:1px solid var(--rosso); color:#ffd3d3;
-    padding:12px; border-radius:8px; margin-bottom:14px; font-family:sans-serif; font-size:13px;
-  }
-  h1,h2,h3{color:var(--bordeaux-dark); font-family:'magic','Cinzel', serif; font-weight:700;}
-  .masthead{
-    text-align:center; padding:22px 20px 18px; background:var(--parch);
-    border:1px solid var(--bordeaux-soft); border-radius:16px; margin-bottom:18px;
-    box-shadow:0 2px 10px rgba(74,36,21,.08);
-  }
-  .masthead .crest{
-    width:56px; height:56px; border-radius:50%; margin:0 auto 8px; display:flex;
-    align-items:center; justify-content:center; background:var(--parch-alt);
-    border:2px solid var(--bordeaux); color:var(--bordeaux); font-size:22px;
-  }
-  .masthead .eyebrow{
-    letter-spacing:3px; font-size:12px; text-transform:uppercase; color:var(--bordeaux); margin-bottom:4px;
-  }
-  .masthead h1{margin:0 0 8px; font-size:28px; font-family:'magic','Cinzel Decorative','Cinzel', serif;}
-  .masthead p{margin:0; font-style:italic; color:var(--testo-muted); font-size:14px;}
-  .divider{width:120px; height:1px; background:var(--bordeaux-soft); margin:12px auto; opacity:.6;}
-  .tabs{display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; justify-content:center;}
-  .tab-btn{
-    background:var(--parch); color:var(--bordeaux-dark); border:1px solid var(--bordeaux-soft);
-    padding:9px 18px; border-radius:8px; cursor:pointer; font-size:14px; font-family:'magic','Cinzel', serif;
-  }
-  .tab-btn.active{background:var(--bordeaux); color:var(--parch); border-color:var(--bordeaux);}
-  .view{display:none;}
-  .view.active{display:block;}
-  .card{
-    background:var(--parch); border:1px solid var(--bordeaux-soft); border-radius:12px;
-    padding:18px 18px 20px; margin-bottom:16px; box-shadow:0 1px 6px rgba(74,36,21,.06);
-  }
-  .step-title{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
-  .step-num{
-    width:28px; height:28px; border-radius:50%; background:var(--bordeaux); color:var(--parch);
-    display:flex; align-items:center; justify-content:center; font-family:'magic','Cinzel', serif;
-    font-size:14px; flex-shrink:0;
-  }
-  label{display:block; margin:12px 0 5px; font-size:13px; color:var(--testo-muted); font-weight:600;}
-  input[type=text], input[type=number], input[type=password], select, textarea{
-    width:100%; padding:9px 10px; border-radius:8px; border:1px solid #d9c69a;
-    background:#fffdf6; color:var(--testo); font-size:15px; font-family:'EB Garamond', serif;
-  }
-  input:focus, select:focus, textarea:focus{outline:2px solid var(--bordeaux-soft); outline-offset:1px;}
-  small.hint{display:block; color:var(--testo-muted); font-size:12.5px; margin-top:5px; line-height:1.4;}
-  .obj-row{
-    border-left:3px solid var(--bordeaux-soft); padding:10px 14px; margin:10px 0;
-    background:var(--parch-alt); border-radius:6px;
-  }
-  .obj-row.filled{border-left-color:var(--verde);}
-  .obj-header{display:flex; justify-content:space-between; align-items:center; gap:8px;}
-  .obj-header label{margin:0; color:var(--testo); font-weight:normal; font-size:15px;}
-  .obj-header .fa-solid{width:18px; text-align:center; color:var(--bordeaux); margin-right:2px;}
-  .obj-sub{margin-top:10px; display:none;}
-  .obj-sub.show{display:block;}
-  .pill{
-    display:inline-block; padding:2px 10px; border-radius:20px; font-size:12px;
-    background:var(--bordeaux); color:var(--parch); margin-left:6px; font-family:'magic','Cinzel', serif;
-  }
-  .resto-pill{
-    display:inline-block; padding:2px 10px; border-radius:20px; font-size:11.5px;
-    background:var(--oro); color:var(--parch); margin-left:6px;
-  }
-  button.main{
-    background:var(--bordeaux); color:var(--parch); border:none; padding:11px 20px;
-    border-radius:8px; font-weight:700; cursor:pointer; font-size:15px; font-family:'magic','Cinzel', serif;
-  }
-  button.main:hover{background:var(--bordeaux-dark);}
-  button.secondary{
-    background:transparent; color:var(--bordeaux); border:1px solid var(--bordeaux);
-    padding:7px 14px; border-radius:8px; cursor:pointer; font-size:13px; font-family:'magic','Cinzel', serif;
-  }
-  button.small{
-    background:#fffdf6; color:var(--testo); border:1px solid #d9c69a;
-    padding:5px 11px; border-radius:6px; cursor:pointer; font-size:12.5px;
-  }
-  .totale-box{
-    position:sticky; bottom:12px; text-align:center; padding:14px; background:var(--parch);
-    border-radius:12px; border:1px solid var(--bordeaux); margin-top:14px; font-size:16px;
-    box-shadow:0 4px 16px rgba(74,36,21,.18); z-index:5;
-  }
-  .totale-box b{color:var(--verde); font-size:20px; font-family:'magic','Cinzel', serif;}
-  .msg-err{color:var(--rosso); font-size:13px; margin-top:6px;}
-  .msg-ok{color:var(--verde); font-size:13px; margin-top:6px;}
-  #gate{max-width:380px; margin:60px auto; text-align:center;}
-  .hidden{display:none !important;}
-  .lista-item{border-bottom:1px solid #e6d6b0; padding:10px 0;}
-  .lista-item:last-child{border-bottom:none;}
-  .lista-item .riga{display:flex; justify-content:space-between; align-items:baseline;}
-  .lista-item .nome{font-family:'magic','Cinzel', serif; color:var(--bordeaux-dark); font-size:17px;}
-  .lista-item .st{color:var(--verde); font-weight:600;}
-  .log-item{font-size:13.5px; padding:8px 0; border-bottom:1px dashed #e0cfa0;}
-  .log-item:last-child{border-bottom:none;}
-  .log-item .quando{color:var(--testo-muted); font-size:11.5px;}
-  .empty, .loading{text-align:center; padding:24px; color:var(--testo-muted); font-style:italic;}
+@font-face{
+  font-family:'magic';
+  src:url('https://dl.dropboxusercontent.com/scl/fi/nbzmrri4qyvc3tzx96911/HarryBeastDisplay-Regular.woff2?rlkey=he290voe32k33gowug23c1osc&st=nj9fgly1') format('woff2');
+  font-weight:normal;
+  font-style:normal;
+}
+:root{
+  --bg:#f3f5ef;
+  --surface:#ffffff;
+  --surface-2:#fff0f5;
+  --surface-3:#eef7e7;
+  --ink:#30242a;
+  --muted:#756b70;
+  --line:#e2d7dc;
+  --accent:#fb0054;
+  --accent-dark:#b0003c;
+  --accent-soft:#ff7daa;
+  --gold:#8bc34a;
+  --gold-soft:#f1f8e9;
+  --green:#8bc34a;
+  --green-dark:#5f8f27;
+  --green-soft:#f1f8e9;
+  --red:#c81d4b;
+  --red-soft:#fff0f4;
+  --shadow:0 10px 30px rgba(48,36,42,.08);
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  padding:22px 14px 90px;
+  background:
+    radial-gradient(circle at top left,rgba(255,255,255,.65),transparent 34%),
+    var(--bg);
+  color:var(--ink);
+  font-family:'EB Garamond',Georgia,serif;
+  font-size:16px;
+}
+button,input,select,textarea{font:inherit}
+button{touch-action:manipulation}
+.wrap{max-width:1040px;margin:0 auto}
+.hidden{display:none!important}
+#loadErr{
+  display:none;
+  background:#3d171f;
+  border:1px solid var(--red);
+  color:#ffe8ed;
+  padding:12px 14px;
+  border-radius:12px;
+  margin-bottom:14px;
+  font-family:Arial,sans-serif;
+  font-size:13px;
+}
+h1,h2,h3,h4{
+  color:var(--accent-dark);
+  font-family:'magic','Cinzel',serif;
+  font-weight:700;
+}
+.masthead{
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+  padding:26px 22px 22px;
+  background:linear-gradient(145deg,var(--surface),#fff 55%,var(--surface-2));
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  margin-bottom:14px;
+}
+.masthead:before,.masthead:after{
+  content:"";
+  position:absolute;
+  width:170px;
+  height:170px;
+  border-radius:50%;
+  border:1px solid rgba(251,0,84,.08);
+}
+.masthead:before{left:-95px;top:-100px}
+.masthead:after{right:-100px;bottom:-115px}
+.crest{
+  width:58px;
+  height:58px;
+  margin:0 auto 8px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:var(--surface-2);
+  border:1px solid var(--accent-soft);
+  color:var(--accent);
+  font-size:23px;
+  box-shadow:inset 0 0 0 5px rgba(255,255,255,.55);
+}
+.eyebrow{
+  letter-spacing:3px;
+  text-transform:uppercase;
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  color:var(--accent);
+}
+.masthead h1{
+  margin:3px 0 7px;
+  font-size:31px;
+  font-family:'magic','Cinzel Decorative','Cinzel',serif;
+}
+.masthead p{margin:0;color:var(--muted);font-size:14px;font-style:italic}
+.nav-shell{
+  position:sticky;
+  top:0;
+  z-index:30;
+  padding:8px 0 10px;
+  background:linear-gradient(var(--bg) 72%,transparent);
+}
+.tabs{
+  display:flex;
+  gap:7px;
+  padding:6px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(8px);
+  border-radius:14px;
+  box-shadow:0 4px 18px rgba(48,36,42,.06);
+}
+.tab-btn{
+  flex:1;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-family:'Cinzel',serif;
+  font-size:12px;
+  font-weight:700;
+  transition:.16s ease;
+}
+.tab-btn:hover{background:var(--surface-2);color:var(--accent-dark)}
+.tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(251,0,84,.18)}
+.tab-btn i{margin-right:6px}
+.view{display:none}
+.view.active{display:block}
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 4px 16px rgba(48,36,42,.045);
+}
+.card.compact{padding:15px 17px}
+.card-title{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.card-title h2,.card-title h3{margin:0}
+.card-title h2{font-size:21px}
+.card-title h3{font-size:18px}
+.card-title p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+label{
+  display:block;
+  margin:11px 0 5px;
+  color:var(--muted);
+  font-size:12.5px;
+  font-weight:700;
+}
+input[type=text],input[type=number],input[type=password],select,textarea{
+  width:100%;
+  border:1px solid #d8c7cd;
+  background:#fff;
+  color:var(--ink);
+  border-radius:10px;
+  padding:10px 11px;
+  font-size:15px;
+  outline:none;
+  transition:.15s ease;
+}
+textarea{resize:vertical;min-height:72px;line-height:1.35}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent-soft);
+  box-shadow:0 0 0 3px rgba(251,0,84,.09);
+}
+input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-allowed}
+.hint{display:block;color:var(--muted);font-size:12px;margin-top:5px;line-height:1.35}
+.main,.secondary,.ghost,.danger,.mini{
+  border:0;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.15s ease;
+  font-weight:700;
+}
+.main{
+  background:var(--accent);
+  color:#fff;
+  padding:11px 17px;
+  font-family:'Cinzel',serif;
+  font-size:13px;
+  box-shadow:0 4px 12px rgba(251,0,84,.16);
+}
+.main:hover{background:var(--accent-dark)}
+.main:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.secondary{
+  background:#fff;
+  color:var(--accent-dark);
+  border:1px solid var(--accent-soft);
+  padding:9px 14px;
+  font-family:'Cinzel',serif;
+  font-size:12px;
+}
+.secondary:hover{background:var(--surface-2)}
+.ghost{
+  background:transparent;
+  color:var(--muted);
+  border:1px solid var(--line);
+  padding:8px 12px;
+  font-size:12px;
+}
+.danger{
+  background:var(--red-soft);
+  color:var(--red);
+  border:1px solid #e8b8c2;
+  padding:8px 12px;
+  font-size:12px;
+}
+.mini{
+  background:var(--surface-2);
+  color:var(--accent-dark);
+  border:1px solid var(--line);
+  padding:5px 8px;
+  font-size:11px;
+}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.access-card{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 4px 15px rgba(48,36,42,.045);
+  margin-bottom:14px;
+}
+.access-card .access-icon{
+  width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;
+  background:var(--surface-2);color:var(--accent);border:1px solid var(--line)
+}
+.access-card .access-text{flex:1}
+.access-card strong{font-family:'Cinzel',serif;font-size:13px;color:var(--accent-dark)}
+.access-card p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.access-form{display:flex;gap:7px;min-width:300px}
+.access-form input{min-width:0}
+.access-ok{background:var(--green-soft);border-color:#d6e9c2}
+.access-ok .access-icon{background:#fff;color:var(--green)}
+.section-label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:20px 2px 9px;
+  color:var(--accent-dark);
+  font-family:'Cinzel',serif;
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+}
+.section-label:after{content:"";height:1px;background:var(--line);flex:1}
+.staff-strip{
+  display:grid;
+  grid-template-columns:minmax(220px,1.3fr) repeat(4,minmax(115px,.65fr));
+  gap:9px;
+  align-items:stretch;
+}
+.staff-metric{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  padding:10px 12px;
+}
+.staff-metric .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.staff-metric .v{font-family:'Cinzel',serif;color:var(--accent-dark);font-size:17px;font-weight:700;margin-top:2px}
+.staff-metric .v.big{font-size:23px}
+.staff-metric .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.activity{
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  overflow:hidden;
+  margin-bottom:9px;
+  transition:.15s ease;
+}
+.activity.selected{border-color:var(--accent-soft);box-shadow:0 0 0 2px rgba(251,0,84,.05)}
+.activity-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px;
+  cursor:pointer;
+  user-select:none;
+}
+.activity-head:hover{background:#fffdfd}
+.activity-check{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+.activity-icon{
+  width:33px;height:33px;flex:0 0 33px;border-radius:10px;display:grid;place-items:center;
+  background:var(--surface-2);color:var(--accent)
+}
+.activity-title{flex:1;min-width:0}
+.activity-title strong{display:block;color:var(--ink);font-size:15px}
+.activity-title span{display:block;color:var(--muted);font-size:11.8px;margin-top:1px}
+.rule-badge{
+  flex:0 0 auto;
+  padding:4px 8px;
+  border-radius:999px;
+  background:var(--gold-soft);
+  color:#5f8f27;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.activity-body{
+  display:none;
+  border-top:1px solid var(--line);
+  padding:13px 14px 15px;
+  background:linear-gradient(180deg,#fff,var(--surface));
+}
+.activity.selected .activity-body{display:block}
+.formula-box{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:48px;
+  margin-top:10px;
+  padding:9px 11px;
+  border-radius:11px;
+  background:var(--green-soft);
+  border:1px solid #d6e9c2;
+  color:#4f7825;
+  font-size:12.5px;
+  line-height:1.3;
+}
+.formula-box i{color:var(--green)}
+.formula-box.zero{background:var(--green-soft);border-color:#d6e9c2;color:#4f7825}
+.resto-progress{
+  height:6px;
+  background:#eee4e7;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:6px;
+}
+.resto-progress>span{display:block;height:100%;background:var(--gold);border-radius:inherit;transition:width .2s ease}
+.smart-import summary{
+  cursor:pointer;
+  list-style:none;
+  color:var(--accent-dark);
+  font-family:'Cinzel',serif;
+  font-weight:700;
+  font-size:12.5px;
+}
+.smart-import summary::-webkit-details-marker{display:none}
+.smart-import summary i{margin-right:7px;color:var(--accent)}
+.smart-import[open] summary{margin-bottom:11px}
+.preview-list{margin:0;padding:0;list-style:none}
+.preview-item{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px dashed var(--line);
+}
+.preview-item:last-child{border-bottom:0}
+.preview-item .name{font-weight:700;color:var(--ink)}
+.preview-item .detail{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
+.preview-item .score{font-family:'Cinzel',serif;color:var(--green);font-weight:700;white-space:nowrap}
+.total-sticky{
+  position:sticky;
+  bottom:10px;
+  z-index:20;
+  display:grid;
+  grid-template-columns:repeat(3,1fr) auto;
+  gap:8px;
+  align-items:center;
+  margin-top:14px;
+  padding:10px;
+  border:1px solid var(--accent-soft);
+  border-radius:15px;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(8px);
+  box-shadow:0 10px 28px rgba(48,36,42,.14);
+}
+.total-cell{padding:5px 9px;border-right:1px solid var(--line)}
+.total-cell:nth-child(3){border-right:0}
+.total-cell .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.total-cell .v{font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:var(--accent-dark)}
+.total-cell .v.green{color:var(--green)}
+.msg-err,.msg-ok,.msg-warn{font-size:12.5px;margin-top:8px;line-height:1.35}
+.msg-err{color:var(--red)}
+.msg-ok{color:var(--green)}
+.msg-warn{color:#5f8f27}
+.notice{
+  padding:11px 12px;
+  border-radius:11px;
+  background:var(--gold-soft);
+  border:1px solid #d6e9c2;
+  color:#4f7825;
+  font-size:12.5px;
+  line-height:1.4;
+}
+.notice i{margin-right:6px}
+.success-box{
+  margin-top:12px;
+  border:1px solid #d6e9c2;
+  background:var(--green-soft);
+  border-radius:13px;
+  padding:13px;
+}
+.success-box h4{margin:0 0 6px;color:#5f8f27;font-size:16px}
+.success-box p{margin:0 0 9px;font-size:13px;color:#4f7825}
+.bbcode-preview{
+  width:100%;min-height:120px;background:#fff;border:1px solid #d6e9c2;border-radius:10px;
+  padding:9px;color:var(--ink);font-family:Consolas,monospace;font-size:11.5px;line-height:1.4
+}
+.public-toolbar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:12px;
+}
+.public-toolbar input,.public-toolbar select{max-width:280px}
+.balance-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.balance-card{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:13px;
+  padding:13px;
+}
+.balance-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.balance-name{font-family:'Cinzel',serif;font-weight:700;color:var(--accent-dark);font-size:15px}
+.balance-st{font-family:'Cinzel',serif;font-weight:700;color:var(--green);font-size:18px}
+.balance-st.negative{color:var(--red)}
+.balance-resti{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.resto-chip{padding:4px 7px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-size:10.8px;border:1px solid var(--line)}
+.log-list{display:flex;flex-direction:column;gap:8px}
+.log-item{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  padding:11px 12px;
+}
+.log-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.log-meta{font-size:11.5px;color:var(--muted)}
+.log-st{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--green);white-space:nowrap}
+.log-st.negative{color:var(--red)}
+.log-st.neutral{color:var(--muted)}
+.log-details{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--ink)}
+.log-details .line{padding:2px 0}
+.empty,.loading{text-align:center;padding:22px;color:var(--muted);font-style:italic}
+.admin-section{border-left:3px solid var(--accent-soft)}
+.separator{height:1px;background:var(--line);margin:16px 0}
+@media(max-width:800px){
+  body{padding:12px 9px 85px}
+  .masthead{padding:20px 15px 17px;border-radius:17px}
+  .masthead h1{font-size:27px}
+  .tabs{overflow-x:auto;justify-content:flex-start}
+  .tab-btn{flex:0 0 auto;white-space:nowrap}
+  .grid-2,.grid-3,.balance-grid{grid-template-columns:1fr}
+  .staff-strip{grid-template-columns:1fr 1fr}
+  .staff-strip .staff-metric:first-child{grid-column:1/-1}
+  .access-card{align-items:flex-start;flex-wrap:wrap}
+  .access-form{min-width:100%;width:100%}
+  .total-sticky{grid-template-columns:1fr 1fr}
+  .total-cell{border-right:0;border-bottom:1px solid var(--line)}
+  .total-cell:nth-child(3){border-bottom:0}
+  .total-sticky .main{grid-column:2;grid-row:2}
+}
+@media(max-width:480px){
+  .staff-strip{grid-template-columns:1fr}
+  .staff-strip .staff-metric:first-child{grid-column:auto}
+  .total-sticky{grid-template-columns:1fr 1fr}
+  .activity-head{align-items:flex-start}
+  .rule-badge{max-width:115px;white-space:normal;text-align:right}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div id="loadErr">⚠️ Firebase non si è caricato correttamente. Controlla hosting, connessione e blocchi del browser.</div>
 
-<div id="loadErr">
-  ⚠️ Firebase non si è caricato correttamente. Prova a servire il file da un server locale o dal tuo hosting, e controlla eventuali adblocker.
-</div>
-
-<!-- ============ CONTENUTO PRINCIPALE (sempre visibile) ============ -->
-<div id="app">
-
-  <div class="masthead">
-    <div class="crest"><i class="fa-solid fa-shield-halved"></i></div>
+  <header class="masthead">
+    <div class="crest"><i class="fa-solid fa-pen-nib"></i></div>
     <div class="eyebrow">Felix Felicis GdR</div>
     <h1>Gestore Staff Token</h1>
-    <div class="divider"></div>
-    <p>L'archivio è pubblico; registrare o correggere un saldo richiede la password Staff.</p>
+    <p>Saldi e registro sono pubblici. Gli accrediti si calcolano secondo le soglie e i valori del regolamento.</p>
+  </header>
+
+  <div class="nav-shell">
+    <nav class="tabs" aria-label="Sezioni Gestore Staff Token">
+      <button class="tab-btn active" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico</button>
+      <button class="tab-btn" data-tab="registra"><i class="fa-solid fa-pen-nib"></i>Nuovo accredito</button>
+      <button class="tab-btn" data-tab="gestione"><i class="fa-solid fa-user-gear"></i>Gestione saldi</button>
+    </nav>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="archivio"><i class="fa-solid fa-scroll"></i> Archivio</button>
-    <button class="tab-btn" data-tab="registra"><i class="fa-solid fa-feather-pointed"></i> Registra Accredito</button>
-    <button class="tab-btn" data-tab="init"><i class="fa-solid fa-user-gear"></i> Inizializza/Correggi</button>
+  <div id="staffAccess" class="access-card hidden">
+    <div class="access-icon"><i class="fa-solid fa-key"></i></div>
+    <div class="access-text">
+      <strong>Modalità Staff bloccata</strong>
+      <p>Inserisci la password una sola volta per questa sessione.</p>
+    </div>
+    <div class="access-form">
+      <input type="password" id="gatePassword" placeholder="Password Staff" autocomplete="current-password">
+      <button class="main" id="btnSblocca">Sblocca</button>
+    </div>
+    <div id="gateErr" class="msg-err" aria-live="polite"></div>
   </div>
 
-  <!-- ============ VISTA REGISTRA ACCREDITO (protetta da password) ============ -->
-  <div id="view-registra" class="view">
-
-    <div id="gateRegistra" class="card">
-      <h3><i class="fa-solid fa-key"></i> Password Staff richiesta</h3>
-      <input type="password" id="gatePassword" placeholder="Password">
-      <button class="main" style="margin-top:10px; width:100%;" id="btnSblocca">Sblocca</button>
-      <div id="gateErr" class="msg-err"></div>
+  <div id="staffUnlocked" class="access-card access-ok hidden">
+    <div class="access-icon"><i class="fa-solid fa-unlock-keyhole"></i></div>
+    <div class="access-text">
+      <strong>Modalità Staff attiva</strong>
+      <p>Puoi registrare accrediti e correggere i saldi. La password resta soltanto in memoria.</p>
     </div>
-
-    <div id="contenutoRegistra" class="hidden">
-
-    <div class="card">
-      <div class="step-title"><span class="step-num">1</span><h2 style="margin:0;">Chi sei</h2></div>
-      <label>Il tuo nome (staff)</label>
-      <input type="text" id="staffNomeInput" list="listaStaffer" placeholder="Es. Gideon">
-      <datalist id="listaStaffer"></datalist>
-      <div id="staffInfo" style="margin-top:8px; font-size:13px; color:var(--testo-muted);"></div>
-    </div>
-
-    <div class="card">
-      <div class="step-title"><span class="step-num">2</span><h2 style="margin:0;">Obiettivi completati</h2></div>
-      <div id="obiettiviContainer"></div>
-    </div>
-
-    <div class="totale-box">
-      ST attuali: <b id="stAttuali">0</b> &nbsp;+&nbsp; guadagnati ora: <b id="stGuadagnati">0</b>
-      &nbsp;=&nbsp; nuovo totale: <b id="stFinale">0</b>
-      <div id="stErrore" class="msg-err"></div>
-    </div>
-
-    <div style="text-align:center; margin-top:14px;">
-      <button class="main" id="btnRegistra">Registra accredito</button>
-      <div id="registraMsg"></div>
-    </div>
-
-    </div><!-- /contenutoRegistra -->
+    <button class="danger" id="btnBlocca"><i class="fa-solid fa-lock"></i> Blocca</button>
   </div>
 
-  <!-- ============ VISTA ARCHIVIO (pubblica, apertura di default) ============ -->
-  <div id="view-archivio" class="view active">
-    <div class="card">
-      <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti (ultimi 200)</h2>
-      <button class="secondary" id="btnCaricaArchivio">Carica/aggiorna</button>
-      <div id="archivioBox" style="margin-top:12px;"><i>Premi il bottone per caricare.</i></div>
-    </div>
-  </div>
+  <main>
+    <section id="view-registro" class="view active">
+      <div class="card">
+        <div class="card-title">
+          <div>
+            <h2><i class="fa-solid fa-coins"></i> Saldi Staffer</h2>
+            <p>Il saldo disponibile e i contatori ancora in sospeso per le attività progressive.</p>
+          </div>
+          <button class="secondary" id="btnAggiornaPubblico"><i class="fa-solid fa-rotate"></i> Aggiorna</button>
+        </div>
+        <div id="saldiPubblici" class="balance-grid"><div class="loading">Caricamento saldi…</div></div>
+      </div>
 
-  <!-- ============ VISTA INIZIALIZZA/CORREGGI (ogni azione ha già il proprio campo password) ============ -->
-  <div id="view-init" class="view">
-    <div class="card">
-      <h2><i class="fa-solid fa-user-plus"></i> Crea/inizializza uno staffer</h2>
-      <p style="font-size:13px; color:var(--testo-muted); margin-top:0;">
-        Usalo per registrare un saldo (e resti in sospeso) già accumulati prima di questo tool.
-      </p>
-      <label>Nome</label>
-      <input type="text" id="initNome" placeholder="Es. Gideon">
-      <label>ST di partenza</label>
-      <input type="number" id="initSt" value="0">
-      <label>Resto in sospeso — Liste della Spesa (su 3)</label>
-      <input type="number" id="initRestoListe" value="0" min="0" max="2">
-      <label>Resto in sospeso — Pool ogni 10 (Camere Blindate/Descrizioni/Quest)</label>
-      <input type="number" id="initRestoPool" value="0" min="0" max="9">
-      <label>Resto in sospeso — Burocrazia generale (su 3)</label>
-      <input type="number" id="initRestoBurocrazia" value="0" min="0" max="2">
-      <label>Password condivisa (di nuovo, per confermare la scrittura)</label>
-      <input type="password" id="initPassword" placeholder="Password">
-      <button class="main" style="margin-top:10px;" id="btnCreaInit">Crea/aggiorna</button>
-      <div id="initMsg" style="margin-top:8px;"></div>
-    </div>
+      <div class="card">
+        <div class="card-title">
+          <div>
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti</h2>
+            <p>Ultimi 300 movimenti registrati dal gestore.</p>
+          </div>
+        </div>
+        <div class="public-toolbar">
+          <input type="text" id="filtroArchivio" placeholder="Cerca staffer o attività…">
+          <select id="filtroTipo">
+            <option value="">Tutti i movimenti</option>
+            <option value="accredito">Accrediti</option>
+            <option value="correzione">Correzioni</option>
+            <option value="inizializzazione">Inizializzazioni</option>
+          </select>
+        </div>
+        <div id="archivioBox" class="log-list"><div class="loading">Caricamento registro…</div></div>
+      </div>
+    </section>
 
-    <div class="card">
-      <h2><i class="fa-solid fa-sliders"></i> Correggi saldo di uno staffer esistente</h2>
-      <label>Nome staffer</label>
-      <input type="text" id="correggiNome" list="listaStaffer" placeholder="Es. Gideon">
-      <label>Imposta ST esatti a...</label>
-      <input type="number" id="correggiValore">
-      <label>Motivo (facoltativo)</label>
-      <input type="text" id="correggiMotivo">
-      <label>Password condivisa</label>
-      <input type="password" id="correggiPassword" placeholder="Password">
-      <button class="main" style="margin-top:10px;" id="btnCorreggi">Applica correzione</button>
-      <div id="correggiMsg" style="margin-top:8px;"></div>
-    </div>
-  </div>
+    <section id="view-registra" class="view">
+      <div id="contenutoRegistra" class="protected hidden">
+        <div class="card compact">
+          <details class="smart-import">
+            <summary><i class="fa-solid fa-wand-magic-sparkles"></i>Importa dal vecchio formato</summary>
+            <div class="notice"><i class="fa-solid fa-circle-info"></i>Il riconoscimento usa il resto già salvato per non conteggiarlo una seconda volta nelle formule del tipo <b>2 + 30 = 32/3</b>. Controlla comunque il riepilogo prima di registrare.</div>
+            <label>Testo del vecchio accredito</label>
+            <textarea id="testoIncolla" rows="5" placeholder="Incolla qui nome, mansioni e riferimenti…"></textarea>
+            <div class="actions" style="margin-top:8px">
+              <button type="button" class="secondary" id="btnAnalizzaTesto">Analizza e compila</button>
+              <button type="button" class="ghost" id="btnPulisciImport">Pulisci</button>
+            </div>
+            <div id="analisiMsg" aria-live="polite"></div>
+          </details>
+        </div>
 
-</div>
+        <div class="card">
+          <div class="card-title">
+            <div>
+              <h2>1. Staffer</h2>
+              <p>Seleziona chi riceve l'accredito. Saldo e resti vengono caricati automaticamente.</p>
+            </div>
+          </div>
+          <label>Nome Staffer</label>
+          <input type="text" id="staffNomeInput" list="listaStaffer" placeholder="Es. Gideon G. Greengrass" autocomplete="off">
+          <datalist id="listaStaffer"></datalist>
+          <div id="staffInfo" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <div>
+              <h2>2. Mansioni svolte</h2>
+              <p>Attiva soltanto le voci che vuoi registrare. Il calcolo compare subito sotto ogni mansione.</p>
+            </div>
+          </div>
+          <div id="obiettiviContainer"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <div>
+              <h2>3. Riepilogo</h2>
+              <p>Verifica formula, quantità e nuovi resti prima dell'accredito.</p>
+            </div>
+          </div>
+          <div id="riepilogoAttivita"><div class="empty">Nessuna mansione selezionata.</div></div>
+          <div id="registraMsg" aria-live="polite"></div>
+          <div id="successBox" class="success-box hidden">
+            <h4><i class="fa-solid fa-circle-check"></i> Accredito registrato</h4>
+            <p id="successText"></p>
+            <textarea id="bbcodeOutput" class="bbcode-preview" readonly></textarea>
+            <div class="actions" style="margin-top:8px">
+              <button class="secondary" id="btnCopiaBBCode"><i class="fa-regular fa-copy"></i> Copia riepilogo per il forum</button>
+            </div>
+            <div id="copyMsg"></div>
+          </div>
+        </div>
+
+        <div class="total-sticky">
+          <div class="total-cell"><div class="k">Saldo attuale</div><div class="v" id="stAttuali">0 ST</div></div>
+          <div class="total-cell"><div class="k">Accredito</div><div class="v green" id="stGuadagnati">+0 ST</div></div>
+          <div class="total-cell"><div class="k">Nuovo saldo</div><div class="v" id="stFinale">0 ST</div></div>
+          <button class="main" id="btnRegistra"><i class="fa-solid fa-check"></i> Registra</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-gestione" class="view">
+      <div id="contenutoGestione" class="protected hidden">
+        <div class="grid-2">
+          <div class="card admin-section">
+            <div class="card-title">
+              <div>
+                <h2><i class="fa-solid fa-box-archive"></i> Importa stato storico</h2>
+                <p>Per inizializzare un nuovo staffer o allineare saldo e resti già esistenti nel registro precedente.</p>
+              </div>
+            </div>
+            <label>Nome Staffer</label>
+            <input type="text" id="initNome" list="listaStaffer" placeholder="Es. Gideon G. Greengrass">
+            <label>Saldo ST esatto</label>
+            <input type="number" id="initSt" value="0" step="1">
+            <div class="grid-3">
+              <div>
+                <label>Liste in sospeso /3</label>
+                <input type="number" id="initRestoListe" value="0" min="0" max="2" step="1">
+              </div>
+              <div>
+                <label>Camere in sospeso /10</label>
+                <input type="number" id="initRestoCamere" value="0" min="0" max="9" step="1">
+              </div>
+              <div>
+                <label>Burocrazia in sospeso /3</label>
+                <input type="number" id="initRestoBurocrazia" value="0" min="0" max="2" step="1">
+              </div>
+            </div>
+            <label>Nota di allineamento</label>
+            <input type="text" id="initNota" placeholder="Es. importato dal registro storico">
+            <button class="main" style="margin-top:11px" id="btnCreaInit">Salva stato</button>
+            <div id="initMsg" aria-live="polite"></div>
+          </div>
+
+          <div class="card admin-section">
+            <div class="card-title">
+              <div>
+                <h2><i class="fa-solid fa-sliders"></i> Correggi saldo</h2>
+                <p>La correzione viene registrata come movimento con la differenza rispetto al saldo precedente.</p>
+              </div>
+            </div>
+            <label>Nome Staffer</label>
+            <input type="text" id="correggiNome" list="listaStaffer" placeholder="Es. Gideon G. Greengrass">
+            <label>Nuovo saldo ST esatto</label>
+            <input type="number" id="correggiValore" step="1">
+            <label>Motivo della correzione</label>
+            <textarea id="correggiMotivo" rows="3" placeholder="Indica perché il saldo viene corretto"></textarea>
+            <button class="main" style="margin-top:11px" id="btnCorreggi">Applica correzione</button>
+            <div id="correggiMsg" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <div>
+              <h2><i class="fa-solid fa-scale-balanced"></i> Criteri implementati</h2>
+              <p>Promemoria operativo del calcolo usato dal tool.</p>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="notice"><b>Progressivi persistenti</b><br>Liste della Spesa: ogni 3 → 2 ST.<br>Camere Blindate: ogni 10 → 1 ST.<br>Burocrazia generale: ogni 3 → 1 ST.<br>I resti passano all'accredito successivo.</div>
+            <div class="notice"><b>Conteggi dell'Appello</b><br>Non estivo: ogni 5 Schede PG attivi → 1 ST.<br>Estivo: ogni 3 Schede PG attivi → 2 ST.<br>Il resto dell'Appello non viene conservato tra appelli; il lavoro può essere diviso tra più Staffer.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -242,370 +712,740 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 if(typeof firebase === 'undefined'){
-  document.getElementById('loadErr').style.display = 'block';
+  document.getElementById('loadErr').style.display='block';
   throw new Error('Firebase SDK non caricato.');
 }
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCvd56bSEL02s2OY2PSk7uyFX-CYRB4Vz0",
-  authDomain: "conteggi-eee1b.firebaseapp.com",
-  projectId: "conteggi-eee1b",
-  storageBucket: "conteggi-eee1b.firebasestorage.app",
-  messagingSenderId: "481320219586",
-  appId: "1:481320219586:web:87e974d618a302adfadc5b",
-  measurementId: "G-EFHVL4H1XW"
+const firebaseConfig={
+  apiKey:"AIzaSyCvd56bSEL02s2OY2PSk7uyFX-CYRB4Vz0",
+  authDomain:"conteggi-eee1b.firebaseapp.com",
+  projectId:"conteggi-eee1b",
+  storageBucket:"conteggi-eee1b.firebasestorage.app",
+  messagingSenderId:"481320219586",
+  appId:"1:481320219586:web:87e974d618a302adfadc5b",
+  measurementId:"G-EFHVL4H1XW"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
+const db=firebase.firestore();
+const auth=firebase.auth();
 
-let authPronta = false;
-let passwordCorrente = null; // la password digitata dallo staffer, tenuta solo in memoria
+let authPronta=false;
+let passwordCorrente=null;
+let staffIdCorrente=null;
+let staffAttuale=null;
+let archivioMovimenti=[];
+let ultimoBBCode='';
 
-auth.onAuthStateChanged(user=>{
-  if(!user){ auth.signInAnonymously(); return; }
-  authPronta = true;
-});
+const OBIETTIVI=[
+  {gruppo:'Progressivi',id:'liste_spesa',nome:'Accredito di Liste della Spesa',tipo:'soglia',restoKey:'listeSpesa',divisore:3,moltiplicatore:2,icona:'fa-basket-shopping',regola:'ogni 3 = 2 ST',hint:'Inserisci soltanto le nuove Liste accreditate adesso. Il resto precedente viene aggiunto automaticamente.'},
+  {gruppo:'Progressivi',id:'camere_blindate',nome:'Accredito di Camere Blindate',tipo:'soglia',restoKey:'camereBlindate',legacyRestoKey:'pool10',divisore:10,moltiplicatore:1,icona:'fa-vault',regola:'ogni 10 = 1 ST',hint:'Il tool conserva le Camere avanzate e le somma al prossimo accredito.'},
+  {gruppo:'Progressivi',id:'burocrazia',nome:'Burocrazia generale',tipo:'soglia',restoKey:'burocrazia',divisore:3,moltiplicatore:1,icona:'fa-file-signature',regola:'ogni 3 = 1 ST',hint:'Operazioni ordinarie: schede, smistamenti, prestavolto, congelamenti, Felix Token, manutenzione e modifiche puntuali.'},
 
-async function verificaPassword(){
-  const pw = document.getElementById('gatePassword').value;
-  const err = document.getElementById('gateErr');
-  err.textContent = '';
-  if(!pw){ err.textContent = 'Inserisci la password.'; return; }
-  if(!authPronta){ await new Promise(r=>{ const i=setInterval(()=>{ if(authPronta){clearInterval(i); r();} },100); }); }
-  try{
-    await db.collection('config').doc('_ping').set({_pw: pw, t: firebase.firestore.FieldValue.serverTimestamp()});
-    passwordCorrente = pw;
-    document.getElementById('gateRegistra').classList.add('hidden');
-    document.getElementById('contenutoRegistra').classList.remove('hidden');
-    caricaListaStaffer();
-  }catch(e){
-    err.textContent = 'Password errata.';
-  }
-}
+  {gruppo:'Per attività',id:'richiesta_narratore',nome:'Richiesta al Narratore generica',tipo:'fisso',ftUnitario:1,icona:'fa-scroll',regola:'1 ST ciascuna',hint:'Il valore si applica a ogni post/lavoro conteggiato.'},
+  {gruppo:'Per attività',id:'spunto_trama',nome:'Richiesta al Narratore: spunto di trama / mietitura',tipo:'fisso',ftUnitario:2,icona:'fa-seedling',regola:'2 ST ciascuna',hint:'Più post della stessa richiesta valgono ciascuno 2 ST.'},
+  {gruppo:'Per attività',id:'quidditch',nome:'Post di esiti partita di Quidditch',tipo:'fisso',ftUnitario:2,icona:'fa-broom',regola:'2 ST ciascuno',hint:'Inserisci il numero di post di esito svolti.'},
+  {gruppo:'Per attività',id:'quest_narrativa',nome:'Quest principalmente narrativa / ambient / evento',tipo:'fisso',ftUnitario:3,ripartibile:true,icona:'fa-map',regola:'3 ST complessivi',hint:'Di base 3 ST per post/lavoro. Se il lavoro è condiviso, puoi indicare la sola quota spettante allo Staffer selezionato.'},
+  {gruppo:'Per attività',id:'quest_azioni',nome:'Quest con esiti di molte azioni',tipo:'fisso',ftUnitario:6,icona:'fa-dice-d20',regola:'6 ST ciascuno',hint:'Il valore si applica a ogni post/lavoro della categoria.'},
+  {gruppo:'Per attività',id:'richiesta_staff',nome:'Richiesta allo Staff',tipo:'fisso',ftUnitario:1,icona:'fa-envelope-open-text',regola:'1 ST ciascuna',hint:'Una unità per ciascuna richiesta/lavoro accreditato.'},
+  {gruppo:'Per attività',id:'annuncio',nome:'Annuncio dello Staff',tipo:'fisso',ftUnitario:2,icona:'fa-bullhorn',regola:'2 ST ciascuno',hint:'Una unità per ciascun annuncio accreditato.'},
 
-/* ================= CONFIG OBIETTIVI ================= */
-// tipo "soglia": conta si accumula in un resto salvato, si converte in ST ogni "divisore" unità.
-// tipo "fisso": ogni voce collegata vale un tot fisso di ST, ripetibile.
-// tipo "libero": lo staffer stesso indica quanti ST assegnarsi (con descrizione), nessuna formula.
-const OBIETTIVI = [
-  {id:"liste_spesa", nome:"Liste della Spesa", tipo:"soglia", restoKey:"listeSpesa", divisore:3, moltiplicatore:2, icona:"fa-basket-shopping"},
-  {id:"pool10", nome:"Camere Blindate / Descrizioni / Quest (ogni 10)", tipo:"soglia", restoKey:"pool10", divisore:10, moltiplicatore:1, icona:"fa-vault",
-    notaConteggio:"Somma insieme di Camere Blindate + Descrizioni + Quest accreditati"},
-  {id:"burocrazia", nome:"Burocrazia generale (ogni 3)", tipo:"soglia", restoKey:"burocrazia", divisore:3, moltiplicatore:1, icona:"fa-file-signature",
-    notaConteggio:"Voci burocratiche varie: Regolamento, congelamenti/scongelamenti, richieste FT, ecc."},
-  {id:"richiesta_staff", nome:"Richiesta allo Staff", tipo:"fisso", ftUnitario:1, icona:"fa-envelope-open-text"},
-  {id:"richiesta_narratore", nome:"Richiesta al Narratore generica", tipo:"fisso", ftUnitario:1, icona:"fa-scroll"},
-  {id:"spunto_trama", nome:"Richiesta al Narratore: spunto di trama / mietitura", tipo:"fisso", ftUnitario:2, icona:"fa-seedling"},
-  {id:"annuncio", nome:"Annuncio dello Staff", tipo:"fisso", ftUnitario:2, icona:"fa-bullhorn"},
-  {id:"quest_azioni", nome:"Quest, esiti di molte azioni", tipo:"fisso", ftUnitario:6, icona:"fa-dice-d20"},
-  {id:"quidditch", nome:"Post esiti partita Quidditch", tipo:"fisso", ftUnitario:2, icona:"fa-broom"},
-  {id:"visioni", nome:"Visioni (+ eventuali MP)", tipo:"fisso", ftUnitario:1, icona:"fa-eye"},
-  {id:"quest_narrativa", nome:"Quest narrativa / ambient / evento", tipo:"libero", ftBase:3, icona:"fa-map"},
-  {id:"regolamento", nome:"Revisione/Modifiche al Regolamento, Appello, altro strutturale", tipo:"libero", ftBase:2, icona:"fa-gavel"},
-  {id:"altro", nome:"Altro (specifica)", tipo:"libero", ftBase:1, icona:"fa-ellipsis"}
+  {gruppo:'Appelli',id:'appello_non_estivo',nome:'Appello non estivo',tipo:'evento',divisore:5,moltiplicatore:1,icona:'fa-list-check',regola:'ogni 5 PG = 1 ST',hint:'Si calcola sui PG attivi dell’Appello. L’eventuale resto non passa a un Appello successivo.'},
+  {gruppo:'Appelli',id:'appello_estivo',nome:'Appello estivo',tipo:'evento',divisore:3,moltiplicatore:2,icona:'fa-sun',regola:'ogni 3 PG = 2 ST',hint:'Se il lavoro è condiviso, indica tra quanti Staffer viene diviso equamente l’accredito.'},
+
+  {gruppo:'Caso per caso',id:'regolamento',nome:'Revisione / aggiunte strutturali al Regolamento',tipo:'libero',icona:'fa-gavel',regola:'valore variabile',hint:'Per revisioni strutturali quantificate caso per caso, distinte dalle piccole operazioni di burocrazia.'},
+  {gruppo:'Caso per caso',id:'contributo',nome:'Contributo inquantificabile / progetto strutturale',tipo:'libero',icona:'fa-wand-sparkles',regola:'valore variabile',hint:'Sistemi di gioco, trama, revisione, grafica o tecnica: inserisci gli ST concordati e il riferimento all’annuncio, se disponibile.'}
 ];
 
+const PATTERN_OBIETTIVI={
+  liste_spesa:/liste della spesa/i,
+  camere_blindate:/camere blindate/i,
+  burocrazia:/burocrazia|richieste? felix token|accredit[oi] felix token/i,
+  richiesta_staff:/richiesta allo staff/i,
+  richiesta_narratore:/richiesta al narratore generica/i,
+  spunto_trama:/spunto di trama|mietitura/i,
+  quidditch:/quidditch/i,
+  quest_narrativa:/quest \(principalmente narrativa\)|quest principalmente narrativa|ambient|evento/i,
+  quest_azioni:/quest.*esiti di molte azioni/i,
+  annuncio:/annuncio dello staff/i,
+  appello_non_estivo:/appello non estivo/i,
+  appello_estivo:/appello estivo/i
+};
+
 function normalizzaStaffId(str){
-  return (str || '').trim().toLowerCase().replace(/\s+/g,' ').replace(/[.#$/\[\]]/g,'');
+  return(str||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[.#$/\[\]]/g,'');
+}
+function escapeHtml(str){
+  return String(str??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+}
+function nomeDaDoc(id,data){return(data&&data.nomeVisualizzato)||id}
+function numeroIntero(v,defaultValue=0){const n=parseInt(v,10);return Number.isFinite(n)?n:defaultValue}
+function getResto(stato,o){
+  const resti=(stato&&stato.resti)||{};
+  if(resti[o.restoKey]!==undefined&&resti[o.restoKey]!==null)return numeroIntero(resti[o.restoKey]);
+  if(o.legacyRestoKey&&resti[o.legacyRestoKey]!==undefined&&resti[o.legacyRestoKey]!==null)return numeroIntero(resti[o.legacyRestoKey]);
+  return 0;
+}
+function formatDelta(n){return`${n>=0?'+':''}${n} ST`}
+function dataIt(ts){return ts&&ts.toDate?ts.toDate().toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}):'—'}
+function linkifySafe(text){
+  const safe=escapeHtml(text||'');
+  return safe.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 }
 
-/* ================= TABS ================= */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('pointerup', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('view-'+btn.dataset.tab).classList.add('active');
-  });
+function syncProtected(){
+  const protette=document.querySelectorAll('.protected');
+  protette.forEach(el=>el.classList.toggle('hidden',!passwordCorrente));
+  const tabAttivo=document.querySelector('.tab-btn.active')?.dataset.tab;
+  const serveAccesso=tabAttivo==='registra'||tabAttivo==='gestione';
+  document.getElementById('staffAccess').classList.toggle('hidden',!serveAccesso||!!passwordCorrente);
+  document.getElementById('staffUnlocked').classList.toggle('hidden',!serveAccesso||!passwordCorrente);
+}
+
+function attivaTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+tab));
+  syncProtected();
+  if(tab==='registro')caricaPubblico(false);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>attivaTab(btn.dataset.tab)));
+
+auth.onAuthStateChanged(user=>{
+  if(!user){auth.signInAnonymously().catch(()=>{});return}
+  authPronta=true;
 });
 
-// Collegamenti bottoni (niente attributi inline nell'HTML: la parola incriminata
-// va evitata anche nel nome dell'attributo "on***" oltre che nel testo del codice).
-document.getElementById('btnSblocca').addEventListener('pointerup', verificaPassword);
-document.getElementById('btnCaricaArchivio').addEventListener('pointerup', caricaArchivio);
-document.getElementById('btnCreaInit').addEventListener('pointerup', creaOInizializzaStaffer);
-document.getElementById('btnCorreggi').addEventListener('pointerup', correggiSaldoStaffer);
+async function aspettaAuth(){
+  if(authPronta)return;
+  await new Promise((resolve,reject)=>{
+    let tentativi=0;
+    const timer=setInterval(()=>{
+      tentativi++;
+      if(authPronta){clearInterval(timer);resolve()}
+      if(tentativi>80){clearInterval(timer);reject(new Error('Autenticazione non disponibile.'))}
+    },100);
+  });
+}
 
-/* ================= STATO ================= */
-let staffIdCorrente = null;
-let staffAttuale = null; // {st_totali, resti}
+async function verificaPassword(){
+  const pw=document.getElementById('gatePassword').value;
+  const err=document.getElementById('gateErr');
+  err.textContent='';
+  if(!pw){err.textContent='Inserisci la password.';return}
+  try{
+    await aspettaAuth();
+    await db.collection('config').doc('_ping').set({_pw:pw,t:firebase.firestore.FieldValue.serverTimestamp()});
+    passwordCorrente=pw;
+    document.getElementById('gatePassword').value='';
+    syncProtected();
+    caricaListaStaffer();
+  }catch(e){err.textContent='Password errata o scrittura non disponibile.'}
+}
+function bloccaStaff(){
+  passwordCorrente=null;
+  staffIdCorrente=null;
+  staffAttuale=null;
+  syncProtected();
+}
+document.getElementById('btnSblocca').addEventListener('click',verificaPassword);
+document.getElementById('gatePassword').addEventListener('keydown',e=>{if(e.key==='Enter')verificaPassword()});
+document.getElementById('btnBlocca').addEventListener('click',bloccaStaff);
 
-/* ================= COSTRUZIONE OBIETTIVI ================= */
-const cont = document.getElementById('obiettiviContainer');
+const cont=document.getElementById('obiettiviContainer');
+
+function htmlCampi(o){
+  if(o.tipo==='soglia'){
+    return`<div class="grid-2">
+      <div><label>Nuove unità accreditate</label><input type="number" class="in-quantita" min="0" step="1" value="0"><span class="hint">${escapeHtml(o.hint)}</span></div>
+      <div><label>Riferimento / link</label><textarea class="in-riferimenti" rows="2" placeholder="Link al post di accredito o breve riferimento"></textarea></div>
+    </div>
+    <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">Seleziona uno Staffer e inserisci la quantità.</span></div>`;
+  }
+  if(o.tipo==='fisso'){
+    if(o.ripartibile){
+      return`<div class="grid-3">
+        <div><label>Quanti post / lavori?</label><input type="number" class="in-quantita" min="0" step="1" value="0"></div>
+        <div><label>Quota a questo Staffer</label><input type="number" class="in-quota" min="1" step="1" placeholder="automatica"><span class="hint">Lascia vuoto per attribuire l'intero valore. Compila solo se il lavoro è condiviso.</span></div>
+        <div><label>Riferimenti</label><textarea class="in-riferimenti" rows="2" placeholder="Uno o più link / riferimenti"></textarea></div>
+      </div><span class="hint">${escapeHtml(o.hint)}</span>
+      <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">0 × ${o.ftUnitario} ST = 0 ST complessivi</span></div>`;
+    }
+    return`<div class="grid-2">
+      <div><label>Quanti post / lavori?</label><input type="number" class="in-quantita" min="0" step="1" value="0"><span class="hint">${escapeHtml(o.hint)}</span></div>
+      <div><label>Riferimenti</label><textarea class="in-riferimenti" rows="2" placeholder="Uno o più link / riferimenti"></textarea><span class="hint">La quantità non dipende dal numero di link inseriti.</span></div>
+    </div>
+    <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">0 × ${o.ftUnitario} ST = 0 ST</span></div>`;
+  }
+  if(o.tipo==='evento'){
+    return`<div class="grid-3">
+      <div><label>Schede PG attivi</label><input type="number" class="in-pg" min="0" step="1" value="0"></div>
+      <div><label>Dividi equamente tra</label><input type="number" class="in-dividi" min="1" step="1" value="1"><span class="hint">1 = accredito intero allo Staffer selezionato.</span></div>
+      <div><label>Riferimento</label><input type="text" class="in-riferimenti" placeholder="Link o nota"></div>
+    </div><span class="hint">${escapeHtml(o.hint)}</span>
+    <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">Inserisci il numero di PG attivi.</span></div>`;
+  }
+  return`<div class="grid-2">
+    <div><label>Descrizione del contributo</label><textarea class="in-descrizione" rows="2" placeholder="Cosa è stato realizzato e come è stato quantificato"></textarea></div>
+    <div><label>ST assegnati</label><input type="number" class="in-st-libero" min="0" step="1" value="0"><label>Riferimento / annuncio</label><input type="text" class="in-riferimenti" placeholder="Link o riferimento"></div>
+  </div><span class="hint">${escapeHtml(o.hint)}</span>
+  <div class="formula-box zero"><i class="fa-solid fa-scale-balanced"></i><span class="formula-text">Valore da indicare caso per caso.</span></div>`;
+}
 
 function creaRigaObiettivo(o){
-  const div = document.createElement('div');
-  div.className = 'obj-row';
-  div.dataset.id = o.id;
-
-  let inner = '';
-  if(o.tipo === 'soglia'){
-    inner = `<label>${o.notaConteggio || 'Quante nuove unità'}</label>
-      <input type="number" class="in-soglia" min="0" value="0">
-      <div class="resto-info" style="font-size:12.5px; color:var(--testo-muted); margin-top:4px;"></div>`;
-  } else if(o.tipo === 'fisso'){
-    inner = `<div class="link-list"></div>
-      <button type="button" class="small btn-add-link">+ aggiungi (link o riferimento)</button>`;
-  } else if(o.tipo === 'libero'){
-    inner = `<label>Descrizione</label>
-      <input type="text" class="in-desc" placeholder="Cosa hai fatto (link se c'è)">
-      <label>ST da assegnare</label>
-      <input type="number" class="in-ft-libero" min="0" value="${o.ftBase}">`;
-  }
-
-  div.innerHTML = `
-    <div class="obj-header">
-      <label style="margin:0; display:flex; align-items:center; gap:8px;">
-        <input type="checkbox" class="chk-obj" style="width:auto;"> <i class="fa-solid ${o.icona}"></i> ${o.nome}
-        ${o.tipo==='fisso' ? '<span class="pill">'+o.ftUnitario+' ST cad.</span>' : ''}
-      </label>
-    </div>
-    <div class="obj-sub">${inner}</div>
-  `;
-
-  const chk = div.querySelector('.chk-obj');
-  const subEl = div.querySelector('.obj-sub');
-  chk.addEventListener('change', ()=>{
-    subEl.classList.toggle('show', chk.checked);
+  const div=document.createElement('div');
+  div.className='activity';
+  div.dataset.id=o.id;
+  div.innerHTML=`<div class="activity-head">
+    <input type="checkbox" class="activity-check" aria-label="Seleziona ${escapeHtml(o.nome)}">
+    <div class="activity-icon"><i class="fa-solid ${o.icona}"></i></div>
+    <div class="activity-title"><strong>${escapeHtml(o.nome)}</strong><span>${escapeHtml(o.hint)}</span></div>
+    <div class="rule-badge">${escapeHtml(o.regola)}</div>
+  </div><div class="activity-body">${htmlCampi(o)}</div>`;
+  const chk=div.querySelector('.activity-check');
+  div.querySelector('.activity-head').addEventListener('click',e=>{
+    if(e.target===chk)return;
+    chk.checked=!chk.checked;
+    chk.dispatchEvent(new Event('change'));
+  });
+  chk.addEventListener('change',()=>{
+    div.classList.toggle('selected',chk.checked);
     ricalcola();
   });
-
-  if(o.tipo === 'fisso'){
-    const list = div.querySelector('.link-list');
-    const addLink = ()=>{
-      const r = document.createElement('div');
-      r.style.cssText = 'display:flex; gap:6px; margin-top:6px;';
-      r.innerHTML = `<input type="text" class="in-link" placeholder="Link o riferimento" style="flex:1;">
-        <button type="button" class="small btn-rm">✕</button>`;
-      r.querySelector('.btn-rm').addEventListener('pointerup', ()=>{ r.remove(); ricalcola(); });
-      list.appendChild(r);
-    };
-    list._aggiungiRiga = addLink; // riferimento diretto, riusato dopo il reset del form
-    div.querySelector('.btn-add-link').addEventListener('pointerup', addLink);
-    addLink();
-  }
-
-  div.addEventListener('input', ricalcola);
+  div.addEventListener('input',ricalcola);
   return div;
 }
-OBIETTIVI.forEach(o=> cont.appendChild(creaRigaObiettivo(o)));
 
-/* ================= CARICAMENTO STAFFER ================= */
-const inputNome = document.getElementById('staffNomeInput');
-let debounceTimer = null;
-inputNome.addEventListener('input', ()=>{
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(caricaStaffer, 350);
+let gruppoCorrente='';
+OBIETTIVI.forEach(o=>{
+  if(o.gruppo!==gruppoCorrente){
+    gruppoCorrente=o.gruppo;
+    const lab=document.createElement('div');
+    lab.className='section-label';
+    lab.innerHTML=`<span>${escapeHtml(gruppoCorrente)}</span>`;
+    cont.appendChild(lab);
+  }
+  cont.appendChild(creaRigaObiettivo(o));
 });
 
-async function caricaListaStaffer(){
-  try{
-    const snap = await db.collection('staff_token').get();
-    const dl = document.getElementById('listaStaffer');
-    dl.innerHTML = '';
-    snap.forEach(doc=>{
-      const opt = document.createElement('option');
-      opt.value = doc.id;
-      dl.appendChild(opt);
-    });
-  }catch(e){ /* silenzioso: non blocca l'uso del tool */ }
-}
-
-async function caricaStaffer(){
-  const raw = inputNome.value;
-  const info = document.getElementById('staffInfo');
-  staffIdCorrente = normalizzaStaffId(raw);
-  if(!staffIdCorrente){ info.textContent = ''; staffAttuale = null; aggiornaRestoInfo(); ricalcola(); return; }
-  try{
-    const doc = await db.collection('staff_token').doc(staffIdCorrente).get();
-    if(doc.exists){
-      staffAttuale = doc.data();
-      info.innerHTML = `✅ Trovato — ST attuali: <b>${staffAttuale.st_totali||0}</b>`;
-    } else {
-      staffAttuale = {st_totali:0, resti:{}};
-      info.textContent = 'Nuovo staffer: verrà creata una scheda da zero al primo accredito.';
+function raccogliRaw(){
+  const raw=[];
+  cont.querySelectorAll('.activity.selected').forEach(div=>{
+    const o=OBIETTIVI.find(x=>x.id===div.dataset.id);
+    if(!o)return;
+    const item={id:o.id,tipo:o.tipo};
+    if(o.tipo==='soglia'||o.tipo==='fisso'){
+      item.quantita=Math.max(0,numeroIntero(div.querySelector('.in-quantita')?.value));
+      if(o.tipo==='fisso'&&o.ripartibile){
+        const quotaRaw=(div.querySelector('.in-quota')?.value||'').trim();
+        item.quota=quotaRaw===''?null:Math.max(0,numeroIntero(quotaRaw));
+      }
+      item.riferimenti=(div.querySelector('.in-riferimenti')?.value||'').trim();
+    }else if(o.tipo==='evento'){
+      item.pg=Math.max(0,numeroIntero(div.querySelector('.in-pg')?.value));
+      item.dividi=Math.max(1,numeroIntero(div.querySelector('.in-dividi')?.value,1));
+      item.riferimenti=(div.querySelector('.in-riferimenti')?.value||'').trim();
+    }else{
+      item.st=Math.max(0,numeroIntero(div.querySelector('.in-st-libero')?.value));
+      item.descrizione=(div.querySelector('.in-descrizione')?.value||'').trim();
+      item.riferimenti=(div.querySelector('.in-riferimenti')?.value||'').trim();
     }
-  }catch(e){
-    info.innerHTML = '<span class="msg-err">Errore: '+e.message+'</span>';
-  }
-  aggiornaRestoInfo();
-  ricalcola();
+    raw.push(item);
+  });
+  return raw;
 }
 
-function aggiornaRestoInfo(){
-  cont.querySelectorAll('.obj-row').forEach(div=>{
-    const o = OBIETTIVI.find(x=>x.id===div.dataset.id);
-    if(o.tipo !== 'soglia') return;
-    const el = div.querySelector('.resto-info');
-    const resto = staffAttuale ? ((staffAttuale.resti||{})[o.restoKey] || 0) : 0;
-    el.textContent = `Resto in sospeso attuale: ${resto}/${o.divisore}`;
+function calcolaMovimento(raw,stato){
+  const restiOriginali={...((stato&&stato.resti)||{})};
+  const nuoviResti={...restiOriginali};
+  const righe=[];
+  const errori=[];
+  let totale=0;
+
+  raw.forEach(item=>{
+    const o=OBIETTIVI.find(x=>x.id===item.id);
+    if(!o)return;
+    let st=0,formula='',restoPrecedente=null,restoNuovo=null;
+
+    if(o.tipo==='soglia'){
+      if(item.quantita<=0){errori.push(`${o.nome}: inserisci almeno 1 nuova unità.`);return}
+      restoPrecedente=getResto(stato,o);
+      const base=restoPrecedente+item.quantita;
+      const gruppi=Math.floor(base/o.divisore);
+      st=gruppi*o.moltiplicatore;
+      restoNuovo=base%o.divisore;
+      nuoviResti[o.restoKey]=restoNuovo;
+      if(o.legacyRestoKey)nuoviResti[o.legacyRestoKey]=restoNuovo;
+      formula=`${restoPrecedente} già in sospeso + ${item.quantita} nuove = ${base}; ${gruppi} grupp${gruppi===1?'o':'i'} × ${o.moltiplicatore} ST = ${st} ST; resta ${restoNuovo}/${o.divisore}.`;
+    }else if(o.tipo==='fisso'){
+      if(item.quantita<=0){errori.push(`${o.nome}: inserisci almeno 1 post/lavoro.`);return}
+      const totaleRegolamentare=item.quantita*o.ftUnitario;
+      if(o.ripartibile&&item.quota!==null){
+        if(item.quota<=0||item.quota>totaleRegolamentare){errori.push(`${o.nome}: la quota personale deve essere compresa tra 1 e ${totaleRegolamentare} ST.`);return}
+        st=item.quota;
+        formula=`${item.quantita} × ${o.ftUnitario} ST = ${totaleRegolamentare} ST complessivi; quota attribuita a questo Staffer = ${st} ST.`;
+      }else{
+        st=totaleRegolamentare;
+        formula=`${item.quantita} × ${o.ftUnitario} ST = ${st} ST.`;
+      }
+    }else if(o.tipo==='evento'){
+      if(item.pg<=0){errori.push(`${o.nome}: inserisci il numero di Schede PG attivi.`);return}
+      const gruppi=Math.floor(item.pg/o.divisore);
+      const pool=gruppi*o.moltiplicatore;
+      if(pool%item.dividi!==0){errori.push(`${o.nome}: ${pool} ST non si dividono in modo intero tra ${item.dividi} Staffer.`);return}
+      st=pool/item.dividi;
+      formula=`${item.pg}/${o.divisore} = ${gruppi} grupp${gruppi===1?'o':'i'} × ${o.moltiplicatore} ST = ${pool} ST${item.dividi>1?`; diviso ${item.dividi} Staffer = ${st} ST`:''}.`;
+    }else{
+      if(item.st<=0){errori.push(`${o.nome}: indica gli ST assegnati.`);return}
+      if(!item.descrizione){errori.push(`${o.nome}: descrivi il contributo.`);return}
+      st=item.st;
+      formula=`Valore concordato: ${st} ST.`;
+    }
+
+    totale+=st;
+    righe.push({id:o.id,nome:o.nome,tipo:o.tipo,st,formula,riferimenti:item.riferimenti||'',descrizione:item.descrizione||'',restoPrecedente,restoNuovo});
+  });
+
+  return{totale,righe,nuoviResti,errori};
+}
+
+function aggiornaFormulaCards(calc){
+  cont.querySelectorAll('.activity').forEach(div=>{
+    const box=div.querySelector('.formula-box');
+    if(!box)return;
+    const riga=calc.righe.find(r=>r.id===div.dataset.id);
+    const errore=calc.errori.find(e=>e.startsWith(OBIETTIVI.find(o=>o.id===div.dataset.id)?.nome+':'));
+    if(riga){
+      box.classList.remove('zero');
+      box.querySelector('.formula-text').textContent=riga.formula;
+    }else{
+      box.classList.add('zero');
+      if(errore)box.querySelector('.formula-text').textContent=errore;
+    }
   });
 }
 
-/* ================= CALCOLO ================= */
-function raccogliObiettivi(){
-  const risultati = [];
-  cont.querySelectorAll('.obj-row').forEach(div=>{
-    const chk = div.querySelector('.chk-obj');
-    if(!chk.checked){ div.classList.remove('filled'); return; }
-    const o = OBIETTIVI.find(x=>x.id === div.dataset.id);
-    let ft = 0, dettaglio = '', restoAggiornato = null;
-
-    if(o.tipo === 'soglia'){
-      const nuovo = parseInt(div.querySelector('.in-soglia').value) || 0;
-      const restoAttuale = staffAttuale ? ((staffAttuale.resti||{})[o.restoKey] || 0) : 0;
-      const totale = restoAttuale + nuovo;
-      ft = Math.floor(totale / o.divisore) * o.moltiplicatore;
-      restoAggiornato = totale % o.divisore;
-      dettaglio = `${o.nome}: +${nuovo} (resto prec. ${restoAttuale}) → ${ft} ST, nuovo resto ${restoAggiornato}`;
-    } else if(o.tipo === 'fisso'){
-      const links = [...div.querySelectorAll('.in-link')].map(i=>i.value.trim()).filter(Boolean);
-      ft = links.length * o.ftUnitario;
-      dettaglio = `${o.nome} (${links.length}): ` + (links.join(' | ') || '—');
-    } else if(o.tipo === 'libero'){
-      ft = parseInt(div.querySelector('.in-ft-libero').value) || 0;
-      const desc = div.querySelector('.in-desc').value.trim();
-      dettaglio = `${o.nome}: ${desc || '(nessuna descrizione)'} → ${ft} ST`;
-    }
-    div.classList.toggle('filled', ft > 0 || o.tipo === 'soglia');
-    risultati.push({id:o.id, tipo:o.tipo, ft, dettaglio, restoKey:o.restoKey, restoAggiornato});
-  });
-  return risultati;
+function mostraStaffInfo(){
+  const info=document.getElementById('staffInfo');
+  if(!staffIdCorrente||!staffAttuale){info.innerHTML='<span class="hint">Seleziona uno Staffer per vedere saldo e resti.</span>';return}
+  const rListe=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='liste_spesa'));
+  const rCamere=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='camere_blindate'));
+  const rBuro=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='burocrazia'));
+  const nome=escapeHtml(staffAttuale.nomeVisualizzato||document.getElementById('staffNomeInput').value||staffIdCorrente);
+  info.innerHTML=`<div class="staff-strip">
+    <div class="staff-metric"><div class="k">Staffer</div><div class="v">${nome}</div><div class="sub">stato caricato dal registro</div></div>
+    <div class="staff-metric"><div class="k">Saldo</div><div class="v big">${numeroIntero(staffAttuale.st_totali)} ST</div></div>
+    <div class="staff-metric"><div class="k">Liste</div><div class="v">${rListe}/3</div><div class="resto-progress"><span style="width:${rListe/3*100}%"></span></div></div>
+    <div class="staff-metric"><div class="k">Camere</div><div class="v">${rCamere}/10</div><div class="resto-progress"><span style="width:${rCamere/10*100}%"></span></div></div>
+    <div class="staff-metric"><div class="k">Burocrazia</div><div class="v">${rBuro}/3</div><div class="resto-progress"><span style="width:${rBuro/3*100}%"></span></div></div>
+  </div>`;
 }
 
 function ricalcola(){
-  const obiettivi = raccogliObiettivi();
-  const guadagnati = obiettivi.reduce((s,o)=>s+o.ft, 0);
-  const attuali = staffAttuale ? (staffAttuale.st_totali||0) : 0;
-  document.getElementById('stAttuali').textContent = attuali;
-  document.getElementById('stGuadagnati').textContent = guadagnati;
-  document.getElementById('stFinale').textContent = attuali + guadagnati;
+  const raw=raccogliRaw();
+  const stato=staffAttuale||{st_totali:0,resti:{}};
+  const calc=calcolaMovimento(raw,stato);
+  aggiornaFormulaCards(calc);
+  const box=document.getElementById('riepilogoAttivita');
+  if(raw.length===0){box.innerHTML='<div class="empty">Nessuna mansione selezionata.</div>'}
+  else{
+    const righe=calc.righe.map(r=>`<li class="preview-item"><div><div class="name">${escapeHtml(r.nome)}</div><div class="detail">${escapeHtml(r.formula)}${r.descrizione?'<br>'+escapeHtml(r.descrizione):''}${r.riferimenti?'<br>'+linkifySafe(r.riferimenti):''}</div></div><div class="score">+${r.st} ST</div></li>`).join('');
+    const errs=calc.errori.map(e=>`<div class="msg-err">• ${escapeHtml(e)}</div>`).join('');
+    box.innerHTML=`${righe?'<ul class="preview-list">'+righe+'</ul>':''}${errs}`;
+  }
+  const attuali=numeroIntero(stato.st_totali);
+  document.getElementById('stAttuali').textContent=`${attuali} ST`;
+  document.getElementById('stGuadagnati').textContent=`+${calc.totale} ST`;
+  document.getElementById('stFinale').textContent=`${attuali+calc.totale} ST`;
+  document.getElementById('btnRegistra').disabled=!staffIdCorrente||raw.length===0||calc.errori.length>0;
+  return calc;
 }
 
-/* ================= REGISTRAZIONE ACCREDITO ================= */
-document.getElementById('btnRegistra').addEventListener('pointerup', async ()=>{
-  const msg = document.getElementById('registraMsg');
-  msg.textContent = '';
-  if(!staffIdCorrente){ msg.innerHTML = '<span class="msg-err">Inserisci il tuo nome.</span>'; return; }
-  const obiettivi = raccogliObiettivi();
-  if(obiettivi.length === 0){ msg.innerHTML = '<span class="msg-err">Seleziona almeno un obiettivo.</span>'; return; }
-
-  const guadagnati = obiettivi.reduce((s,o)=>s+o.ft,0);
-  const nuoviResti = {...(staffAttuale.resti||{})};
-  obiettivi.forEach(o=>{ if(o.restoKey) nuoviResti[o.restoKey] = o.restoAggiornato; });
-  const nuovoTotale = (staffAttuale.st_totali||0) + guadagnati;
-
-  try{
-    await db.collection('staff_token').doc(staffIdCorrente).set({
-      _pw: passwordCorrente,
-      st_totali: nuovoTotale,
-      resti: nuoviResti,
-      ultimoAggiornamento: firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-
-    await db.collection('staff_token_log').add({
-      _pw: passwordCorrente,
-      staffId: staffIdCorrente,
-      obiettivi: obiettivi.map(o=>({id:o.id, ft:o.ft, dettaglio:o.dettaglio})),
-      guadagnati,
-      data: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    msg.innerHTML = '<span class="msg-ok">Accredito registrato!</span>';
-    cont.querySelectorAll('.obj-row').forEach(div=>{
-      div.querySelector('.chk-obj').checked = false;
-      div.querySelector('.obj-sub').classList.remove('show');
-      div.classList.remove('filled');
-      div.querySelectorAll('input[type=text], input[type=number]').forEach(i=>{ i.value = i.type==='number' ? '0' : ''; });
-      div.querySelectorAll('.link-list').forEach(list=>{ list.innerHTML=''; if(list._aggiungiRiga) list._aggiungiRiga(); });
-    });
-    await caricaStaffer();
-  }catch(e){
-    msg.innerHTML = '<span class="msg-err">Errore (password sbagliata o problema di rete): '+e.message+'</span>';
-  }
+const inputNome=document.getElementById('staffNomeInput');
+let debounceTimer=null;
+inputNome.addEventListener('input',()=>{
+  clearTimeout(debounceTimer);
+  debounceTimer=setTimeout(caricaStaffer,300);
 });
+inputNome.addEventListener('change',caricaStaffer);
 
-/* ================= ARCHIVIO & CLASSIFICA ================= */
-async function caricaArchivio(){
-  const box = document.getElementById('archivioBox');
-  box.innerHTML = '<div class="loading">Caricamento…</div>';
+async function caricaListaStaffer(){
   try{
-    const snap = await db.collection('staff_token_log').orderBy('data','desc').limit(200).get();
-    if(snap.empty){ box.innerHTML = '<div class="empty">Nessun movimento registrato.</div>'; return; }
-    box.innerHTML = '';
-    snap.forEach(doc=>{
-      const m = doc.data();
-      const quando = m.data && m.data.toDate ? m.data.toDate().toLocaleString('it-IT') : '-';
-      const dettagli = (m.obiettivi||[]).map(o=>o.dettaglio).join('<br>');
-      const div = document.createElement('div');
-      div.className = 'log-item';
-      div.innerHTML = `<div class="quando">${quando} — ${m.staffId} — +${m.guadagnati} ST</div>${dettagli}`;
-      box.appendChild(div);
+    const snap=await db.collection('staff_token').get();
+    const dl=document.getElementById('listaStaffer');
+    dl.innerHTML='';
+    const items=[];
+    snap.forEach(doc=>items.push({id:doc.id,...doc.data()}));
+    items.sort((a,b)=>nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    items.forEach(s=>{
+      const opt=document.createElement('option');
+      opt.value=nomeDaDoc(s.id,s);
+      dl.appendChild(opt);
     });
-  }catch(e){
-    box.innerHTML = '<span class="msg-err">Errore: '+e.message+'</span>';
-  }
+  }catch(e){}
 }
 
-/* ================= INIZIALIZZA / CORREGGI ================= */
-async function creaOInizializzaStaffer(){
-  const msg = document.getElementById('initMsg');
-  msg.textContent = '';
-  const nome = document.getElementById('initNome').value.trim();
-  const staffId = normalizzaStaffId(nome);
-  const st = parseInt(document.getElementById('initSt').value) || 0;
-  const restoListe = parseInt(document.getElementById('initRestoListe').value) || 0;
-  const restoPool = parseInt(document.getElementById('initRestoPool').value) || 0;
-  const restoBuro = parseInt(document.getElementById('initRestoBurocrazia').value) || 0;
-  const pw = document.getElementById('initPassword').value;
-
-  if(!staffId){ msg.innerHTML = '<span class="msg-err">Inserisci un nome.</span>'; return; }
+async function caricaStaffer(){
+  const raw=inputNome.value.trim();
+  const id=normalizzaStaffId(raw);
+  staffIdCorrente=id||null;
+  staffAttuale=null;
+  if(!id){mostraStaffInfo();ricalcola();return}
   try{
-    await db.collection('staff_token').doc(staffId).set({
-      _pw: pw,
-      st_totali: st,
-      resti: {listeSpesa:restoListe, pool10:restoPool, burocrazia:restoBuro},
-      ultimoAggiornamento: firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-    msg.innerHTML = '<span class="msg-ok">Fatto.</span>';
-    document.getElementById('initNome').value = '';
-    document.getElementById('initSt').value = '0';
-    document.getElementById('initRestoListe').value = '0';
-    document.getElementById('initRestoPool').value = '0';
-    document.getElementById('initRestoBurocrazia').value = '0';
-    caricaListaStaffer();
+    const doc=await db.collection('staff_token').doc(id).get();
+    if(doc.exists)staffAttuale=doc.data();
+    else staffAttuale={st_totali:0,resti:{},nomeVisualizzato:raw};
   }catch(e){
-    msg.innerHTML = '<span class="msg-err">Errore (password sbagliata?): '+e.message+'</span>';
+    document.getElementById('staffInfo').innerHTML=`<div class="msg-err">Errore nel caricamento: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  mostraStaffInfo();
+  ricalcola();
+}
+
+function resetFormAccredito(mantieniStaffer=true){
+  cont.querySelectorAll('.activity').forEach(div=>{
+    div.classList.remove('selected');
+    const chk=div.querySelector('.activity-check');if(chk)chk.checked=false;
+    div.querySelectorAll('input[type=number]').forEach(i=>{
+      if(i.classList.contains('in-dividi')) i.value='1';
+      else if(i.classList.contains('in-quota')) i.value='';
+      else i.value='0';
+    });
+    div.querySelectorAll('input[type=text],textarea').forEach(i=>i.value='');
+  });
+  document.getElementById('successBox').classList.add('hidden');
+  document.getElementById('registraMsg').textContent='';
+  if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;mostraStaffInfo()}
+  ricalcola();
+}
+
+function creaDettaglioLog(r){
+  let t=`${r.nome}: ${r.formula}`;
+  if(r.descrizione)t+=` ${r.descrizione}`;
+  if(r.riferimenti)t+=` Riferimento: ${r.riferimenti}`;
+  return t;
+}
+
+function creaBBCode(nome,prima,dopo,calc){
+  const lines=[];
+  lines.push(`[b]${nome.toUpperCase()}[/b]`);
+  lines.push(`[b]Staff Token posseduti:[/b] ${prima} ST`);
+  lines.push(`[b]Richiesta di accredito per completamento obiettivo:[/b]`);
+  calc.righe.forEach(r=>{
+    let s=`- ${r.nome}: ${r.formula.replace(/×/g,'x')}`;
+    if(r.riferimenti)s+=` [${r.riferimenti}]`;
+    if(r.descrizione)s+=` — ${r.descrizione}`;
+    lines.push(s);
+  });
+  lines.push(`[b]Staff Token guadagnati:[/b] ${calc.totale} ST`);
+  lines.push(`[b]Staff Token totali:[/b] ${dopo} ST`);
+  const resti=[];
+  const map=[['liste_spesa','Accredito di Liste della Spesa'],['camere_blindate','Accredito di Camere Blindate'],['burocrazia','Burocrazia generale']];
+  map.forEach(([id,label])=>{
+    const o=OBIETTIVI.find(x=>x.id===id);
+    const resto=getResto({resti:calc.nuoviResti},o);
+    if(resto>0)resti.push(`- ${label}: ${resto}/${o.divisore}`);
+  });
+  if(resti.length){lines.push('');lines.push('[b]In sospeso[/b]');lines.push(...resti)}
+  return lines.join('\n');
+}
+
+async function registraAccredito(){
+  const msg=document.getElementById('registraMsg');
+  const btn=document.getElementById('btnRegistra');
+  msg.textContent='';
+  document.getElementById('successBox').classList.add('hidden');
+  if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  if(!staffIdCorrente){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer.</div>';return}
+  const raw=raccogliRaw();
+  if(raw.length===0){msg.innerHTML='<div class="msg-err">Seleziona almeno una mansione.</div>';return}
+  const nomeDigitato=inputNome.value.trim()||staffIdCorrente;
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Registro…';
+  try{
+    const staffRef=db.collection('staff_token').doc(staffIdCorrente);
+    const logRef=db.collection('staff_token_log').doc();
+    let risultatoTx=null;
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(staffRef);
+      const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nomeDigitato};
+      const calc=calcolaMovimento(raw,stato);
+      if(calc.errori.length)throw new Error(calc.errori.join(' '));
+      const prima=numeroIntero(stato.st_totali);
+      const dopo=prima+calc.totale;
+      const dettagli=calc.righe.map(r=>({id:r.id,nome:r.nome,ft:r.st,dettaglio:creaDettaglioLog(r),formula:r.formula,riferimenti:r.riferimenti||'',descrizione:r.descrizione||''}));
+      tx.set(staffRef,{
+        _pw:passwordCorrente,
+        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
+        st_totali:dopo,
+        resti:calc.nuoviResti,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      tx.set(logRef,{
+        _pw:passwordCorrente,
+        tipo:'accredito',
+        staffId:staffIdCorrente,
+        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
+        obiettivi:dettagli,
+        guadagnati:calc.totale,
+        delta:calc.totale,
+        saldoPrima:prima,
+        saldoDopo:dopo,
+        restiDopo:calc.nuoviResti,
+        data:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      risultatoTx={calc,prima,dopo,nome:stato.nomeVisualizzato||nomeDigitato};
+    });
+    ultimoBBCode=creaBBCode(risultatoTx.nome,risultatoTx.prima,risultatoTx.dopo,risultatoTx.calc);
+    document.getElementById('bbcodeOutput').value=ultimoBBCode;
+    document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
+    document.getElementById('successBox').classList.remove('hidden');
+    resetFormAccredito(true);
+    document.getElementById('successBox').classList.remove('hidden');
+    document.getElementById('bbcodeOutput').value=ultimoBBCode;
+    document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
+    await caricaStaffer();
+    await caricaPubblico(true);
+  }catch(e){
+    msg.innerHTML=`<div class="msg-err">Accredito non registrato: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.innerHTML='<i class="fa-solid fa-check"></i> Registra';
+    ricalcola();
   }
 }
+document.getElementById('btnRegistra').addEventListener('click',registraAccredito);
+
+async function copiaTesto(text,msgEl){
+  try{
+    if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(text);
+    else{
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    msgEl.innerHTML='<div class="msg-ok">Copiato.</div>';
+  }catch(e){msgEl.innerHTML='<div class="msg-err">Non sono riuscito a copiare automaticamente: seleziona il testo sopra.</div>'}
+}
+document.getElementById('btnCopiaBBCode').addEventListener('click',()=>copiaTesto(document.getElementById('bbcodeOutput').value,document.getElementById('copyMsg')));
+
+function impostaAttivita(id,valori={}){
+  const div=cont.querySelector(`.activity[data-id="${id}"]`);if(!div)return;
+  const chk=div.querySelector('.activity-check');chk.checked=true;div.classList.add('selected');
+  if(valori.quantita!==undefined&&div.querySelector('.in-quantita'))div.querySelector('.in-quantita').value=valori.quantita;
+  if(valori.pg!==undefined&&div.querySelector('.in-pg'))div.querySelector('.in-pg').value=valori.pg;
+  if(valori.dividi!==undefined&&div.querySelector('.in-dividi'))div.querySelector('.in-dividi').value=valori.dividi;
+  if(valori.riferimenti&&div.querySelector('.in-riferimenti'))div.querySelector('.in-riferimenti').value=valori.riferimenti;
+}
+
+function estraiUrl(riga){
+  const urls=[];
+  const re=/(https?:\/\/[^\s\]\)<>]+)/g;let m;
+  while((m=re.exec(riga))!==null)urls.push(m[1].replace(/[),.;]+$/,''));
+  return urls.join('\n');
+}
+function numeroPrimaDiDivisore(riga,divisore){
+  const re=new RegExp('(\\d+)\\s*\\/\\s*'+divisore,'i');
+  const m=riga.match(re);return m?numeroIntero(m[1],null):null;
+}
+
+async function analizzaTesto(){
+  const testo=document.getElementById('testoIncolla').value;
+  const msg=document.getElementById('analisiMsg');
+  msg.textContent='';
+  if(!testo.trim()){msg.innerHTML='<div class="msg-err">Incolla prima il testo.</div>';return}
+
+  const mNome=testo.match(/(?:<b>|\[b\]|\*\*)([^<\[\n*]+?)(?:<\/b>|\[\/b\]|\*\*)/i);
+  if(mNome){
+    const candidato=mNome[1].replace(/staff token posseduti.*$/i,'').trim();
+    if(candidato&&!/staff token|felix token|richiesta/i.test(candidato)){
+      inputNome.value=candidato;
+      await caricaStaffer();
+    }
+  }
+  if(!staffAttuale&&inputNome.value.trim())await caricaStaffer();
+
+  resetFormAccredito(true);
+  const righe=testo.split(/\n|<br\s*\/?\s*>/i).map(r=>r.trim()).filter(Boolean);
+  const trovati=[];
+  const avvisi=[];
+
+  OBIETTIVI.forEach(o=>{
+    const pattern=PATTERN_OBIETTIVI[o.id];if(!pattern)return;
+    let matches=righe.filter(r=>pattern.test(r));
+    if(o.id==='quest_narrativa')matches=matches.filter(r=>!/esiti di molte azioni/i.test(r));
+    if(o.id==='appello_non_estivo')matches=matches.filter(r=>!/appello estivo/i.test(r));
+    if(matches.length===0)return;
+
+    if(o.tipo==='soglia'){
+      const riga=matches[0];
+      const totaleFormula=numeroPrimaDiDivisore(riga,o.divisore);
+      let nuove=0;
+      if(totaleFormula!==null){
+        const resto=getResto(staffAttuale||{resti:{}},o);
+        nuove=Math.max(0,totaleFormula-resto);
+        if(resto>0)avvisi.push(`${o.nome}: letto ${totaleFormula}/${o.divisore}; sottratto il resto già salvato (${resto}), quindi inserite ${nuove} nuove unità.`);
+      }else{
+        const nums=[...riga.matchAll(/\[(\d+)\]/g)].map(m=>numeroIntero(m[1]));
+        nuove=nums.length?Math.max(...nums):0;
+      }
+      if(nuove>0){impostaAttivita(o.id,{quantita:nuove,riferimenti:estraiUrl(riga)});trovati.push(`${o.nome}: ${nuove} nuove`)}
+    }else if(o.tipo==='fisso'){
+      let quantita=0;const refs=[];
+      matches.forEach(r=>{
+        const urls=estraiUrl(r).split('\n').filter(Boolean);refs.push(...urls);
+        if(urls.length)quantita+=urls.length;
+        else{
+          const possibile=r.match(/(?:\[|\(|\s)(\d+)\s*(?:\]|\)|ST)/i);
+          quantita+=possibile?Math.max(1,numeroIntero(possibile[1],1)):1;
+        }
+      });
+      impostaAttivita(o.id,{quantita,riferimenti:[...new Set(refs)].join('\n')});
+      if(o.ripartibile){
+        const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
+        const totaleRegolamentare=quantita*o.ftUnitario;
+        const espliciti=matches.map(r=>{const m=r.match(/(?:^|[^0-9])(\d+)\s*ST\b/i);return m?numeroIntero(m[1]):null}).filter(v=>v!==null);
+        if(espliciti.length){
+          const quota=espliciti.reduce((a,b)=>a+b,0);
+          if(quota>0&&quota<=totaleRegolamentare&&quota!==totaleRegolamentare)div.querySelector('.in-quota').value=quota;
+        }
+      }
+      trovati.push(`${o.nome}: ${quantita}`);
+    }else if(o.tipo==='evento'){
+      const riga=matches[0];
+      const pgM=riga.match(/(\d+)\s*(?:Schede\s*)?PG\s*attivi/i);
+      const pg=pgM?numeroIntero(pgM[1]):0;
+      let dividi=1;
+      const divM=riga.match(/ST\s*\/\s*(\d+)/i);if(divM)dividi=Math.max(1,numeroIntero(divM[1],1));
+      if(pg){impostaAttivita(o.id,{pg,dividi,riferimenti:estraiUrl(riga)});trovati.push(`${o.nome}: ${pg} PG${dividi>1?', diviso '+dividi:''}`)}
+    }
+  });
+
+  if(/accredito descrizioni|descrizioni\s*\(\s*=\s*di camere blindate/i.test(testo)){
+    avvisi.push('Il testo contiene il vecchio accredito Descrizioni = Camere Blindate. Non l’ho importato automaticamente perché non compare nella tabella regolamentare attuale fornita.');
+  }
+  ricalcola();
+  if(trovati.length){
+    msg.innerHTML=`<div class="msg-ok">Riconosciuto: ${escapeHtml(trovati.join(' • '))}</div>${avvisi.map(a=>`<div class="msg-warn">⚠ ${escapeHtml(a)}</div>`).join('')}`;
+  }else msg.innerHTML='<div class="msg-err">Non ho riconosciuto voci sicure da compilare automaticamente.</div>';
+}
+document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTesto);
+document.getElementById('btnPulisciImport').addEventListener('click',()=>{document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent=''});
+
+async function caricaPubblico(forza=false){
+  const saldi=document.getElementById('saldiPubblici');
+  const archivio=document.getElementById('archivioBox');
+  if(forza||!saldi.dataset.loaded){saldi.innerHTML='<div class="loading">Caricamento saldi…</div>'}
+  if(forza||!archivio.dataset.loaded){archivio.innerHTML='<div class="loading">Caricamento registro…</div>'}
+  try{
+    const [snapStaff,snapLog]=await Promise.all([
+      db.collection('staff_token').get(),
+      db.collection('staff_token_log').orderBy('data','desc').limit(300).get()
+    ]);
+    const staff=[];snapStaff.forEach(doc=>staff.push({id:doc.id,...doc.data()}));
+    staff.sort((a,b)=>nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    if(!staff.length)saldi.innerHTML='<div class="empty">Nessuno Staffer registrato.</div>';
+    else saldi.innerHTML=staff.map(s=>{
+      const rl=getResto(s,OBIETTIVI.find(o=>o.id==='liste_spesa'));
+      const rc=getResto(s,OBIETTIVI.find(o=>o.id==='camere_blindate'));
+      const rb=getResto(s,OBIETTIVI.find(o=>o.id==='burocrazia'));
+      const st=numeroIntero(s.st_totali);
+      return`<div class="balance-card"><div class="balance-top"><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div><div class="balance-resti"><span class="resto-chip">Liste ${rl}/3</span><span class="resto-chip">Camere ${rc}/10</span><span class="resto-chip">Burocrazia ${rb}/3</span></div></div>`;
+    }).join('');
+    saldi.dataset.loaded='1';
+
+    archivioMovimenti=[];snapLog.forEach(doc=>archivioMovimenti.push({id:doc.id,...doc.data()}));
+    archivio.dataset.loaded='1';
+    renderArchivio();
+  }catch(e){
+    saldi.innerHTML=`<div class="msg-err">Errore saldi: ${escapeHtml(e.message)}</div>`;
+    archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderArchivio(){
+  const box=document.getElementById('archivioBox');
+  const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
+  const tipo=document.getElementById('filtroTipo').value;
+  const filtered=archivioMovimenti.filter(m=>{
+    const mtipo=m.tipo||(m.obiettivi?.some(o=>o.id==='correzione')?'correzione':'accredito');
+    if(tipo&&mtipo!==tipo)return false;
+    if(!q)return true;
+    const hay=[m.staffId,m.nomeVisualizzato,mtipo,...(m.obiettivi||[]).flatMap(o=>[o.nome,o.dettaglio])].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+  if(!filtered.length){box.innerHTML='<div class="empty">Nessun movimento corrisponde ai filtri.</div>';return}
+  box.innerHTML=filtered.map(m=>{
+    const mtipo=m.tipo||(m.obiettivi?.some(o=>o.id==='correzione')?'correzione':'accredito');
+    const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+    const cls=delta<0?'negative':delta===0?'neutral':'';
+    const label=mtipo==='correzione'?'Correzione':mtipo==='inizializzazione'?'Allineamento':'Accredito';
+    const details=(m.obiettivi||[]).map(o=>`<div class="line">${linkifySafe(o.dettaglio||o.nome||'Movimento')}</div>`).join('');
+    return`<article class="log-item"><div class="log-head"><div><div><b>${escapeHtml(m.nomeVisualizzato||m.staffId||'—')}</b> · ${label}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}</div></div><div class="log-st ${cls}">${formatDelta(delta)}</div></div><div class="log-details">${details}</div></article>`;
+  }).join('');
+}
+document.getElementById('filtroArchivio').addEventListener('input',renderArchivio);
+document.getElementById('filtroTipo').addEventListener('change',renderArchivio);
+document.getElementById('btnAggiornaPubblico').addEventListener('click',()=>caricaPubblico(true));
+
+async function creaOInizializzaStaffer(){
+  const msg=document.getElementById('initMsg');msg.textContent='';
+  if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Modalità Staff non attiva.</div>';return}
+  const nome=document.getElementById('initNome').value.trim();
+  const staffId=normalizzaStaffId(nome);
+  const st=numeroIntero(document.getElementById('initSt').value);
+  const restoListe=numeroIntero(document.getElementById('initRestoListe').value);
+  const restoCamere=numeroIntero(document.getElementById('initRestoCamere').value);
+  const restoBuro=numeroIntero(document.getElementById('initRestoBurocrazia').value);
+  const nota=document.getElementById('initNota').value.trim();
+  if(!staffId){msg.innerHTML='<div class="msg-err">Inserisci un nome.</div>';return}
+  if(restoListe<0||restoListe>2||restoCamere<0||restoCamere>9||restoBuro<0||restoBuro>2){msg.innerHTML='<div class="msg-err">Controlla i resti: Liste 0–2, Camere 0–9, Burocrazia 0–2.</div>';return}
+  try{
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc();
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(staffRef);
+      const prima=snap.exists?numeroIntero(snap.data().st_totali):0;
+      const resti={...((snap.exists&&snap.data().resti)||{}),listeSpesa:restoListe,camereBlindate:restoCamere,pool10:restoCamere,burocrazia:restoBuro};
+      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:nome,st_totali:st,resti,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(logRef,{_pw:passwordCorrente,tipo:'inizializzazione',staffId,nomeVisualizzato:nome,delta:st-prima,guadagnati:st-prima,saldoPrima:prima,saldoDopo:st,restiDopo:resti,obiettivi:[{id:'inizializzazione',nome:'Allineamento stato storico',ft:st-prima,dettaglio:`Saldo impostato a ${st} ST; resti: Liste ${restoListe}/3, Camere ${restoCamere}/10, Burocrazia ${restoBuro}/3. ${nota||''}`.trim()}],data:firebase.firestore.FieldValue.serverTimestamp()});
+    });
+    msg.innerHTML='<div class="msg-ok">Stato salvato e registrato nell’archivio.</div>';
+    await caricaListaStaffer();await caricaPubblico(true);
+  }catch(e){msg.innerHTML=`<div class="msg-err">Errore: ${escapeHtml(e.message)}</div>`}
+}
+document.getElementById('btnCreaInit').addEventListener('click',creaOInizializzaStaffer);
 
 async function correggiSaldoStaffer(){
-  const msg = document.getElementById('correggiMsg');
-  msg.textContent = '';
-  const staffId = normalizzaStaffId(document.getElementById('correggiNome').value);
-  const valore = parseInt(document.getElementById('correggiValore').value);
-  const motivo = document.getElementById('correggiMotivo').value.trim();
-  const pw = document.getElementById('correggiPassword').value;
-  if(!staffId || isNaN(valore)){ msg.innerHTML = '<span class="msg-err">Compila nome e valore.</span>'; return; }
+  const msg=document.getElementById('correggiMsg');msg.textContent='';
+  if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Modalità Staff non attiva.</div>';return}
+  const nome=document.getElementById('correggiNome').value.trim();
+  const staffId=normalizzaStaffId(nome);
+  const rawVal=document.getElementById('correggiValore').value;
+  const valore=parseInt(rawVal,10);
+  const motivo=document.getElementById('correggiMotivo').value.trim();
+  if(!staffId||!Number.isFinite(valore)){msg.innerHTML='<div class="msg-err">Compila nome e nuovo saldo.</div>';return}
+  if(!motivo){msg.innerHTML='<div class="msg-err">Indica il motivo: la correzione deve essere leggibile nel registro pubblico.</div>';return}
   try{
-    await db.collection('staff_token').doc(staffId).set({
-      _pw: pw, st_totali: valore, ultimoAggiornamento: firebase.firestore.FieldValue.serverTimestamp()
-    }, {merge:true});
-    await db.collection('staff_token_log').add({
-      _pw: pw, staffId, obiettivi: [{id:'correzione', ft:0, dettaglio:`Correzione manuale a ${valore} ST. Motivo: ${motivo||'-'}`}],
-      guadagnati: 0, data: firebase.firestore.FieldValue.serverTimestamp()
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc();
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(staffRef);
+      const stato=snap.exists?snap.data():{st_totali:0,resti:{}};
+      const prima=numeroIntero(stato.st_totali);
+      const delta=valore-prima;
+      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:stato.nomeVisualizzato||nome,st_totali:valore,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(logRef,{_pw:passwordCorrente,tipo:'correzione',staffId,nomeVisualizzato:stato.nomeVisualizzato||nome,delta,guadagnati:delta,saldoPrima:prima,saldoDopo:valore,obiettivi:[{id:'correzione',nome:'Correzione saldo',ft:delta,dettaglio:`Correzione da ${prima} a ${valore} ST (${formatDelta(delta)}). Motivo: ${motivo}`}],data:firebase.firestore.FieldValue.serverTimestamp()});
     });
-    msg.innerHTML = '<span class="msg-ok">Saldo corretto.</span>';
-  }catch(e){
-    msg.innerHTML = '<span class="msg-err">Errore (password sbagliata?): '+e.message+'</span>';
-  }
+    msg.innerHTML='<div class="msg-ok">Saldo corretto e movimento registrato.</div>';
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){msg.innerHTML=`<div class="msg-err">Errore: ${escapeHtml(e.message)}</div>`}
 }
+document.getElementById('btnCorreggi').addEventListener('click',correggiSaldoStaffer);
 
-// La lettura è pubblica: carico subito classifica, archivio e lista staffer
-// senza aspettare che qualcuno sblocchi la password.
-caricaArchivio();
 caricaListaStaffer();
+caricaPubblico(true);
+mostraStaffInfo();
+ricalcola();
+syncProtected();
 </script>
 </body>
 </html>
