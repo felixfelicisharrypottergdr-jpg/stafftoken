@@ -1,36 +1,36 @@
 <!DOCTYPE html>
-<!-- v52 — Registro: quattro Player sempre visibili e tutte le tendine chiuse, 04/09/2026 -->
-<!-- v51 — totale a sinistra nei metodi + saldo Player aggiornato subito dopo registrazione, 04/09/2026 -->
-<!-- v50 — Rinomina PG con migrazione ST + registrazione separata per Importa/Manuale/Clic, 04/09/2026 -->
-<!-- v49 — Importa/Manuale separati + registro compatto con scroll e righe alternate, 04/09/2026 -->
-<!-- v48 — Registro unico + saldo sui pulsanti Player, 04/09/2026 -->
-<!-- v47 — importazioni storiche più permissive: FT/ST, valori liberi e Appelli senza formule ricostruibili, 04/09/2026 -->
-<!-- v45 — accesso Staff allineato alle sessioni Firestore + altezza iframe stabile anche dopo focus/scroll, 04/09/2026 -->
-<!-- v41 — saldi del Registro ricalcolati per data storica + rimozione che storna il movimento, 04/09/2026 -->
-<!-- v38 — saldo risultante subito sotto ogni variazione nel registro, 04/09/2026 -->
-<!-- v37 — palette più decisa: fucsia e verde più presenti e leggibili, 04/09/2026 -->
-<!-- v36 — barra di navigazione centrata + rimossa sezione Criteri implementati, 04/09/2026 -->
-<!-- v34 — quattro Player Staffer fissi e sempre attivi: rimosso stato attivo/inattivo, 04/09/2026 -->
-<!-- v33 — gestione PG a tendina + terminologia saldo ST, 04/09/2026 -->
-<!-- v32 — PG Staff: consentito solo il passaggio Studente → Adulto, 04/09/2026 -->
-<!-- v31 — selettore Studente/Adulto: stato attivo visibile e click robusto, 04/09/2026 -->
-<!-- v30 — rimozione neutra delle voci extra: nessuna etichetta "errore", 04/09/2026 -->
-<!-- v29 — quattro saldi ST fisse (Player) + PG associati separati; pulizia voci create per errore, 04/09/2026 -->
-<!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
-<!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
-<!-- v40 — X per rimuovere qualsiasi movimento dal Registro (solo vista; saldo invariato), 04/09/2026 -->
-<!-- v39 — import storico: totale dichiarato usato come quota per singola Quest narrativa ripartibile, 04/09/2026 -->
-<!-- v43 — import storico: data/ora riconosciuta dal testo e mantenuta nel Registro, 04/09/2026 -->
-<!-- v44 — Data accredito manuale persistente: la data inserita nel campo viene salvata e riusata nel Registro, 04/09/2026 -->
-<!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
-<!-- v23 — ST storici: disassociare un PG non rimborsa gli ST già spesi e non è bloccato dagli usi precedenti, 04/09/2026 -->
-<!-- v22 — sicurezza Staff Token: sessione Staff protetta, nessuna Password nei documenti pubblici, bonifica legacy + PG associati con ID esatto, 04/09/2026 -->
-<!-- v21 — integrazione Elfi: spesa/rimborso live da Camera Blindata + protezione PG con usi attivi, 04/09/2026 -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v52</title>
+<title>Gestore Staff Token — v54</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -606,14 +606,6 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 
 
 /* v7 — import più leggibile + cronologia Annulla/Ripristina */
-.history-toolbar{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:10px 12px; margin-bottom:12px; border:1px solid #d9efb5;
-  border-radius:12px; background:#fbfff5;
-}
-.history-toolbar .history-copy{font-size:13px; color:var(--testo-muted); line-height:1.35}
-.history-actions{display:flex; gap:7px; flex-wrap:wrap}
-.history-actions button:disabled{opacity:.38; cursor:not-allowed; filter:grayscale(.35)}
 .import-help{
   margin:10px 0 12px; padding:10px 12px; border-radius:10px;
   background:#fff4f8; border:1px solid #ffc5d8; color:#5b2b3d; font-size:13px; line-height:1.45;
@@ -637,7 +629,6 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .activity-body label{font-weight:700; color:#5a4250}
 .activity-body .hint{line-height:1.45}
 @media(max-width:620px){
-  .history-toolbar{align-items:flex-start; flex-direction:column}
   .import-line{grid-template-columns:1fr}
   .import-line .score{justify-self:start}
 }
@@ -942,6 +933,38 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .pg-step-number{background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
 input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,0,76,.12)}
 
+
+/* ===== v53: Nuovo accredito a rivelazione progressiva ===== */
+.accredito-after-staffer{
+  animation:accreditoReveal .18s ease-out;
+}
+@keyframes accreditoReveal{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.staffer-first-hint{
+  margin-top:12px;
+  padding:10px 12px;
+  border:1px dashed rgba(180,0,77,.28);
+  border-radius:11px;
+  background:linear-gradient(135deg,rgba(180,0,77,.025),rgba(134,201,0,.045));
+  color:var(--muted);
+  font-size:12.5px;
+  line-height:1.4;
+}
+
+
+.staff-ledger-body{scroll-snap-type:y mandatory;scroll-padding:10px;}
+.log-item{scroll-snap-align:start;scroll-snap-stop:always;}
+.staff-ledger.ledger-tone-0>summary{background:linear-gradient(90deg,#fff0f5,#fff8fb);}
+.staff-ledger.ledger-tone-0 .staff-ledger-body{background:#fff8fb;}
+.staff-ledger.ledger-tone-1>summary{background:linear-gradient(90deg,#f2ffdc,#fbfff4);}
+.staff-ledger.ledger-tone-1 .staff-ledger-body{background:#fbfff4;}
+.staff-ledger.ledger-tone-2>summary{background:linear-gradient(90deg,#ffe3ed,#fff5f8);}
+.staff-ledger.ledger-tone-2 .staff-ledger-body{background:#fff5f8;}
+.staff-ledger.ledger-tone-3>summary{background:linear-gradient(90deg,#eaffc6,#f7ffe8);}
+.staff-ledger.ledger-tone-3 .staff-ledger-body{background:#f7ffe8;}
+
 </style>
 </head>
 <body>
@@ -1013,13 +1036,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 
     <section id="view-registra" class="view active">
       <div id="contenutoRegistra" class="protected hidden">
-        <div class="history-toolbar">
-          <div class="history-copy"><b>Modifiche dell’accredito</b><br>Puoi annullare un inserimento o ripristinarlo senza toccare il registro già salvato.</div>
-          <div class="history-actions">
-            <button type="button" class="ghost" id="btnUndo" disabled><i class="fa-solid fa-arrow-rotate-left"></i> Annulla</button>
-            <button type="button" class="ghost" id="btnRedo" disabled><i class="fa-solid fa-arrow-rotate-right"></i> Ripristina</button>
-          </div>
-        </div>
         <div class="card">
           <div class="card-title">
             <div>
@@ -1037,8 +1053,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
           <input type="hidden" id="staffNomeInput" value="">
           <div class="staffer-picker-help">I quattro pulsanti sono i quattro Player Staffer. I PG associati non compaiono qui: servono soltanto al collegamento con gli Elfi.</div>
           <div id="staffInfo" style="margin-top:10px"></div>
+          <div class="staffer-first-hint" id="stafferFirstHint"><i class="fa-solid fa-arrow-pointer"></i> Seleziona prima uno dei quattro Player. Le modalità di accredito compariranno subito dopo la scelta.</div>
         </div>
 
+        <div id="accreditoDopoStaffer" class="accredito-after-staffer hidden">
         <div class="card">
           <div class="card-title">
             <div>
@@ -1119,6 +1137,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <div id="registraMsgClick" class="method-register-msg" aria-live="polite"></div>
           </div>
 
+        </div>
         </div>
       </div>
     </section>
@@ -1294,7 +1313,6 @@ const PATTERN_OBIETTIVI={
 
 function normalizzaStaffId(str){
   const n=(str||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[.#$/\[\]]/g,'');
-  // Compatibilità con i documenti storici: il Player è lo stesso anche se ora
   // mostriamo il nome completo del PG principale sui quattro pulsanti.
   if(n==='lulu')return 'lulu sparks';
   if(n==='gideon'||n==='gideon g greengrass')return 'gideon g greengrass';
@@ -1583,7 +1601,7 @@ function creaRigaObiettivo(o){
   chk.addEventListener('change',()=>{
     div.classList.toggle('selected',chk.checked);
     if(chk.checked)div.dataset.entrySource='click';
-    else delete div.dataset.entrySource;
+    else delete div.dataset.entrySource; delete div.dataset.importStOverride;
     ricalcola();
   });
   div.addEventListener('input',ricalcola);
@@ -1663,6 +1681,9 @@ function raccogliRaw(metodo='all'){
     const o=OBIETTIVI.find(x=>x.id===div.dataset.id);
     if(!o)return;
     const item={id:o.id,tipo:o.tipo,source};
+    if(source==='import' && div.dataset.importStOverride!==undefined && div.dataset.importStOverride!==''){
+      item.stOverride=Math.max(0,numeroIntero(div.dataset.importStOverride));
+    }
     if(o.tipo==='soglia'||o.tipo==='fisso'){
       item.quantita=Math.max(0,numeroIntero(div.querySelector('.in-quantita')?.value));
       if(o.tipo==='fisso'&&o.ripartibile){
@@ -1747,6 +1768,12 @@ function calcolaMovimento(raw,stato){
       formula=`Valore concordato: ${st} ST.`;
     }
 
+    if(item.source==='import' && item.stOverride!==undefined && item.stOverride!==null){
+      const calcolato=st;
+      st=Math.max(0,numeroIntero(item.stOverride));
+      if(st!==calcolato) formula+=` Valore presente nell’importazione: ${st} ST — prevale sul calcolo automatico di ${calcolato} ST.`;
+      else formula+=` Valore confermato dall’importazione: ${st} ST.`;
+    }
     totale+=st;
     righe.push({id:o.id,nome:o.nome,tipo:o.tipo,st,formula,riferimenti:item.riferimenti||'',descrizione:item.descrizione||'',restoPrecedente,restoNuovo});
   });
@@ -1803,10 +1830,10 @@ function applicaOverrideTotale(calc,override){
   if(delta!==0){
     copia.righe.push({
       id:'correzione_totale',
-      nome:'Correzione manuale del totale',
+      nome:'Adeguamento del totale',
       tipo:'correzione_totale',
       st:delta,
-      formula:`Totale calcolato ${base} ST → totale impostato manualmente ${override} ST (${formatDelta(delta)}).`,
+      formula:`Totale delle righe ${base} ST → totale registrato ${override} ST (${formatDelta(delta)}).`,
       riferimenti:'',descrizione:'',restoPrecedente:null,restoNuovo:null
     });
   }
@@ -1861,7 +1888,10 @@ function ricalcola(){
       mts.textContent=`Totale manuale impostato a ${calc.overrideTotale} ST: coincide con il calcolo automatico.`;
     }else{
       mts.className='manual-total-status override';
-      mts.innerHTML=`<b>Correzione manuale attiva:</b> ${calc.totaleCalcolato} ST calcolati → <b>${calc.overrideTotale} ST</b> registrati (${formatDelta(calc.overrideTotale-calc.totaleCalcolato)}).`;
+      const autoImport=document.getElementById('overrideTotaleAccredito')?.dataset.importAuthoritative==='1';
+      mts.innerHTML=autoImport
+        ?`<b>Totale storico dell’importazione:</b> le righe sommano ${calc.totaleCalcolato} ST, ma il testo dichiara <b>${calc.overrideTotale} ST</b>. Verrà registrato il totale dichiarato.`
+        :`<b>Correzione manuale attiva:</b> ${calc.totaleCalcolato} ST calcolati → <b>${calc.overrideTotale} ST</b> registrati (${formatDelta(calc.overrideTotale-calc.totaleCalcolato)}).`;
     }
   }
   aggiornaMetodoRegistrazione('import',importData);
@@ -1913,6 +1943,8 @@ function collegaPickerStaffer(){
   });
 }
 collegaPickerStaffer();
+// All'apertura di Nuovo accredito si vede soltanto la scelta del Player.
+setTimeout(()=>{ if(typeof aggiornaVisibilitaAccredito==='function') aggiornaVisibilitaAccredito(); },0);
 
 function stafferBreve(nome){
   const legacy=primaryStaffById(nome);
@@ -1975,6 +2007,14 @@ async function caricaListaStaffer(){
   return snap;
 }
 
+function aggiornaVisibilitaAccredito(){
+  const area=document.getElementById('accreditoDopoStaffer');
+  const hint=document.getElementById('stafferFirstHint');
+  const scelto=!!(staffIdCorrente&&String(inputNome.value||'').trim());
+  if(area)area.classList.toggle('hidden',!scelto);
+  if(hint)hint.classList.toggle('hidden',scelto);
+}
+
 async function caricaStaffer(){
   const canonico=nomeCanonicoStaffer(inputNome.value.trim());
   if(canonico) inputNome.value=canonico;
@@ -1983,7 +2023,8 @@ async function caricaStaffer(){
   const id=normalizzaStaffId(raw);
   staffIdCorrente=id||null;
   staffAttuale=null;
-  if(!id){mostraStaffInfo();ricalcola();return}
+  if(!id){aggiornaVisibilitaAccredito();mostraStaffInfo();ricalcola();return}
+  aggiornaVisibilitaAccredito();
   try{
     const doc=await db.collection('staff_token').doc(id).get();
     if(doc.exists)staffAttuale=doc.data();
@@ -2011,7 +2052,7 @@ function resetFormAccredito(mantieniStaffer=true,mantieniManuali=false){
   if(!mantieniManuali){svuotaVociManuali();const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';}
   const dataAcc=document.getElementById('dataAccredito'); if(dataAcc)dataAcc.value='';
   ['registraMsgImport','registraMsgManual','registraMsgClick'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
-  if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;sincronizzaPicker(document.getElementById('pickerAccredito'));mostraStaffInfo()}
+  if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;sincronizzaPicker(document.getElementById('pickerAccredito'));aggiornaVisibilitaAccredito();mostraStaffInfo()}
   ricalcola();
 }
 
@@ -2152,8 +2193,8 @@ function registraModificaManuale(){
     }
   },250);
 }
-document.getElementById('btnUndo').addEventListener('click',annullaAccredito);
-document.getElementById('btnRedo').addEventListener('click',ripristinaAccredito);
+document.getElementById('btnUndo')?.addEventListener('click',annullaAccredito);
+document.getElementById('btnRedo')?.addEventListener('click',ripristinaAccredito);
 document.getElementById('contenutoRegistra').addEventListener('input',e=>{
   if(e.target.id==='testoIncolla')return; // il testo sorgente non altera il calcolo finché non si analizza
   registraModificaManuale();
@@ -2167,7 +2208,7 @@ setTimeout(inizializzaHistory,0);
 function pulisciActivityMetodo(metodo){
   cont.querySelectorAll('.activity').forEach(div=>{
     if((div.dataset.entrySource||'click')!==metodo)return;
-    div.classList.remove('selected'); delete div.dataset.entrySource;
+    div.classList.remove('selected'); delete div.dataset.entrySource; delete div.dataset.importStOverride;
     const chk=div.querySelector('.activity-check');if(chk)chk.checked=false;
     div.querySelectorAll('input[type=number]').forEach(i=>{
       if(i.classList.contains('in-dividi'))i.value='1';
@@ -2289,8 +2330,9 @@ function numeroPrimaDiDivisore(riga,divisore){
 }
 function stEsplicitiRiga(riga){
   const vals=[];
-  for(const m of riga.matchAll(/\((\d+)\s*(?:ST)?\)/ig)) vals.push(numeroIntero(m[1]));
-  for(const m of riga.matchAll(/(?:^|[=:])\s*(\d+)\s*ST\b/ig)) vals.push(numeroIntero(m[1]));
+  const src=String(riga||'');
+  for(const m of src.matchAll(/\(\s*([+-]?\d+)\s*(?:(?:S|F)T|Staff\s*Token|Felix\s*Token)?\s*\)/ig)) vals.push(numeroIntero(m[1]));
+  for(const m of src.matchAll(/([+-]?\d+)\s*(?:(?:S|F)T|Staff\s*Token|Felix\s*Token)\b/ig)) vals.push(numeroIntero(m[1]));
   return vals.length?vals[vals.length-1]:null;
 }
 function nomeMansioneDaRigaImport(riga){
@@ -2361,19 +2403,11 @@ async function analizzaTesto(){
   const dataEl=document.getElementById('dataAccredito');
   const dataGiaInserita=String(dataEl?.value||'').trim();
   const dataStorica=estraiDataStoricaDaTesto(testo);
+  const overrideEl=document.getElementById('overrideTotaleAccredito');
+  if(overrideEl) delete overrideEl.dataset.importAuthoritative;
 
   salvaStatoPerUndo();
-
-  const mNome=testo.match(/\[color=[^\]]+\]\s*(?:<b>|\[b\]|\*\*)([^<\[\n*]+?)(?:<\/b>|\[\/b\]|\*\*)\s*\[\/color\]/i)
-    || testo.match(/(?:<b>|\[b\]|\*\*)([^<\[\n*]+?)(?:<\/b>|\[\/b\]|\*\*)/i);
-  if(mNome){
-    const candidato=mNome[1].replace(/staff token posseduti.*$/i,'').trim();
-    if(candidato&&!/staff token|felix token|richiesta/i.test(candidato)){
-      inputNome.value=candidato;
-      sincronizzaPicker(document.getElementById('pickerAccredito'));
-      await caricaStaffer();
-    }
-  }
+  // quindi non deve mai sostituire Lulu/Gideon/Noah/Odette.
   if(!staffAttuale&&inputNome.value.trim())await caricaStaffer();
 
   // Ogni analisi rigenera soltanto l'importazione precedente: le voci manuali e le mansioni cliccate restano indipendenti.
@@ -2442,8 +2476,13 @@ async function analizzaTesto(){
       }
       if(nuove>0){
         impostaAttivita(o.id,{quantita:nuove,riferimenti:estraiUrl(riga)});
-        const resto=getResto(staffAttuale||{resti:{}},o),base=resto+nuove,st=Math.floor(base/o.divisore)*o.moltiplicatore;
-        report.push({categoria:o.nome,src:riga,score:st,why:`${resto} in sospeso + ${nuove} nuove → ${st} ST`});
+        const resto=getResto(staffAttuale||{resti:{}},o),base=resto+nuove,stCalcolato=Math.floor(base/o.divisore)*o.moltiplicatore;
+        const stEsplicito=stEsplicitiRiga(riga);
+        const st=stEsplicito!==null&&stEsplicito>=0?stEsplicito:stCalcolato;
+        const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
+        if(div&&stEsplicito!==null&&stEsplicito>=0)div.dataset.importStOverride=String(stEsplicito);
+        report.push({categoria:o.nome,src:riga,score:st,why:stEsplicito!==null&&stEsplicito>=0?`Valore dell’importazione: ${st} ST; progressione ricostruita per conservare correttamente i resti`:`${resto} in sospeso + ${nuove} nuove → ${st} ST`});
+        if(stEsplicito!==null&&stEsplicito>=0&&stEsplicito!==stCalcolato)avvisi.push(`${o.nome}: il valore importato (${stEsplicito} ST) prevale sul calcolo automatico (${stCalcolato} ST); i resti vengono comunque aggiornati dalla progressione.`);
         trovati.push(`${o.nome}: ${nuove} nuove`);
       }else{
         // Nei registri storici può essere noto soltanto il valore finale, es.
@@ -2464,64 +2503,46 @@ async function analizzaTesto(){
     }
 
     if(o.tipo==='fisso'){
-      let quantita=0; const refs=[]; let scoreImport=0;
+      let quantita=0; const refs=[]; let scoreImport=0; let overrideSomma=0; let haOverride=false;
       const reportStart=report.length;
-      const righeConValoreStorico=[];
       for(const riga of matches){
         const q=quantitaFissaDaRiga(riga);
         const rr=estraiRiferimenti(riga); refs.push(...rr);
         const atteso=q*o.ftUnitario;
         const esplicito=stEsplicitiRiga(riga);
-        // Se il vecchio accredito dichiara esplicitamente un valore diverso dalla
-        // regola attuale, non lo "correggiamo": stiamo ricostruendo lo storico.
-        // Importiamo quindi quella singola riga come voce storica manuale.
-        if(esplicito!==null&&esplicito>=0&&esplicito!==atteso&&!o.ripartibile){
-          const nome=nomeMansioneDaRigaImport(riga);
-          creaVoceManuale({nome,st:esplicito,riferimenti:estraiUrl(riga),importAuto:true});
-          report.push({categoria:nome,src:riga,score:esplicito,why:`Valore storico esplicito: ${esplicito} ST (regola attuale: ${atteso} ST)`});
-          righeConValoreStorico.push(riga);
-          scoreImport+=esplicito;
-          avvisi.push(`${nome}: mantenuto il valore storico esplicito di ${esplicito} ST invece di ricalcolarlo con la regola attuale.`);
-          continue;
-        }
         quantita+=q;
-        scoreImport+=atteso;
-        report.push({categoria:o.nome,src:riga,score:atteso,why:`${q} ${q===1?'voce':'voci'} × ${o.ftUnitario} ST`});
+        if(esplicito!==null&&esplicito>=0){
+          haOverride=true;
+          overrideSomma+=esplicito;
+          scoreImport+=esplicito;
+          report.push({categoria:o.nome,src:riga,score:esplicito,why:esplicito===atteso?`Valore dell’importazione: ${esplicito} ST`:`Valore dell’importazione: ${esplicito} ST (prevale sulla regola automatica: ${atteso} ST)`});
+        }else{
+          overrideSomma+=atteso;
+          scoreImport+=atteso;
+          report.push({categoria:o.nome,src:riga,score:atteso,why:`Nessun valore ST/FT esplicito: ${q} ${q===1?'voce':'voci'} × ${o.ftUnitario} ST`});
+        }
       }
-      if(quantita>0) impostaAttivita(o.id,{quantita,riferimenti:[...new Set(refs)].join('\n')});
-      if(o.ripartibile&&quantita>0){
+      if(quantita>0){
+        impostaAttivita(o.id,{quantita,riferimenti:[...new Set(refs)].join('\n')});
         const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
+        if(div&&haOverride)div.dataset.importStOverride=String(overrideSomma);
+      }
+      if(haOverride){
+        avvisi.push(`${o.nome}: usato il valore presente nell’importazione (${overrideSomma} ST), anche se diverso dalla regola automatica.`);
+      }else if(o.ripartibile&&quantita>0&&matches.length===1&&gruppi.size===1&&fallbackEspliciti.length===0&&totaleDichiarato!==null){
         const totaleRegolamentare=quantita*o.ftUnitario;
-        const espliciti=matches.map(stEsplicitiRiga).filter(v=>v!==null);
-        let quotaStorica=null;
-        if(espliciti.length){
-          const quota=espliciti.reduce((a,b)=>a+b,0);
-          if(quota>0&&quota<=totaleRegolamentare&&quota!==totaleRegolamentare) quotaStorica=quota;
-        }else if(
-          matches.length===1 &&
-          gruppi.size===1 &&
-          fallbackEspliciti.length===0 &&
-          totaleDichiarato!==null &&
-          totaleDichiarato>0 &&
-          totaleDichiarato<totaleRegolamentare
-        ){
-          // Registro storico: se l'unica attività è ripartibile e il testo dichiara
-          // un totale inferiore al valore pieno, quel totale è la quota realmente
-          // attribuita allo Staffer (es. Quest narrativa da 3 ST condivisa: quota 1 ST).
-          quotaStorica=totaleDichiarato;
-        }
-        if(quotaStorica!==null){
-          div.querySelector('.in-quota').value=quotaStorica;
-          scoreImport=quotaStorica;
-          if(matches.length===1 && report[reportStart]){
-            report[reportStart].score=quotaStorica;
-            report[reportStart].why=`Quota storica attribuita allo Staffer: ${quotaStorica} ST (valore pieno ${totaleRegolamentare} ST)`;
+        if(totaleDichiarato>=0&&totaleDichiarato!==totaleRegolamentare){
+          const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
+          if(div)div.dataset.importStOverride=String(totaleDichiarato);
+          scoreImport=totaleDichiarato;
+          if(report[reportStart]){
+            report[reportStart].score=totaleDichiarato;
+            report[reportStart].why=`Totale storico dell’importazione: ${totaleDichiarato} ST (prevale sul valore automatico ${totaleRegolamentare} ST)`;
           }
-          avvisi.push(`${o.nome}: ho usato la quota storica di ${quotaStorica} ST indicata dall’accredito, invece del valore pieno di ${totaleRegolamentare} ST.`);
+          avvisi.push(`${o.nome}: usato il totale storico di ${totaleDichiarato} ST indicato nell’importazione.`);
         }
       }
-      if(quantita>0) trovati.push(`${o.nome}: ${quantita} ${quantita===1?'voce':'voci'} = ${scoreImport} ST`);
-      else if(righeConValoreStorico.length) trovati.push(`${o.nome}: valore storico importato = ${scoreImport} ST`);
+      if(quantita>0)trovati.push(`${o.nome}: ${quantita} ${quantita===1?'voce':'voci'} = ${scoreImport} ST`);
       continue;
     }
 
@@ -2534,8 +2555,13 @@ async function analizzaTesto(){
       if(pg){
         impostaAttivita(o.id,{pg,dividi,riferimenti:estraiUrl(riga)});
         const pool=Math.floor(pg/o.divisore)*o.moltiplicatore;
-        const score=pool/dividi;
-        report.push({categoria:o.nome,src:riga,score,why:`${pg}/${o.divisore} × ${o.moltiplicatore} ST${dividi>1?' ÷ '+dividi:''}`});
+        const calcolato=pool/dividi;
+        const esplicito=stEsplicitiRiga(riga);
+        const score=esplicito!==null&&esplicito>=0?esplicito:calcolato;
+        const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
+        if(div&&esplicito!==null&&esplicito>=0)div.dataset.importStOverride=String(esplicito);
+        report.push({categoria:o.nome,src:riga,score,why:esplicito!==null&&esplicito>=0?`Valore dell’importazione: ${score} ST${score!==calcolato?` (prevale sul calcolo automatico: ${calcolato} ST)`:''}`:`${pg}/${o.divisore} × ${o.moltiplicatore} ST${dividi>1?' ÷ '+dividi:''}`});
+        if(esplicito!==null&&esplicito>=0&&esplicito!==calcolato)avvisi.push(`${o.nome}: usato il valore importato di ${esplicito} ST invece del calcolo automatico di ${calcolato} ST.`);
         trovati.push(`${o.nome}: ${pg} PG${dividi>1?', diviso '+dividi:''}`);
       }else{
         const esplicito=stEsplicitiRiga(riga);
@@ -2554,13 +2580,23 @@ async function analizzaTesto(){
     avvisi.push('Il testo contiene l’accredito Descrizioni = Camere Blindate. Non l’ho importato automaticamente perché non compare nella tabella regolamentare attuale fornita.');
   }
 
-  const calc=ricalcola();
+  let calc=ricalcola();
   if(totaleDichiarato!==null){
     const fonte=totaleDichiaratoFonte==='dichiarato'
       ?`l’accredito indica ${totaleDichiarato} ST`
       :`${totaleDichiaratoFonte} = ${totaleDichiarato} ST`;
-    if(totaleDichiarato===calc.totale)avvisi.unshift(`Controllo totale: ${fonte} e il nuovo calcolo coincide.`);
-    else avvisi.unshift(`ATTENZIONE: ${fonte}, mentre le righe importate danno ${calc.totale} ST.`);
+    const totaleRighe=calc.totaleCalcolato??calc.totale;
+    if(totaleDichiarato===totaleRighe){
+      avvisi.unshift(`Controllo totale: ${fonte} e le righe importate coincidono.`);
+    }else{
+      const ov=document.getElementById('overrideTotaleAccredito');
+      if(ov){
+        ov.value=String(totaleDichiarato);
+        ov.dataset.importAuthoritative='1';
+        calc=ricalcola();
+      }
+      avvisi.unshift(`Totale storico prioritario: ${fonte}. Le righe riconosciute sommano ${totaleRighe} ST, ma verranno registrati ${totaleDichiarato} ST perché nell’importazione il totale dichiarato prevale.`);
+    }
   }
   aggiornaSnapshotCorrenteDopoAzione();
   if(report.length){
@@ -2569,14 +2605,70 @@ async function analizzaTesto(){
       ?`<div class="msg-ok"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(a)}</div>`
       :`<div class="msg-warn">⚠ ${escapeHtml(a)}</div>`).join('');
     const nonLettiHtml=nonLetti.length?`<div class="import-unread"><b>${nonLetti.length} riga${nonLetti.length===1?' non riconosciuta':'he non riconosciute'}:</b><br>${nonLetti.map(escapeHtml).join('<br>')}</div>`:'';
-    msg.innerHTML=`<div class="import-report"><div class="import-summary"><strong>${report.length} righe riconosciute</strong><div class="sum-score">+${calc.totale} ST</div></div><div class="import-lines">${righeHtml}</div></div>${avvisiHtml}${nonLettiHtml}`;
+    msg.innerHTML=`<div class="import-report"><div class="import-summary"><strong>${report.length} righe riconosciute · totale importato</strong><div class="sum-score">+${calc.totale} ST</div></div><div class="import-lines">${righeHtml}</div></div>${avvisiHtml}${nonLettiHtml}`;
   }else msg.innerHTML='<div class="msg-err">Non ho trovato valori o voci abbastanza chiari da importare automaticamente. Puoi comunque aggiungerli come voci manuali qui sotto.</div>';
 }
 document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTesto);
 document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';pulisciActivityMetodo('import');rimuoviVociAutoImportate();ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
-document.getElementById('btnResetTotale').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('overrideTotaleAccredito').value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
-document.getElementById('overrideTotaleAccredito').addEventListener('input',ricalcola);
+document.getElementById('btnResetTotale').addEventListener('click',()=>{salvaStatoPerUndo();const el=document.getElementById('overrideTotaleAccredito');el.value='';delete el.dataset.importAuthoritative;ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
+document.getElementById('overrideTotaleAccredito').addEventListener('input',e=>{delete e.currentTarget.dataset.importAuthoritative;ricalcola();});
 document.getElementById('btnDataAdesso').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
+
+
+async function migraAccreditiDaPgAlPlayerSeNecessario(snapStaff,snapLog){
+  if(!passwordCorrente)return false;
+  const docsById=new Map();
+  snapStaff.forEach(d=>docsById.set(normalizzaStaffId(d.id),{ref:d.ref,id:normalizzaStaffId(d.id),data:d.data()||{}}));
+  const ownerByPg=new Map();
+  LEGACY_STAFFER_PG_CONFIG.forEach(cfg=>{
+    const ownerId=normalizzaStaffId(cfg.nome);
+    const doc=docsById.get(ownerId);
+    const data=doc?.data||{};
+    (Array.isArray(data.pgAssociati)?data.pgAssociati:[]).forEach(pg=>{
+      const k=normalizzaNomePgStaff(pg&&pg.nome);
+      if(k)ownerByPg.set(k,ownerId);
+    });
+    (Array.isArray(data.pgAliasStorici)?data.pgAliasStorici:[]).forEach(a=>{
+      const da=normalizzaNomePgStaff(a&&a.da),aNome=normalizzaNomePgStaff(a&&a.a);
+      if(da)ownerByPg.set(da,ownerId);
+      if(aNome)ownerByPg.set(aNome,ownerId);
+    });
+  });
+  const gruppi=new Map();
+  snapLog.forEach(d=>{
+    const m={id:d.id,...(d.data()||{})};
+    const sourceId=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
+    if(!sourceId||isPrimaryStaffId(sourceId)||m.riassegnatoAlPlayerIl)return;
+    const candidates=[m.nomeVisualizzato,m.staffId,m.pgId].map(normalizzaNomePgStaff).filter(Boolean);
+    const ownerId=candidates.map(k=>ownerByPg.get(k)).find(Boolean);
+    if(!ownerId||ownerId===sourceId)return;
+    const k=sourceId+'→'+ownerId;
+    if(!gruppi.has(k))gruppi.set(k,{sourceId,ownerId,movs:[]});
+    gruppi.get(k).movs.push(m);
+  });
+  if(!gruppi.size)return false;
+  let changed=false;
+  for(const g of gruppi.values()){
+    const source=docsById.get(g.sourceId);
+    const owner=docsById.get(g.ownerId);
+    if(!source||!owner)continue;
+    const cambiaResti=g.movs.some(m=>JSON.stringify(m.restiPrima||{})!==JSON.stringify(m.restiDopo||{}));
+    if(cambiaResti){console.warn('Migrazione automatica saltata per',g.sourceId,'perché contiene progressivi/resti.');continue;}
+    const delta=g.movs.reduce((sum,m)=>sum+deltaEffettivoMovimento(m),0);
+    const batch=db.batch();
+    batch.set(source.ref,{st_totali:numeroIntero(source.data.st_totali)-delta,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    batch.set(owner.ref,{st_totali:numeroIntero(owner.data.st_totali)+delta,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    g.movs.forEach(m=>batch.set(db.collection('staff_token_log').doc(m.id),{
+      staffId:g.ownerId,
+      nomeVisualizzato:primaryStaffName(g.ownerId,g.ownerId),
+      riassegnatoDaPg:g.sourceId,
+      riassegnatoAlPlayerIl:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true}));
+    await batch.commit();
+    changed=true;
+  }
+  return changed;
+}
 
 async function caricaPubblico(forza=false){
   if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){
@@ -2585,10 +2677,16 @@ async function caricaPubblico(forza=false){
   const archivio=document.getElementById('archivioBox');
   if(forza||!archivio.dataset.loaded){archivio.innerHTML='<div class="loading">Caricamento registro…</div>'}
   try{
-    const [snapStaff,snapLog]=await Promise.all([
+    let [snapStaff,snapLog]=await Promise.all([
       db.collection('staff_token').get(),
-      db.collection('staff_token_log').orderBy('data','desc').limit(300).get()
+      db.collection('staff_token_log').limit(500).get()
     ]);
+    if(await migraAccreditiDaPgAlPlayerSeNecessario(snapStaff,snapLog)){
+      [snapStaff,snapLog]=await Promise.all([
+        db.collection('staff_token').get(),
+        db.collection('staff_token_log').limit(500).get()
+      ]);
+    }
     const staffDocs=new Map();snapStaff.forEach(doc=>staffDocs.set(normalizzaStaffId(doc.id),{id:doc.id,...doc.data()}));
     const staff=LEGACY_STAFFER_PG_CONFIG.map(cfg=>{
       const id=normalizzaStaffId(cfg.nome);
@@ -2603,9 +2701,13 @@ async function caricaPubblico(forza=false){
       if(isPrimaryStaffId(sid))archivioMovimenti.push(m);
     });
     archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
-    const ultimaDataPerStaff={};
-    archivioMovimenti.forEach(m=>{const k=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');if(k&&!ultimaDataPerStaff[k])ultimaDataPerStaff[k]=m.data});
-    staff.sort((a,b)=>timestampMs(ultimaDataPerStaff[b.id]||b.ultimoAggiornamento)-timestampMs(ultimaDataPerStaff[a.id]||a.ultimoAggiornamento)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    const ultimaModificaPerStaff={};
+    archivioMovimenti.forEach(m=>{
+      const k=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
+      const t=timestampUltimaModificaMovimento(m);
+      if(k&&t>(ultimaModificaPerStaff[k]||0))ultimaModificaPerStaff[k]=t;
+    });
+    staff.sort((a,b)=>(ultimaModificaPerStaff[b.id]||timestampMs(b.ultimoAggiornamento))-(ultimaModificaPerStaff[a.id]||timestampMs(a.ultimoAggiornamento))||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
     staffPubblici=staff;
     saldiPlayer={};
     staff.forEach(s=>{saldiPlayer[normalizzaStaffId(s.id)]=numeroIntero(s.st_totali);});
@@ -2615,6 +2717,18 @@ async function caricaPubblico(forza=false){
   }catch(e){
     archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;
   }
+}
+
+
+function timestampUltimaModificaMovimento(m){
+  return Math.max(
+    timestampMs(m?.modificatoIl),
+    timestampMs(m?.registratoIl),
+    timestampMs(m?.pgRinominatoIl),
+    timestampMs(m?.rimozioneCompensataIl),
+    timestampMs(m?.riassegnatoAlPlayerIl),
+    timestampMs(m?.data)
+  );
 }
 
 function tipoMovimento(m){
@@ -2967,8 +3081,8 @@ function renderArchivio(){
   });
 
   const lista=[...gruppi.values()].map(g=>{
-    g.movimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
-    g.ultimo=timestampMs(g.movimenti[0]?.data)||0;
+    g.movimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data)||timestampUltimaModificaMovimento(b)-timestampUltimaModificaMovimento(a));
+    g.ultimo=Math.max(0,...g.movimenti.map(timestampUltimaModificaMovimento));
     return g;
   }).sort((a,b)=>b.ultimo-a.ultimo||LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===a.key)-LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===b.key));
 
@@ -3008,8 +3122,11 @@ function renderArchivio(){
       const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi" aria-label="Rimuovi"><i class="fa-solid fa-xmark"></i></button>`:'';
       return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
     }).join(''):`<div class="empty">Nessun movimento registrato.</div>`;
-    const ultimoTesto=g.movimenti.length?`Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}`:'Nessun movimento registrato';
-    return `<details class="staff-ledger"><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">${ultimoTesto}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
+    const ultimoMovAgg=g.movimenti.slice().sort((a,b)=>timestampUltimaModificaMovimento(b)-timestampUltimaModificaMovimento(a))[0];
+    const ultimoTs=ultimoMovAgg?(ultimoMovAgg.modificatoIl||ultimoMovAgg.registratoIl||ultimoMovAgg.data):null;
+    const ultimoTesto=g.movimenti.length?`Ultimo aggiornamento: ${escapeHtml(dataIt(ultimoTs))}`:'Nessun movimento registrato';
+    const tone=Math.max(0,LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===g.key))%4;
+    return `<details class="staff-ledger ledger-tone-${tone}"><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">${ultimoTesto}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
   box.querySelectorAll('[data-remove-log-id]').forEach(btn=>btn.addEventListener('click',()=>rimuoviMovimentoDalRegistro(btn.dataset.removeLogId)));
   box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);if(ed)ed.classList.toggle('hidden')}));
