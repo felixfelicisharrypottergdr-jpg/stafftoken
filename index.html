@@ -30,7 +30,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v54</title>
+<title>Gestore Staff Token — v55</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -534,6 +534,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .staff-ledger-body::-webkit-scrollbar{width:10px}
 .staff-ledger-body::-webkit-scrollbar-track{background:#f6f1f3;border-radius:999px}
 .staff-ledger-body::-webkit-scrollbar-thumb{background:rgba(180,0,77,.28);border:2px solid #f6f1f3;border-radius:999px}
+.staff-ledger-body.is-editing{scroll-snap-type:none;}
 .log-item{
   border:1px solid rgba(180,0,77,.12);
   border-radius:12px;
@@ -3047,6 +3048,30 @@ async function rimuoviMovimentoDalRegistro(id){
   }
 }
 
+function adattaAltezzaRegistroInModifica(editor){
+  if(!editor)return;
+  const articolo=editor.closest('.log-item');
+  const body=editor.closest('.staff-ledger-body');
+  if(!articolo||!body)return;
+  body.classList.add('is-editing');
+  requestAnimationFrame(()=>{
+    const altezzaArticolo=Math.ceil(articolo.scrollHeight);
+    const altezzaMinima=Math.max(560,altezzaArticolo+24);
+    body.style.maxHeight=altezzaMinima+'px';
+    const top=Math.max(0,articolo.offsetTop-10);
+    body.scrollTo({top,behavior:'smooth'});
+  });
+}
+function ripristinaAltezzaRegistro(editor){
+  if(!editor)return;
+  const body=editor.closest('.staff-ledger-body');
+  if(!body)return;
+  const altriAperti=[...body.querySelectorAll('.log-edit-editor:not(.hidden)')].filter(x=>x!==editor);
+  if(altriAperti.length){adattaAltezzaRegistroInModifica(altriAperti[0]);return}
+  body.classList.remove('is-editing');
+  body.style.maxHeight='';
+}
+
 function renderArchivio(){
   const box=document.getElementById('archivioBox');
   const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
@@ -3129,11 +3154,25 @@ function renderArchivio(){
     return `<details class="staff-ledger ledger-tone-${tone}"><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">${ultimoTesto}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
   box.querySelectorAll('[data-remove-log-id]').forEach(btn=>btn.addEventListener('click',()=>rimuoviMovimentoDalRegistro(btn.dataset.removeLogId)));
-  box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);if(ed)ed.classList.toggle('hidden')}));
-  box.querySelectorAll('[data-close-edit-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.closeEditId)}"]`);if(ed)ed.classList.add('hidden')}));
+  box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{
+    const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);
+    if(!ed)return;
+    const stavaAperto=!ed.classList.contains('hidden');
+    ed.classList.toggle('hidden');
+    if(stavaAperto)ripristinaAltezzaRegistro(ed);else adattaAltezzaRegistroInModifica(ed);
+  }));
+  box.querySelectorAll('[data-close-edit-id]').forEach(btn=>btn.addEventListener('click',()=>{
+    const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.closeEditId)}"]`);
+    if(ed){ed.classList.add('hidden');ripristinaAltezzaRegistro(ed)}
+  }));
   box.querySelectorAll('[data-save-edit-id]').forEach(btn=>btn.addEventListener('click',()=>salvaModificheMovimento(btn.dataset.saveEditId)));
-  box.querySelectorAll('[data-add-edit-row]').forEach(btn=>btn.addEventListener('click',()=>aggiungiRigaEditorMovimento(btn.dataset.addEditRow)));
-  box.querySelectorAll('.remove-edit-row').forEach(btn=>btn.addEventListener('click',()=>btn.closest('.log-edit-row')?.remove()));
+  box.querySelectorAll('[data-add-edit-row]').forEach(btn=>btn.addEventListener('click',()=>{
+    aggiungiRigaEditorMovimento(btn.dataset.addEditRow);
+    const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.addEditRow)}"]`);
+    if(ed)setTimeout(()=>adattaAltezzaRegistroInModifica(ed),0);
+  }));
+  box.querySelectorAll('.remove-edit-row').forEach(btn=>btn.addEventListener('click',()=>{const ed=btn.closest('.log-edit-editor');btn.closest('.log-edit-row')?.remove();if(ed)setTimeout(()=>adattaAltezzaRegistroInModifica(ed),0)}));
+  box.querySelectorAll('.log-edit-editor input,.log-edit-editor textarea').forEach(el=>el.addEventListener('input',()=>{const ed=el.closest('.log-edit-editor');if(ed&&!ed.classList.contains('hidden'))adattaAltezzaRegistroInModifica(ed)}));
 }
 document.getElementById('filtroArchivio').addEventListener('input',renderArchivio);
 document.getElementById('filtroTipo').addEventListener('change',renderArchivio);
