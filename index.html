@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
 <!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
 <!-- v25 — audit finale segnalazioni: blocco transazionale accrediti su Staffer inattivo + versione UI coerente, 04/09/2026 -->
 <!-- v24 — Staffer attivo/non attivo: cessazione incarico senza toccare saldo, usi o storico; Elfi live, 04/09/2026 -->
@@ -9,7 +10,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v26</title>
+<title>Gestore Staff Token — v27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -698,6 +699,16 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 
   /* ===== PG DELLO STAFF / collegamento Elfi ===== */
   .pg-staff-admin{margin-top:0;margin-bottom:16px;}
+  .staffer-admin-title{display:flex;align-items:center;gap:9px;margin:4px 0 10px;color:var(--accent-dark);font-family:'magic','Cinzel',serif;font-size:16px;font-weight:700;}
+  .staffer-admin-title i{color:var(--accent);}
+  .staffer-admin-list{display:grid;gap:9px;margin:10px 0 4px;}
+  .staffer-admin-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:12px;background:#fff;}
+  .staffer-admin-card.is-inactive{border-left-color:var(--accent);background:#fff8fb;}
+  .staffer-admin-card .staffer-admin-name{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);font-size:14px;}
+  .staffer-admin-card .staffer-admin-meta{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .staffer-admin-card .staffer-admin-action{margin:0;white-space:nowrap;}
+  .staffer-admin-card .staffer-admin-action.reactivate{background:var(--green);border:1px solid #76b900;color:#203000;}
+  .staffer-admin-separator{height:1px;background:var(--line);margin:16px 0;}
   .staffer-create-box{margin:12px 0 16px;padding:13px 14px;border:1px solid rgba(158,234,0,.55);border-radius:12px;background:rgba(158,234,0,.07);}
   .staffer-create-box .pg-add-row{margin-top:8px;}
   .pg-staff-group.is-inactive{opacity:.82;background:#faf7f8;}
@@ -921,12 +932,15 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             </div>
           </div>
 
-          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Collegamento live con gli Elfi.</b> Aggiungere o rimuovere un PG si riflette nella sua Camera Blindata. Puoi anche segnare uno Staffer come <b>«Non è più Staffer»</b>: saldo, usi e movimenti storici restano invariati, ma da quel momento nessun suo PG vedrà più il tasto per usare nuovi ST.</div></div>
+          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Collegamento live con gli Elfi.</b> Qui gestisci prima di tutto chi fa parte dello Staff. <b>Rimuovere uno Staffer non cancella nulla</b>: saldo, storico, ST già usati e PG associati restano memorizzati. Se lo rimetti nello Staff, i suoi PG tornano subito abilitati.</div></div>
+
+          <div class="staffer-admin-title"><i class="fa-solid fa-user-shield"></i> Staffer attuali</div>
+          <div id="stafferStatusLista" class="staffer-admin-list"><div class="loading">Caricamento Staffer…</div></div>
 
           <div class="staffer-create-box">
             <div>
-              <label for="nuovoStafferNome">Aggiungi un nuovo Staffer</label>
-              <div class="hint">Crea il suo saldo a 0 ST. Se esiste già ma non è più Staffer, usa invece <b>Riattiva Staffer</b> nel riquadro sotto.</div>
+              <label for="nuovoStafferNome">Aggiungi Staffer</label>
+              <div class="hint">Aggiunge una nuova persona allo Staff con saldo iniziale di 0 ST.</div>
             </div>
             <div class="pg-add-row">
               <input type="text" id="nuovoStafferNome" placeholder="Nome dello Staffer" autocomplete="off">
@@ -934,6 +948,10 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             </div>
             <div id="stafferAdminMsg" aria-live="polite"></div>
           </div>
+
+          <div class="staffer-admin-separator"></div>
+          <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG che possono usare gli Staff Token</div>
+          <div class="hint" style="margin-bottom:10px">Associa qui i PG dello Staffer. Solo questi PG vedranno il saldo ST e il tasto di utilizzo nella propria Camera Blindata.</div>
 
           <div class="pg-staff-toolbar">
             <div>
@@ -1963,7 +1981,7 @@ async function registraAccredito(){
       /* Controllo anche DENTRO la transazione: se un altro Staffer disattiva
          questa persona mentre la schermata è già aperta, un vecchio stato UI
          non può comunque registrare un nuovo accredito. */
-      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è segnato come «Non è più Staffer». Riattivalo prima di registrare nuovi accrediti.');
+      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è fuori dallo Staff. Rimettilo nello Staff prima di registrare nuovi accrediti.');
       const calc=applicaOverrideTotale(calcolaMovimento(raw,stato),overrideTotale);
       if(calc.errori.length)throw new Error(calc.errori.join(' '));
       const prima=numeroIntero(stato.st_totali);
@@ -2773,11 +2791,11 @@ function aggiornaStatoStafferUI(){
     btn.classList.toggle('staffer-inactive',inactive);
     if(btn.closest('#pickerAccredito')){
       btn.disabled=inactive;
-      btn.title=inactive?'Non è più Staffer: non può ricevere nuovi accrediti.':'';
+      btn.title=inactive?'Fuori dallo Staff: non può ricevere nuovi accrediti.':'';
     }else{
       btn.disabled=false;
-      if(inactive)btn.title='Non è più Staffer: saldo e storico restano disponibili.';
-      else if(btn.title&&/Non è più Staffer/.test(btn.title))btn.title='';
+      if(inactive)btn.title='Fuori dallo Staff: saldo e storico restano disponibili.';
+      else if(btn.title&&/Fuori dallo Staff/.test(btn.title))btn.title='';
     }
   });
 }
@@ -2794,16 +2812,31 @@ function renderPgStaff(){
     const chips=lista.length?lista.map(pg=>`<span class="pg-chip"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b><button type="button" class="btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Rimuovi ${escapeHtml(pg.nome)}"><i class="fa-solid fa-xmark"></i></button></span>`).join(''):'<span class="pg-empty">Nessun PG associato.</span>';
     return `<div class="pg-staff-group${attivo?'':' is-inactive'}">
       <div class="pg-staff-group-head">
-        <div><b>${escapeHtml(st.breve)}</b><div class="staffer-state-line"><span class="staffer-state-badge${attivo?'':' inactive'}">${attivo?'Staffer attivo':'Non più Staffer'}</span><span class="pg-staff-count">${lista.length} PG associati</span></div></div>
-        <button type="button" class="${attivo?'danger':'secondary'} staffer-status-btn" data-staffer-status="${escapeHtml(id)}" data-active="${attivo?'1':'0'}">${attivo?'<i class="fa-solid fa-user-slash"></i> Non è più Staffer':'<i class="fa-solid fa-user-check"></i> Riattiva Staffer'}</button>
+        <div><b>${escapeHtml(st.breve)}</b><div class="staffer-state-line"><span class="staffer-state-badge${attivo?'':' inactive'}">${attivo?'Staffer attivo':'Fuori dallo Staff'}</span><span class="pg-staff-count">${lista.length} PG associati</span></div></div>
       </div>
       <div class="pg-chip-list">${chips}</div>
-      ${attivo?'':`<div class="hint" style="margin-top:8px">Gli ST già consumati restano consumati. I PG associati restano memorizzati, ma negli Elfi non compare più alcun tasto per nuovi utilizzi.</div>`}
+      ${attivo?'':`<div class="hint" style="margin-top:8px">I PG restano associati ma non possono usare nuovi ST finché lo Staffer non viene rimesso nello Staff.</div>`}
     </div>`;
   }).join('');
   box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
-  box.querySelectorAll('[data-staffer-status]').forEach(btn=>btn.addEventListener('click',()=>gestisciStatoStaffer(btn)));
+  renderStafferStatus();
   aggiornaStatoStafferUI();
+}
+
+function renderStafferStatus(){
+  const box=document.getElementById('stafferStatusLista');
+  if(!box)return;
+  if(!STAFFER_PG_CONFIG.length){box.innerHTML='<div class="empty">Nessuno Staffer configurato.</div>';return;}
+  box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
+    const id=normalizzaStaffId(st.nome);
+    const attivo=STAFF_STATUS_CACHE[id]!==false;
+    const pgCount=pgStaffCache.filter(pg=>pg.staffId===id).length;
+    return `<div class="staffer-admin-card${attivo?'':' is-inactive'}">
+      <div><div class="staffer-admin-name">${escapeHtml(st.breve||st.nome)}</div><div class="staffer-admin-meta">${attivo?'Nello Staff':'Fuori dallo Staff'} · ${pgCount} PG associati</div></div>
+      <button type="button" class="${attivo?'danger':'secondary reactivate'} staffer-admin-action" data-staffer-status="${escapeHtml(id)}" data-active="${attivo?'1':'0'}">${attivo?'<i class="fa-solid fa-user-minus"></i> Rimuovi dallo Staff':'<i class="fa-solid fa-user-plus"></i> Rimetti nello Staff'}</button>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('[data-staffer-status]').forEach(btn=>btn.addEventListener('click',()=>gestisciStatoStaffer(btn)));
 }
 
 async function caricaPgStaff(){
@@ -2839,7 +2872,7 @@ async function aggiungiStaffer(){
     const snap=await ref.get();
     if(snap.exists){
       const data=snap.data()||{};
-      if(data.stafferAttivo===false)throw new Error('Questo Staffer esiste già ma è inattivo: usa «Riattiva Staffer» nel suo riquadro.');
+      if(data.stafferAttivo===false)throw new Error('Questo Staffer esiste già ma è fuori dallo Staff: usa «Rimetti nello Staff» nel suo riquadro.');
       throw new Error('Questo Staffer esiste già.');
     }
     await ref.set({
@@ -2868,7 +2901,7 @@ async function gestisciStatoStaffer(btn){
   if(!staffId)return;
   if(btn.dataset.confirmState!=='1'){
     btn.dataset.confirmState='1';
-    btn.innerHTML=currentlyActive?'<i class="fa-solid fa-triangle-exclamation"></i> Conferma: non è più Staffer':'<i class="fa-solid fa-rotate"></i> Conferma riattivazione';
+    btn.innerHTML=currentlyActive?'<i class="fa-solid fa-triangle-exclamation"></i> Conferma rimozione':'<i class="fa-solid fa-rotate"></i> Conferma reinserimento';
     setTimeout(()=>{if(btn&&document.body.contains(btn)&&btn.dataset.confirmState==='1'){delete btn.dataset.confirmState;renderPgStaff()}},4500);
     return;
   }
@@ -2880,8 +2913,8 @@ async function gestisciStatoStaffer(btn){
       stafferStatoAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
     if(msg)msg.innerHTML=currentlyActive
-      ? '<div class="msg-ok">Staffer disattivato. Saldo, ST consumati, associazioni e storico restano invariati; i tasti ST spariscono live dagli Elfi.</div>'
-      : '<div class="msg-ok">Staffer riattivato. I PG già associati tornano automaticamente abilitati negli Elfi.</div>';
+      ? '<div class="msg-ok">Staffer rimosso dallo Staff. Saldo, ST consumati, associazioni e storico restano invariati; i tasti ST spariscono live dagli Elfi.</div>'
+      : '<div class="msg-ok">Staffer rimesso nello Staff. I PG già associati tornano automaticamente abilitati negli Elfi.</div>';
     await caricaPgStaff();
     await caricaPubblico(true);
     if(staffIdCorrente===staffId)await caricaStaffer();
@@ -2929,7 +2962,7 @@ async function aggiungiPgStaff(){
   let nome;
   try{nome=await risolviNomePgStaffRegistrato(digitato,pgStaffKind);}catch(e){if(msg)msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   const targetId=normalizzaStaffId(pgStaffOwner);
-  if(STAFF_STATUS_CACHE[targetId]===false){if(msg)msg.innerHTML='<div class="msg-err">Questo Staffer è segnato come «Non è più Staffer». Riattivalo prima di associare nuovi PG.</div>';return}
+  if(STAFF_STATUS_CACHE[targetId]===false){if(msg)msg.innerHTML='<div class="msg-err">Questo Staffer è fuori dallo Staff. Rimettilo nello Staff prima di associare nuovi PG.</div>';return}
   const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
   try{
     await db.runTransaction(async tx=>{
@@ -2946,7 +2979,7 @@ async function aggiungiPgStaff(){
       const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===targetId);
       if(idx<0)throw new Error('Staffer non trovato. Ricarica la pagina e riprova.');
       const snap=snaps[idx]; const stato=snap.exists?snap.data():{};
-      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è segnato come «Non è più Staffer». Riattivalo prima di associare nuovi PG.');
+      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è fuori dallo Staff. Rimettilo nello Staff prima di associare nuovi PG.');
       const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
       arr.push({nome,tipo:pgStaffKind});
       tx.set(refs[idx],{nomeVisualizzato:stato.nomeVisualizzato||pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
@@ -3014,23 +3047,33 @@ attivaTab('registra');
 <script>
 (function(){
   var ffHeightTimer=null,ffLastHeight=0;
+  function misuraContenutoStaffToken(){
+    var wrap=document.querySelector('.wrap');
+    if(!wrap)return 0;
+    var r=wrap.getBoundingClientRect();
+    var cs=window.getComputedStyle(document.body);
+    var pb=parseFloat(cs.paddingBottom)||0;
+    // Misura il fondo del contenuto vero, NON scrollHeight/html height: così
+    // l'altezza dell'iframe impostata dal Forum non rientra nel calcolo e non crea loop.
+    return Math.ceil(r.bottom + Math.min(pb,32));
+  }
   function sendStaffTokenHeight(){
     if(ffHeightTimer)clearTimeout(ffHeightTimer);
     ffHeightTimer=setTimeout(function(){
       ffHeightTimer=null;
-      var de=document.documentElement,b=document.body;
-      var h=Math.max(de?de.scrollHeight:0,b?b.scrollHeight:0,de?de.offsetHeight:0,b?b.offsetHeight:0);
-      if(!h||Math.abs(h-ffLastHeight)<2)return;
+      var h=misuraContenutoStaffToken();
+      if(!h||h<400||h>20000||Math.abs(h-ffLastHeight)<3)return;
       ffLastHeight=h;
       try{parent.postMessage({tipo:'altezzaStaffToken',altezza:h},'*');}catch(e){}
-    },50);
+    },70);
   }
   window.addEventListener('load',sendStaffTokenHeight);
   window.addEventListener('resize',sendStaffTokenHeight);
-  try{new ResizeObserver(sendStaffTokenHeight).observe(document.documentElement);}catch(e){}
+  var wrap=document.querySelector('.wrap');
+  try{if(wrap)new ResizeObserver(sendStaffTokenHeight).observe(wrap);}catch(e){}
   try{new MutationObserver(sendStaffTokenHeight).observe(document.body,{subtree:true,childList:true,attributes:true,characterData:true});}catch(e){}
-  setTimeout(sendStaffTokenHeight,150);
-  setTimeout(sendStaffTokenHeight,800);
+  setTimeout(sendStaffTokenHeight,160);
+  setTimeout(sendStaffTokenHeight,900);
 })();
 </script>
 </body>
