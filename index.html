@@ -2702,13 +2702,13 @@ async function caricaPubblico(forza=false){
       if(isPrimaryStaffId(sid))archivioMovimenti.push(m);
     });
     archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
-    const ultimaModificaPerStaff={};
+    const ultimoMovimentoCronologicoPerStaff={};
     archivioMovimenti.forEach(m=>{
       const k=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
-      const t=timestampUltimaModificaMovimento(m);
-      if(k&&t>(ultimaModificaPerStaff[k]||0))ultimaModificaPerStaff[k]=t;
+      const t=timestampMs(m.data);
+      if(k&&t>(ultimoMovimentoCronologicoPerStaff[k]||0))ultimoMovimentoCronologicoPerStaff[k]=t;
     });
-    staff.sort((a,b)=>(ultimaModificaPerStaff[b.id]||timestampMs(b.ultimoAggiornamento))-(ultimaModificaPerStaff[a.id]||timestampMs(a.ultimoAggiornamento))||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    staff.sort((a,b)=>(ultimoMovimentoCronologicoPerStaff[b.id]||0)-(ultimoMovimentoCronologicoPerStaff[a.id]||0)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
     staffPubblici=staff;
     saldiPlayer={};
     staff.forEach(s=>{saldiPlayer[normalizzaStaffId(s.id)]=numeroIntero(s.st_totali);});
@@ -3106,8 +3106,16 @@ function renderArchivio(){
   });
 
   const lista=[...gruppi.values()].map(g=>{
-    g.movimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data)||timestampUltimaModificaMovimento(b)-timestampUltimaModificaMovimento(a));
-    g.ultimo=Math.max(0,...g.movimenti.map(timestampUltimaModificaMovimento));
+    // Ordine sempre cronologico: la data/ora del movimento decide la posizione.
+    // Se due movimenti hanno la stessa data, usa il momento di registrazione solo come spareggio stabile.
+    g.movimenti.sort((a,b)=>{
+      const d=timestampMs(b.data)-timestampMs(a.data);
+      if(d)return d;
+      return timestampMs(b.registratoIl||b.data)-timestampMs(a.registratoIl||a.data);
+    });
+    // Anche l'ordine dei Player segue il loro movimento cronologicamente più recente,
+    // non il momento in cui un vecchio movimento è stato modificato nel Gestore.
+    g.ultimo=Math.max(0,...g.movimenti.map(m=>timestampMs(m.data)));
     return g;
   }).sort((a,b)=>b.ultimo-a.ultimo||LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===a.key)-LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===b.key));
 
