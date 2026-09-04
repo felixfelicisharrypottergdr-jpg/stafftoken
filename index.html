@@ -774,7 +774,15 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .staffer-status-btn{margin-left:auto}
   .field-with-action{display:flex;gap:7px;align-items:center;}
   .field-with-action input{flex:1;}
-  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-pool-balance{text-align:left}}
+  .staffer-manage-details{margin-top:14px;border:1px solid rgba(180,0,77,.22);border-radius:16px;background:linear-gradient(180deg,#fff,#fff8fb);box-shadow:0 4px 14px rgba(48,36,42,.04);overflow:hidden;}
+  .staffer-manage-details>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:10px;font-family:'magic','Cinzel',serif;font-weight:700;color:var(--accent-dark);user-select:none;}
+  .staffer-manage-details>summary::-webkit-details-marker{display:none;}
+  .staffer-manage-details>summary:before{content:'\f105';font-family:'Font Awesome 6 Free';font-weight:900;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(180,0,77,.08);color:var(--accent);transition:transform .18s ease;}
+  .staffer-manage-details[open]>summary:before{transform:rotate(90deg);}
+  .staffer-manage-details>summary .summary-note{margin-left:auto;font-family:'EB Garamond',serif;font-weight:400;font-size:13px;color:var(--muted);}
+  .staffer-manage-panel{padding:0 16px 16px;border-top:1px solid rgba(180,0,77,.12);}
+  .staffer-manage-panel .notice{margin-top:14px;}
+  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-pool-balance{text-align:left}.staffer-manage-details>summary{align-items:flex-start}.staffer-manage-details>summary .summary-note{margin-left:0}}
 
 
 /* ===== v29: quattro Player fisse + pulizia voci errate ===== */
@@ -1075,57 +1083,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 
     <section id="view-gestione" class="view">
       <div id="contenutoGestione" class="protected hidden">
-        <div class="card pg-staff-admin">
-          <div class="card-title">
-            <div>
-              <h2><i class="fa-solid fa-users-gear"></i> Staff Token e PG associati</h2>
-              <p>Gli Staff Token appartengono ai quattro Player Staffer. I loro PG servono soltanto al collegamento live con gli Elfi.</p>
-            </div>
-          </div>
-
-          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Quattro Player, quattro saldi.</b> I pulsanti principali sono sempre e soltanto <b>Lulu Sparks, Gideon G. Greengrass, Noah Fisher e Odette Montclaire</b>. Ogni pulsante rappresenta il saldo del relativo <b>Player</b>; sotto puoi collegare tutti i suoi PG, che spenderanno dallo stesso saldo ST.</div></div>
-
-          <div id="stafferExtraBox" class="hidden" style="margin:12px 0 14px">
-            <div id="stafferErratiLista" class="staffer-admin-list"></div>
-            <div id="stafferErratiMsg" aria-live="polite"></div>
-          </div>
-
-          <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG collegati agli Staff Token</div>
-          <div class="clarity-banner"><i class="fa-solid fa-wallet"></i><div><b>I PG non sono Staffer separati.</b> Sono soltanto associati a uno dei quattro Player. Per esempio, tutti i PG collegati a <b>Lulu Sparks</b> usano il saldo di quel Player. Aggiungi qui anche il PG principale che dà il nome al pulsante, scegliendo il suo Elfo corretto. Questi nomi servono <b>solo</b> al collegamento con le Camere Blindate.</div></div>
-
-          <div class="pg-step-label"><span class="pg-step-number">1</span> Scegli il Player Staffer</div>
-          <div class="staffer-picker" id="pickerPgStaff">
-            <button type="button" class="staffer-choice" data-value="Lulu Sparks">Lulu Sparks</button>
-            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon G. Greengrass</button>
-            <button type="button" class="staffer-choice" data-value="Noah Fisher">Noah Fisher</button>
-            <button type="button" class="staffer-choice" data-value="Odette Montclaire">Odette Montclaire</button>
-          </div>
-          <div id="pgStaffPoolInfo" class="pg-pool-info empty">Seleziona uno dei quattro Player: il PG verrà collegato al suo saldo ST condiviso.</div>
-
-          <div class="pg-step-label"><span class="pg-step-number">2</span> Indica quale Elfo usa il PG</div>
-          <div class="movement-sign-picker" id="tipoPgStaffPicker">
-            <button type="button" class="movement-sign add" data-kind="studenti" aria-pressed="false"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
-            <button type="button" class="movement-sign" data-kind="adulti" aria-pressed="false"><i class="fa-solid fa-briefcase"></i> Adulto</button>
-          </div>
-          <div class="pg-kind-required"><i class="fa-solid fa-circle-exclamation"></i> Scelta obbligatoria: non viene preselezionato nessun tipo, così non puoi inserire per errore un Adulto tra gli Studenti.</div>
-
-          <div class="pg-step-label"><span class="pg-step-number">3</span> Inserisci uno dei PG di quel Player</div>
-          <div class="pg-add-row">
-            <div>
-              <label>Nome del PG</label>
-              <input type="text" id="pgStaffNome" placeholder="Nome e Cognome esatti del PG" autocomplete="off">
-            </div>
-            <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-link"></i> Collega PG</button>
-          </div>
-          <div id="pgStaffMsg" aria-live="polite"></div>
-          <div id="pgStaffLista" class="pg-staff-list"><div class="loading">Caricamento PG dello Staff…</div></div>
-        </div>
-
-
         <div class="card admin-section">
             <div class="card-title">
               <div>
-                <h2><i class="fa-solid fa-arrow-right-arrow-left"></i> Aumenta o diminuisci saldo</h2>
+                <h2><i class="fa-solid fa-arrow-right-arrow-left"></i> Gestione saldo</h2>
                 <p>Parti sempre dal totale reale degli ST del Player e registra soltanto la variazione, con il relativo riferimento.</p>
               </div>
             </div>
@@ -1176,7 +1137,49 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <div id="correggiMsg" aria-live="polite"></div>
         </div>
 
+        <details class="staffer-manage-details">
+          <summary><span><i class="fa-solid fa-users-gear"></i> Modifica staffer</span><span class="summary-note">PG collegati agli Elfi</span></summary>
+          <div class="staffer-manage-panel">
+            <div class="notice"><i class="fa-solid fa-circle-info"></i><b>Quattro Player, un saldo ciascuno.</b> I PG che colleghi qui non ricevono un saldo proprio: servono solo agli Elfi per mostrare il tasto ST e usare il saldo del Player scelto.</div>
+
+            <div id="stafferExtraBox" class="hidden" style="margin:12px 0 14px">
+              <div id="stafferErratiLista" class="staffer-admin-list"></div>
+              <div id="stafferErratiMsg" aria-live="polite"></div>
+            </div>
+
+            <div class="staffer-admin-title"><i class="fa-solid fa-link"></i> PG collegati agli Staff Token</div>
+
+            <div class="pg-step-label"><span class="pg-step-number">1</span> Scegli il Player Staffer</div>
+            <div class="staffer-picker" id="pickerPgStaff">
+              <button type="button" class="staffer-choice" data-value="Lulu Sparks">Lulu Sparks</button>
+              <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon G. Greengrass</button>
+              <button type="button" class="staffer-choice" data-value="Noah Fisher">Noah Fisher</button>
+              <button type="button" class="staffer-choice" data-value="Odette Montclaire">Odette Montclaire</button>
+            </div>
+            <div id="pgStaffPoolInfo" class="pg-pool-info empty">Seleziona uno dei quattro Player: il PG verrà collegato al suo saldo ST condiviso.</div>
+
+            <div class="pg-step-label"><span class="pg-step-number">2</span> Indica quale Elfo usa il PG</div>
+            <div class="movement-sign-picker" id="tipoPgStaffPicker">
+              <button type="button" class="movement-sign add" data-kind="studenti" aria-pressed="false"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
+              <button type="button" class="movement-sign" data-kind="adulti" aria-pressed="false"><i class="fa-solid fa-briefcase"></i> Adulto</button>
+            </div>
+            <div class="pg-kind-required"><i class="fa-solid fa-circle-exclamation"></i> Scelta obbligatoria: non viene preselezionato nessun tipo, così non puoi inserire per errore un Adulto tra gli Studenti.</div>
+
+            <div class="pg-step-label"><span class="pg-step-number">3</span> Inserisci uno dei PG di quel Player</div>
+            <div class="pg-add-row">
+              <div>
+                <label>Nome del PG</label>
+                <input type="text" id="pgStaffNome" placeholder="Nome e Cognome esatti del PG" autocomplete="off">
+              </div>
+              <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-link"></i> Collega PG</button>
+            </div>
+            <div id="pgStaffMsg" aria-live="polite"></div>
+            <div id="pgStaffLista" class="pg-staff-list"><div class="loading">Caricamento PG dello Staff…</div></div>
+          </div>
+        </details>
+
       </div>
+    </section>
     </section>
   </main>
 </div>
