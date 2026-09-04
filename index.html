@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- v33 — gestione PG a tendina + rimozione Importa stato storico + terminologia saldo ST, 04/09/2026 -->
+<!-- v34 — quattro Player Staffer fissi e sempre attivi: rimosso stato attivo/inattivo, 04/09/2026 -->
+<!-- v33 — gestione PG a tendina + terminologia saldo ST, 04/09/2026 -->
 <!-- v32 — PG Staff: consentito solo il passaggio Studente → Adulto, 04/09/2026 -->
 <!-- v31 — selettore Studente/Adulto: stato attivo visibile e click robusto, 04/09/2026 -->
 <!-- v30 — rimozione neutra delle voci extra: nessuna etichetta "errore", 04/09/2026 -->
@@ -7,8 +8,6 @@
 <!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
 <!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
 <!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
-<!-- v25 — audit finale segnalazioni: blocco transazionale accrediti su Staffer inattivo + versione UI coerente, 04/09/2026 -->
-<!-- v24 — Staffer attivo/non attivo: cessazione incarico senza toccare saldo, usi o storico; Elfi live, 04/09/2026 -->
 <!-- v23 — ST storici: disassociare un PG non rimborsa gli ST già spesi e non è bloccato dagli usi precedenti, 04/09/2026 -->
 <!-- v22 — sicurezza Staff Token: sessione Staff protetta, nessuna Password nei documenti pubblici, bonifica legacy + PG associati con ID esatto, 04/09/2026 -->
 <!-- v21 — integrazione Elfi: spesa/rimborso live da Camera Blindata + protezione PG con usi attivi, 04/09/2026 -->
@@ -16,7 +15,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v30</title>
+<title>Gestore Staff Token — v35</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -712,7 +711,6 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .staffer-admin-title i{color:var(--accent);}
   .staffer-admin-list{display:grid;gap:9px;margin:10px 0 4px;}
   .staffer-admin-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:12px;background:#fff;}
-  .staffer-admin-card.is-inactive{border-left-color:var(--accent);background:#fff8fb;}
   .staffer-admin-card .staffer-admin-name{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);font-size:14px;}
   .staffer-admin-card .staffer-admin-meta{font-size:11.5px;color:var(--muted);margin-top:2px;}
   .staffer-admin-card .staffer-admin-action{margin:0;white-space:nowrap;}
@@ -720,7 +718,6 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .staffer-admin-separator{height:1px;background:var(--line);margin:16px 0;}
   .staffer-create-box{margin:12px 0 16px;padding:13px 14px;border:1px solid rgba(158,234,0,.55);border-radius:12px;background:rgba(158,234,0,.07);}
   .staffer-create-box .pg-add-row{margin-top:8px;}
-  .pg-staff-group.is-inactive{opacity:.82;background:#faf7f8;}
   .pg-staff-toolbar{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;align-items:end;}
   .pg-add-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:14px;}
   .pg-staff-list{margin-top:14px;display:grid;gap:10px;}
@@ -751,13 +748,8 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .pg-step-label{display:flex;align-items:center;gap:7px;margin:14px 0 6px;font-family:'Cinzel',serif;font-size:12px;font-weight:800;color:var(--accent-dark);}
   .pg-step-number{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--accent);color:#fff;font-family:Arial,sans-serif;font-size:11px;}
   .pg-kind-required{margin-top:5px;color:var(--accent-dark);font-size:11.5px;font-weight:700;}
-  .pg-staff-group.is-inactive{opacity:.78;background:#faf7f8;border-style:dashed}
   .staffer-state-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:3px}
-  .staffer-state-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border:1px solid #cfe99f;background:#f7ffe6;color:#557500}
-  .staffer-state-badge.inactive{border-color:#e5c7cf;background:#fff4f7;color:#9a3151}
   .staffer-status-btn{margin-left:auto}
-  .staffer-choice.staffer-inactive{opacity:.52;filter:grayscale(.35)}
-  #pickerAccredito .staffer-choice.staffer-inactive{cursor:not-allowed}
   .field-with-action{display:flex;gap:7px;align-items:center;}
   .field-with-action input{flex:1;}
   @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-pool-balance{text-align:left}}
@@ -891,7 +883,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
           <details class="import-details">
             <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa o aggiungi manualmente</span><span class="summary-note">facoltativo</span></summary>
             <div class="import-panel">
-              <div class="import-panel-title"><i class="fa-solid fa-wand-magic-sparkles"></i><div><b>Importa un accredito</b><span>Incolla un accredito già compilato e il tool proverà a riconoscere Staffer, mansioni, ST e riferimenti.</span></div></div>
+              <div class="import-panel-title"><i class="fa-solid fa-wand-magic-sparkles"></i><div><b>Importa un accredito</b><span>Incolla una singola richiesta di accredito già compilata: lo storico viene ricostruito movimento per movimento, mantenendo la sua data reale.</span></div></div>
               <div class="import-date-row">
                 <div>
                   <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
@@ -970,15 +962,11 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 
           <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Quattro Player, quattro saldi.</b> I pulsanti principali sono sempre e soltanto <b>Lulu Sparks, Gideon G. Greengrass, Noah Fisher e Odette Montclaire</b>. Ogni pulsante rappresenta il saldo del relativo <b>Player</b>; sotto puoi collegare tutti i suoi PG, che spenderanno dallo stesso saldo ST.</div></div>
 
-          <div class="staffer-admin-title"><i class="fa-solid fa-user-shield"></i> I 4 Player Staffer</div>
-          <div id="stafferStatusLista" class="staffer-admin-list"><div class="loading">Caricamento Staffer…</div></div>
-
           <div id="stafferExtraBox" class="hidden" style="margin:12px 0 14px">
             <div id="stafferErratiLista" class="staffer-admin-list"></div>
             <div id="stafferErratiMsg" aria-live="polite"></div>
           </div>
 
-          <div class="staffer-admin-separator"></div>
           <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG collegati agli Staff Token</div>
           <div class="clarity-banner"><i class="fa-solid fa-wallet"></i><div><b>I PG non sono Staffer separati.</b> Sono soltanto associati a uno dei quattro Player. Per esempio, tutti i PG collegati a <b>Lulu Sparks</b> usano il saldo di quel Player. Aggiungi qui anche il PG principale che dà il nome al pulsante, scegliendo il suo Elfo corretto. Questi nomi servono <b>solo</b> al collegamento con le Camere Blindate.</div></div>
 
@@ -1108,8 +1096,6 @@ let authPronta=false;
 let passwordCorrente=null;
 let staffIdCorrente=null;
 let staffAttuale=null;
-let STAFF_STATUS_CACHE={};
-function stafferAttivoDaData(data){return !(data&&data.stafferAttivo===false);}
 let archivioMovimenti=[];
 let staffPubblici=[];
 let ultimoBBCode='';
@@ -1571,10 +1557,9 @@ function mostraStaffInfo(){
   const rListe=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='liste_spesa'));
   const rCamere=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='camere_blindate'));
   const rBuro=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='burocrazia'));
-  const nome=escapeHtml(staffAttuale.nomeVisualizzato||document.getElementById('staffNomeInput').value||staffIdCorrente);
-  const attivo=stafferAttivoDaData(staffAttuale);
-  info.innerHTML=`${attivo?'':`<div class="msg-warn"><b>Non è più Staffer.</b> Saldo e storico sono conservati, ma non sono consentiti nuovi accrediti o nuovi usi ST dagli Elfi.</div>`}<div class="staff-strip">
-    <div class="staff-metric"><div class="k">Staffer</div><div class="v">${nome}</div><div class="sub">${attivo?'Staffer attivo':'Non più Staffer'}</div></div>
+  const nome=escapeHtml(primaryStaffName(staffIdCorrente,staffAttuale.nomeVisualizzato||document.getElementById('staffNomeInput').value||staffIdCorrente));
+  info.innerHTML=`<div class="staff-strip">
+    <div class="staff-metric"><div class="k">Player</div><div class="v">${nome}</div><div class="sub">Saldo condiviso da tutti i PG associati</div></div>
     <div class="staff-metric"><div class="k">Saldo</div><div class="v big">${numeroIntero(staffAttuale.st_totali)} ST</div></div>
     <div class="staff-metric"><div class="k">Liste</div><div class="v">${rListe}/3</div><div class="resto-progress"><span style="width:${rListe/3*100}%"></span></div></div>
     <div class="staff-metric"><div class="k">Camere</div><div class="v">${rCamere}/10</div><div class="resto-progress"><span style="width:${rCamere/10*100}%"></span></div></div>
@@ -1642,8 +1627,7 @@ function ricalcola(){
   const btnRegistra=document.getElementById('btnRegistra');
   const registerHelp=document.getElementById('registerHelp');
   const totalSummary=document.getElementById('totalSummary');
-  const stafferAttivo=!!staffIdCorrente&&stafferAttivoDaData(staffAttuale);
-  const pronto=stafferAttivo&&raw.length>0&&calc.errori.length===0;
+  const pronto=!!staffIdCorrente&&raw.length>0&&calc.errori.length===0;
   btnRegistra.disabled=!pronto;
   totalSummary.classList.toggle('is-ready',pronto);
   totalSummary.classList.toggle('is-empty',raw.length===0);
@@ -1654,9 +1638,6 @@ function ricalcola(){
   }else if(!staffIdCorrente){
     btnRegistra.innerHTML='<i class="fa-solid fa-user"></i> Seleziona uno Staffer';
     registerHelp.textContent='Le mansioni sono pronte: seleziona prima chi deve ricevere gli Staff Token.';
-  }else if(!stafferAttivo){
-    btnRegistra.innerHTML='<i class="fa-solid fa-user-slash"></i> Non è più Staffer';
-    registerHelp.textContent='Questo Staffer è stato disattivato: saldo e storico restano consultabili, ma non può ricevere nuovi accrediti né abilitare nuovi utilizzi dagli Elfi.';
   }else if(calc.errori.length>0){
     btnRegistra.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Correggi i dati';
     registerHelp.textContent='Controlla gli errori evidenziati nel riepilogo prima di registrare.';
@@ -1768,8 +1749,6 @@ async function caricaStaffer(){
     const doc=await db.collection('staff_token').doc(id).get();
     if(doc.exists)staffAttuale=doc.data();
     else staffAttuale={st_totali:0,resti:{},nomeVisualizzato:raw};
-    STAFF_STATUS_CACHE[id]=stafferAttivoDaData(staffAttuale);
-    if(typeof aggiornaStatoStafferUI==="function")aggiornaStatoStafferUI();
   }catch(e){
     document.getElementById('staffInfo').innerHTML=`<div class="msg-err">Errore nel caricamento: ${escapeHtml(e.message)}</div>`;
     return;
@@ -1967,10 +1946,6 @@ async function registraAccredito(){
     await db.runTransaction(async tx=>{
       const snap=await tx.get(staffRef);
       const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nomeDigitato};
-      /* Controllo anche DENTRO la transazione: se un altro Staffer disattiva
-         questa persona mentre la schermata è già aperta, un vecchio stato UI
-         non può comunque registrare un nuovo accredito. */
-      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è fuori dallo Staff. Rimettilo nello Staff prima di registrare nuovi accrediti.');
       const calc=applicaOverrideTotale(calcolaMovimento(raw,stato),overrideTotale);
       if(calc.errori.length)throw new Error(calc.errori.join(' '));
       const prima=numeroIntero(stato.st_totali);
@@ -2308,7 +2283,7 @@ async function caricaPubblico(forza=false){
     const staffDocs=new Map();snapStaff.forEach(doc=>staffDocs.set(normalizzaStaffId(doc.id),{id:doc.id,...doc.data()}));
     const staff=LEGACY_STAFFER_PG_CONFIG.map(cfg=>{
       const id=normalizzaStaffId(cfg.nome);
-      const data=staffDocs.get(id)||{id,st_totali:0,resti:{},stafferAttivo:true};
+      const data=staffDocs.get(id)||{id,st_totali:0,resti:{}};
       return {...data,id,nomeVisualizzato:cfg.nome};
     });
     archivioMovimenti=[];snapLog.forEach(doc=>{
@@ -2332,8 +2307,7 @@ async function caricaPubblico(forza=false){
       if(rc)chips.push(`<span class="resto-chip">Camere ${rc}/10</span>`);
       if(rb)chips.push(`<span class="resto-chip">Burocrazia ${rb}/3</span>`);
       const ultima=ultimaDataPerStaff[s.id]||s.ultimoAggiornamento;
-      const attivo=stafferAttivoDaData(s);
-      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(primaryStaffName(s.id,nomeDaDoc(s.id,s)))}${attivo?'':' <span class="staffer-state-badge inactive">Non più Staffer</span>'}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
+      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(primaryStaffName(s.id,nomeDaDoc(s.id,s)))}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
     }).join('');
     saldi.dataset.loaded='1';
     archivio.dataset.loaded='1';
@@ -2770,21 +2744,7 @@ function normalizzaNomePgStaff(nome){
 }
 function nomeKindPgStaff(kind){return kind==='adulti'?'Adulto':'Studente'}
 
-function aggiornaStatoStafferUI(){
-  document.querySelectorAll('.staffer-choice').forEach(btn=>{
-    const id=normalizzaStaffId(btn.dataset.value||'');
-    const inactive=STAFF_STATUS_CACHE[id]===false;
-    btn.classList.toggle('staffer-inactive',inactive);
-    if(btn.closest('#pickerAccredito')){
-      btn.disabled=inactive;
-      btn.title=inactive?'Fuori dallo Staff: non può ricevere nuovi accrediti.':'';
-    }else{
-      btn.disabled=false;
-      if(inactive)btn.title='Fuori dallo Staff: saldo e storico restano disponibili.';
-      else if(btn.title&&/Fuori dallo Staff/.test(btn.title))btn.title='';
-    }
-  });
-}
+function aggiornaStatoStafferUI(){}
 function aggiornaPoolPgStaffInfo(){
   const box=document.getElementById('pgStaffPoolInfo');
   if(!box)return;
@@ -2809,7 +2769,6 @@ function renderPgStaff(){
   pgStaffCache.forEach(x=>{if(perStaff[x.staffId])perStaff[x.staffId].push(x)});
   box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
     const id=normalizzaStaffId(st.nome);
-    const attivo=STAFF_STATUS_CACHE[id]!==false;
     const saldo=Number(STAFF_BALANCE_CACHE[id]||0);
     const lista=(perStaff[id]||[]).sort((a,b)=>{
       const aMain=normalizzaNomePgStaff(a.nome)===normalizzaNomePgStaff(st.nome);
@@ -2830,38 +2789,20 @@ function renderPgStaff(){
         </div>
       </div>`;
     }).join(''):'<span class="pg-empty">Nessun PG collegato a questo saldo ST.</span>';
-    return `<details class="pg-staff-group${attivo?'':' is-inactive'}">
+    return `<details class="pg-staff-group">
       <summary class="pg-staff-group-head">
         <i class="fa-solid fa-chevron-right pg-group-chevron" aria-hidden="true"></i>
-        <div class="pg-group-title"><b>${escapeHtml(st.nome)}</b><div class="staffer-state-line"><span class="staffer-state-badge${attivo?'':' inactive'}">${attivo?'Staffer attivo':'Fuori dallo Staff'}</span><span class="pg-staff-count">${lista.length} PG collegati</span></div></div>
+        <div class="pg-group-title"><b>${escapeHtml(st.nome)}</b><div class="staffer-state-line"><span class="pg-staff-count">${lista.length} PG collegati</span></div></div>
         <div class="pg-pool-balance">${saldo} ST<small>saldo del Player</small></div>
       </summary>
       <div class="pg-staff-group-body">
         <div class="pg-chip-list">${righe}</div>
-        ${attivo?'':`<div class="hint" style="margin-top:8px">I PG restano memorizzati soltanto per il collegamento con gli Elfi, ma non possono usare nuovi ST finché lo Staffer non viene rimesso nello Staff.</div>`}
       </div>
     </details>`;
   }).join('');
   box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
   box.querySelectorAll('.btn-cambia-tipo-pg-staff').forEach(btn=>btn.addEventListener('click',()=>cambiaTipoPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
-  renderStafferStatus();
-  aggiornaStatoStafferUI();
   aggiornaPoolPgStaffInfo();
-}
-function renderStafferStatus(){
-  const box=document.getElementById('stafferStatusLista');
-  if(!box)return;
-  if(!STAFFER_PG_CONFIG.length){box.innerHTML='<div class="empty">Nessuno Staffer configurato.</div>';return;}
-  box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
-    const id=normalizzaStaffId(st.nome);
-    const attivo=STAFF_STATUS_CACHE[id]!==false;
-    const pgCount=pgStaffCache.filter(pg=>pg.staffId===id).length;
-    return `<div class="staffer-admin-card${attivo?'':' is-inactive'}">
-      <div><div class="staffer-admin-name">${escapeHtml(st.nome||st.nome)}</div><div class="staffer-admin-meta">${attivo?'Nello Staff':'Fuori dallo Staff'} · ${pgCount} PG associati</div></div>
-      <button type="button" class="${attivo?'danger':'secondary reactivate'} staffer-admin-action" data-staffer-status="${escapeHtml(id)}" data-active="${attivo?'1':'0'}">${attivo?'<i class="fa-solid fa-user-minus"></i> Rimuovi dallo Staff':'<i class="fa-solid fa-user-plus"></i> Rimetti nello Staff'}</button>
-    </div>`;
-  }).join('');
-  box.querySelectorAll('[data-staffer-status]').forEach(btn=>btn.addEventListener('click',()=>gestisciStatoStaffer(btn)));
 }
 
 function renderStafferErrati(){
@@ -2889,7 +2830,6 @@ async function rimuoviVoceStafferErrata(staffId,btn){
   try{
     await db.collection('staff_token').doc(staffId).set({
       stafferNascosto:true,
-      stafferAttivo:false,
       stafferStatoAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
     if(msg)msg.innerHTML='<div class="msg-ok">Voce rimossa dal Gestore.</div>';
@@ -2908,11 +2848,9 @@ async function caricaPgStaff(){
     const snap=await caricaListaStaffer();
     const docsById=new Map(snap.docs.map(d=>[d.id,d]));
     pgStaffCache=[];
-    STAFF_STATUS_CACHE={};
     STAFF_BALANCE_CACHE={};
     STAFFER_PG_CONFIG.forEach(st=>{
       const sid=normalizzaStaffId(st.nome),doc=docsById.get(sid),data=doc?doc.data():{};
-      STAFF_STATUS_CACHE[sid]=stafferAttivoDaData(data);
       STAFF_BALANCE_CACHE[sid]=Number(data.st_totali||0);
       const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
       arr.forEach(pg=>{
@@ -2922,37 +2860,6 @@ async function caricaPgStaff(){
     });
     renderPgStaff();
   }catch(e){if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare gli Staffer e i PG associati: ${escapeHtml(e.message)}</div>`}
-}
-
-async function gestisciStatoStaffer(btn){
-  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
-  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
-  const staffId=String(btn&&btn.dataset.stafferStatus||'');
-  const currentlyActive=String(btn&&btn.dataset.active||'1')==='1';
-  if(!staffId)return;
-  if(btn.dataset.confirmState!=='1'){
-    btn.dataset.confirmState='1';
-    btn.innerHTML=currentlyActive?'<i class="fa-solid fa-triangle-exclamation"></i> Conferma rimozione':'<i class="fa-solid fa-rotate"></i> Conferma reinserimento';
-    setTimeout(()=>{if(btn&&document.body.contains(btn)&&btn.dataset.confirmState==='1'){delete btn.dataset.confirmState;renderPgStaff()}},4500);
-    return;
-  }
-  btn.disabled=true;
-  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Salvo…';
-  try{
-    await db.collection('staff_token').doc(staffId).set({
-      stafferAttivo:!currentlyActive,
-      stafferStatoAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()
-    },{merge:true});
-    if(msg)msg.innerHTML=currentlyActive
-      ? '<div class="msg-ok">Staffer rimosso dallo Staff. Saldo, ST consumati, associazioni e storico restano invariati; i tasti ST spariscono live dagli Elfi.</div>'
-      : '<div class="msg-ok">Staffer rimesso nello Staff. I PG già associati tornano automaticamente abilitati negli Elfi.</div>';
-    await caricaPgStaff();
-    await caricaPubblico(true);
-    if(staffIdCorrente===staffId)await caricaStaffer();
-  }catch(e){
-    if(msg)msg.innerHTML=`<div class="msg-err">Stato Staffer non aggiornato: ${escapeHtml(e.message)}</div>`;
-    btn.disabled=false;
-  }
 }
 
 function selezionaOwnerPgStaff(nome){
@@ -3009,7 +2916,6 @@ async function aggiungiPgStaff(){
   let nome;
   try{nome=await risolviNomePgStaffRegistrato(digitato,pgStaffKind);}catch(e){if(msg)msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   const targetId=normalizzaStaffId(pgStaffOwner);
-  if(STAFF_STATUS_CACHE[targetId]===false){if(msg)msg.innerHTML='<div class="msg-err">Questo Staffer è fuori dallo Staff. Rimettilo nello Staff prima di associare nuovi PG.</div>';return}
   const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
   try{
     await db.runTransaction(async tx=>{
@@ -3026,7 +2932,6 @@ async function aggiungiPgStaff(){
       const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===targetId);
       if(idx<0)throw new Error('Staffer non trovato. Ricarica la pagina e riprova.');
       const snap=snaps[idx]; const stato=snap.exists?snap.data():{};
-      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è fuori dallo Staff. Rimettilo nello Staff prima di associare nuovi PG.');
       const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
       arr.push({nome,tipo:pgStaffKind});
       tx.set(refs[idx],{nomeVisualizzato:pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
