@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- v49 — Importa/Manuale separati + registro compatto con scroll e righe alternate, 04/09/2026 -->
+<!-- v48 — Registro unico + saldo sui pulsanti Player, 04/09/2026 -->
 <!-- v47 — importazioni storiche più permissive: FT/ST, valori liberi e Appelli senza formule ricostruibili, 04/09/2026 -->
 <!-- v45 — accesso Staff allineato alle sessioni Firestore + altezza iframe stabile anche dopo focus/scroll, 04/09/2026 -->
 <!-- v41 — saldi del Registro ricalcolati per data storica + rimozione che storna il movimento, 04/09/2026 -->
@@ -25,7 +27,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v45</title>
+<title>Gestore Staff Token — v49</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -514,9 +516,32 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .ledger-latest{display:block;font-family:'EB Garamond',serif;font-weight:400;color:var(--muted);font-size:11px;margin-top:2px}
 .ledger-balance{font-family:'Cinzel',serif;font-weight:700;color:var(--green-dark);font-size:17px;white-space:nowrap}
 .ledger-balance.negative{color:var(--red)}
-.staff-ledger-body{padding:0 14px 12px;border-top:1px solid var(--line);background:#fffdfd}
-.log-item{border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;padding:12px 0}
-.log-item:last-child{border-bottom:0;padding-bottom:2px}
+.staff-ledger-body{
+  padding:10px;
+  border-top:1px solid var(--line);
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:560px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.staff-ledger-body::-webkit-scrollbar{width:10px}
+.staff-ledger-body::-webkit-scrollbar-track{background:#f6f1f3;border-radius:999px}
+.staff-ledger-body::-webkit-scrollbar-thumb{background:rgba(180,0,77,.28);border:2px solid #f6f1f3;border-radius:999px}
+.log-item{
+  border:1px solid rgba(180,0,77,.12);
+  border-radius:12px;
+  padding:12px 13px;
+  background:#fff7fa;
+}
+.log-item:nth-of-type(even){
+  background:#f6ffe9;
+  border-color:rgba(112,169,0,.20);
+}
+.log-item:last-child{padding-bottom:12px}
 .log-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
 .log-marker{width:30px;height:30px;border-radius:9px;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
 .log-marker.negative{background:var(--red-soft);color:var(--red)}
@@ -533,7 +558,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .ref-icons{display:inline-flex;gap:4px;flex:0 0 auto;margin-top:-1px}
 .ref-icon{width:25px;height:25px;border-radius:7px;border:1px solid var(--accent-soft);display:inline-flex;align-items:center;justify-content:center;color:var(--accent-dark);background:#fff;text-decoration:none;font-size:10px;transition:.15s ease}
 .ref-icon:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px)}
-.log-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+.log-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:9px;padding-top:8px;border-top:1px dashed rgba(180,0,77,.18)}
 .log-actions .why-disabled{font-size:11px;color:var(--muted);font-style:italic;margin-right:auto}
 .log-item.cancelled{opacity:.68}
 .log-item.cancelled .log-details{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#b8a8ae}
@@ -662,6 +687,10 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   font-size:12.5px;
   color:var(--text-muted);
 }
+#pickerAccredito .staffer-choice{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;}
+#pickerAccredito .staffer-choice-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#pickerAccredito .staffer-choice-balance{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:rgba(134,201,0,.12);border:1px solid rgba(134,201,0,.42);color:var(--green-dark);font-family:'Cinzel',serif;font-size:12px;font-weight:800;white-space:nowrap;}
+#pickerAccredito .staffer-choice.active .staffer-choice-balance{background:rgba(255,255,255,.72);border-color:rgba(73,109,0,.35);color:#365200;}
 @media(max-width:600px){
   .staffer-picker{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
@@ -944,20 +973,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
       <div class="card">
         <div class="card-title">
           <div>
-            <h2><i class="fa-solid fa-coins"></i> Saldi Staffer</h2>
-            <p>Il saldo disponibile e i contatori ancora in sospeso per le attività progressive.</p>
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti</h2>
+            <p>Ogni Player ha un unico blocco con saldo attuale e storico dei movimenti, ordinati dal più recente al meno recente.</p>
           </div>
           <button class="secondary" id="btnAggiornaPubblico"><i class="fa-solid fa-rotate"></i> Aggiorna</button>
-        </div>
-        <div id="saldiPubblici" class="balance-grid"><div class="loading">Caricamento saldi…</div></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">
-          <div>
-            <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti</h2>
-            <p>Uno Staffer per blocco, come nel registro storico. Gli Staffer e i movimenti sono ordinati dal più recente al meno recente.</p>
-          </div>
         </div>
         <div class="public-toolbar">
           <input type="text" id="filtroArchivio" placeholder="Cerca staffer o attività…">
@@ -993,10 +1012,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
           </div>
           <label>A quale Player accrediti?</label>
           <div class="staffer-picker" id="pickerAccredito" data-input="staffNomeInput">
-            <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu Sparks</button>
-            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon G. Greengrass</button>
-            <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher">Noah Fisher</button>
-            <button type="button" class="staffer-choice" data-value="Odette Montclaire" data-aliases="odette|odette montclaire">Odette Montclaire</button>
+            <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks"><span class="staffer-choice-name">Lulu Sparks</span><span class="staffer-choice-balance">0 ST</span></button>
+            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass"><span class="staffer-choice-name">Gideon G. Greengrass</span><span class="staffer-choice-balance">0 ST</span></button>
+            <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher"><span class="staffer-choice-name">Noah Fisher</span><span class="staffer-choice-balance">0 ST</span></button>
+            <button type="button" class="staffer-choice" data-value="Odette Montclaire" data-aliases="odette|odette montclaire"><span class="staffer-choice-name">Odette Montclaire</span><span class="staffer-choice-balance">0 ST</span></button>
           </div>
           <input type="hidden" id="staffNomeInput" value="">
           <div class="staffer-picker-help">I quattro pulsanti sono i quattro Player Staffer. I PG associati non compaiono qui: servono soltanto al collegamento con gli Elfi.</div>
@@ -1012,21 +1031,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
           </div>
           <div class="clarity-banner"><i class="fa-solid fa-lightbulb"></i><div><b>Qui inserisci quantità, non Staff Token.</b> Per esempio: una Quest con molti esiti = quantità <b>1</b> → il tool calcola automaticamente <b>6 ST</b>. I numeri verdi nel riepilogo sono il risultato finale.</div></div>
 
+          <div class="import-date-row">
+            <div>
+              <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
+              <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
+              <div class="hint">Vale sia per l’importazione sia per le voci aggiunte a mano. Se la compili, questa sarà la data del movimento nel Registro; se la lasci vuota viene usato il momento della registrazione.</div>
+            </div>
+            <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
+          </div>
+
           <details class="import-details">
-            <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa o aggiungi manualmente</span><span class="summary-note">facoltativo</span></summary>
+            <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa un accredito</span><span class="summary-note">facoltativo</span></summary>
             <div class="import-panel">
-              <div class="import-panel-title"><i class="fa-solid fa-wand-magic-sparkles"></i><div><b>Importa un accredito</b><span>Incolla una singola richiesta di accredito già compilata: lo storico viene ricostruito movimento per movimento, mantenendo la sua data reale.</span></div></div>
-              <div class="import-date-row">
-                <div>
-                  <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
-                  <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
-                  <div class="hint">Scrivila a mano, per esempio <b>19/02/2026 17:54</b>. <b>Se questo campo è compilato, questa è sempre la data del movimento nel Registro.</b> La data odierna viene conservata separatamente solo come momento tecnico di inserimento. Se nel testo importato compare una data-link come <b>[12/1/2026, 00:33](link)</b>, il campo viene compilato automaticamente.</div>
-                </div>
-                <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
-              </div>
+              <div class="import-panel-title"><i class="fa-solid fa-file-import"></i><div><b>Importazione</b><span>Incolla una singola richiesta già compilata: il tool prova a ricostruire mansioni, ST, link e data storica.</span></div></div>
               <label for="testoIncolla">Testo da importare</label>
               <textarea id="testoIncolla" rows="5" placeholder="Incolla qui nome, mansioni e riferimenti…"></textarea>
-              <div class="import-minihelp"><i class="fa-solid fa-circle-info"></i><span>I resti già salvati non vengono contati due volte. Un valore finale come <b>(6)</b> viene letto come valore della voce, non come 6 lavori.</span></div>
+              <div class="import-minihelp"><i class="fa-solid fa-circle-info"></i><span>Le importazioni storiche accettano anche formulazioni libere e valori espliciti in ST/FT. I resti già salvati non vengono conteggiati due volte.</span></div>
               <div class="actions" style="margin-top:10px">
                 <button type="button" class="secondary" id="btnAnalizzaTesto"><i class="fa-solid fa-wand-magic-sparkles"></i> Analizza e compila</button>
                 <button type="button" class="ghost" id="btnPulisciImport"><i class="fa-solid fa-eraser"></i> Pulisci</button>
@@ -1036,18 +1056,24 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
               <div class="manual-total-box">
                 <div class="manual-total-row">
                   <div>
-                    <label for="overrideTotaleAccredito">Totale accredito manuale <span class="hint" style="display:inline">(facoltativo)</span></label>
-                    <div class="hint">Se dopo l’importazione il totale corretto è diverso da quello ricostruito dal tool, puoi indicarlo qui. Lascia vuoto per usare il calcolo automatico.</div>
+                    <label for="overrideTotaleAccredito">Totale importato da correggere <span class="hint" style="display:inline">(facoltativo)</span></label>
+                    <div class="hint">Usalo solo se il totale storico corretto è diverso da quello ricostruito automaticamente.</div>
                   </div>
                   <input type="number" id="overrideTotaleAccredito" min="0" step="1" placeholder="Es. 7">
                   <button type="button" class="ghost" id="btnResetTotale"><i class="fa-solid fa-rotate-left"></i> Automatico</button>
                 </div>
                 <div id="manualTotalStatus" class="manual-total-status">Totale automatico attivo.</div>
               </div>
+            </div>
+          </details>
 
-              <div class="manual-zone">
+          <details class="import-details manual-details">
+            <summary><span><i class="fa-solid fa-pen-to-square"></i> Aggiungi manualmente</span><span class="summary-note">facoltativo</span></summary>
+            <div class="import-panel">
+              <div class="import-panel-title"><i class="fa-solid fa-plus"></i><div><b>Voci manuali</b><span>Inserisci liberamente il nome della mansione, gli ST e l’eventuale link, senza passare dal parser.</span></div></div>
+              <div class="manual-zone" style="margin-top:0;padding-top:0;border-top:0">
                 <div class="manual-zone-head">
-                  <div><b>Aggiungi una voce manuale</b><div class="hint">Puoi continuare l’accredito inserendo liberamente nome della mansione, ST e link.</div></div>
+                  <div><b>Voci dell’accredito</b><div class="hint">Puoi aggiungerne più di una nello stesso movimento.</div></div>
                   <button type="button" class="secondary" id="btnAggiungiManuale"><i class="fa-solid fa-plus"></i> Aggiungi voce</button>
                 </div>
                 <div id="manualEntriesContainer"><div class="manual-empty">Nessuna voce manuale aggiunta.</div></div>
@@ -1213,6 +1239,7 @@ let staffIdCorrente=null;
 let staffAttuale=null;
 let archivioMovimenti=[];
 let staffPubblici=[];
+let saldiPlayer={};
 let ultimoBBCode='';
 
 const OBIETTIVI=[
@@ -1710,18 +1737,17 @@ function aggiornaFormulaCards(calc){
 
 function mostraStaffInfo(){
   const info=document.getElementById('staffInfo');
-  if(!staffIdCorrente||!staffAttuale){info.innerHTML='<span class="hint">Seleziona uno Staffer per vedere saldo e resti.</span>';return}
+  if(!staffIdCorrente||!staffAttuale){info.innerHTML='<span class="hint">Seleziona un Player. Il saldo è già visibile sul suo pulsante.</span>';return}
   const rListe=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='liste_spesa'));
   const rCamere=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='camere_blindate'));
   const rBuro=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='burocrazia'));
-  const nome=escapeHtml(primaryStaffName(staffIdCorrente,staffAttuale.nomeVisualizzato||document.getElementById('staffNomeInput').value||staffIdCorrente));
-  info.innerHTML=`<div class="staff-strip">
-    <div class="staff-metric"><div class="k">Player</div><div class="v">${nome}</div><div class="sub">Saldo condiviso da tutti i PG associati</div></div>
-    <div class="staff-metric"><div class="k">Saldo</div><div class="v big">${numeroIntero(staffAttuale.st_totali)} ST</div></div>
-    <div class="staff-metric"><div class="k">Liste</div><div class="v">${rListe}/3</div><div class="resto-progress"><span style="width:${rListe/3*100}%"></span></div></div>
-    <div class="staff-metric"><div class="k">Camere</div><div class="v">${rCamere}/10</div><div class="resto-progress"><span style="width:${rCamere/10*100}%"></span></div></div>
-    <div class="staff-metric"><div class="k">Burocrazia</div><div class="v">${rBuro}/3</div><div class="resto-progress"><span style="width:${rBuro/3*100}%"></span></div></div>
-  </div>`;
+  const chips=[];
+  if(rListe)chips.push(`<span class="resto-chip">Liste ${rListe}/3</span>`);
+  if(rCamere)chips.push(`<span class="resto-chip">Camere ${rCamere}/10</span>`);
+  if(rBuro)chips.push(`<span class="resto-chip">Burocrazia ${rBuro}/3</span>`);
+  info.innerHTML=chips.length
+    ?`<div class="hint" style="margin-bottom:5px"><b>Progressivi in sospeso</b></div><div class="balance-resti">${chips.join('')}</div>`
+    :'<span class="hint">Nessun progressivo in sospeso per questo Player.</span>';
 }
 
 function leggiOverrideTotale(){
@@ -1860,6 +1886,17 @@ function stafferAliases(nome){
   const first=full.split(/\s+/)[0]||full;
   return [full,first].filter(Boolean).join('|');
 }
+function aggiornaSaldiPickerAccredito(){
+  const picker=document.getElementById('pickerAccredito');
+  if(!picker)return;
+  picker.querySelectorAll('.staffer-choice').forEach(btn=>{
+    const nome=btn.dataset.value||btn.textContent.trim();
+    const id=normalizzaStaffId(nome);
+    const saldo=Object.prototype.hasOwnProperty.call(saldiPlayer,id)?numeroIntero(saldiPlayer[id]):0;
+    btn.innerHTML=`<span class="staffer-choice-name">${escapeHtml(nome)}</span><span class="staffer-choice-balance">${saldo} ST</span>`;
+  });
+}
+
 function aggiornaPickerStafferDinamici(){
   // I quattro pulsanti rappresentano i quattro Player/saldi ST, mai i singoli PG.
   const defs=LEGACY_STAFFER_PG_CONFIG.slice();
@@ -1873,6 +1910,7 @@ function aggiornaPickerStafferDinamici(){
     picker.dataset.input=inputId;
     picker.innerHTML=defs.map(st=>`<button type="button" class="staffer-choice" data-value="${escapeHtml(st.nome)}" data-aliases="${escapeHtml(st.aliases||stafferAliases(st.nome))}">${escapeHtml(st.nome)}</button>`).join('');
   });
+  aggiornaSaldiPickerAccredito();
   const pgPicker=document.getElementById('pickerPgStaff');
   if(pgPicker){
     pgPicker.innerHTML=defs.map(st=>`<button type="button" class="staffer-choice${normalizzaStaffId(st.nome)===normalizzaStaffId(pgStaffOwner)?' active':''}" data-value="${escapeHtml(st.nome)}">${escapeHtml(st.nome)}</button>`).join('');
@@ -1884,6 +1922,11 @@ function aggiornaPickerStafferDinamici(){
 }
 async function caricaListaStaffer(){
   const snap=await db.collection('staff_token').get();
+  saldiPlayer={};
+  snap.docs.forEach(d=>{
+    const id=normalizzaStaffId(d.id);
+    if(isPrimaryStaffId(id))saldiPlayer[id]=numeroIntero((d.data()||{}).st_totali);
+  });
   STAFFER_PG_CONFIG=LEGACY_STAFFER_PG_CONFIG.slice();
   EXTRA_STAFF_DOCS=snap.docs.map(d=>({id:d.id,...(d.data()||{}) }))
     .filter(x=>!isPrimaryStaffId(x.id)&&x.stafferNascosto!==true);
@@ -2487,9 +2530,7 @@ async function caricaPubblico(forza=false){
   if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){
     await riparaRimozioniV40();
   }
-  const saldi=document.getElementById('saldiPubblici');
   const archivio=document.getElementById('archivioBox');
-  if(forza||!saldi.dataset.loaded){saldi.innerHTML='<div class="loading">Caricamento saldi…</div>'}
   if(forza||!archivio.dataset.loaded){archivio.innerHTML='<div class="loading">Caricamento registro…</div>'}
   try{
     const [snapStaff,snapLog]=await Promise.all([
@@ -2514,24 +2555,12 @@ async function caricaPubblico(forza=false){
     archivioMovimenti.forEach(m=>{const k=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');if(k&&!ultimaDataPerStaff[k])ultimaDataPerStaff[k]=m.data});
     staff.sort((a,b)=>timestampMs(ultimaDataPerStaff[b.id]||b.ultimoAggiornamento)-timestampMs(ultimaDataPerStaff[a.id]||a.ultimoAggiornamento)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
     staffPubblici=staff;
-    if(!staff.length)saldi.innerHTML='<div class="empty">Nessuno Staffer registrato.</div>';
-    else saldi.innerHTML=staff.map(s=>{
-      const rl=getResto(s,OBIETTIVI.find(o=>o.id==='liste_spesa'));
-      const rc=getResto(s,OBIETTIVI.find(o=>o.id==='camere_blindate'));
-      const rb=getResto(s,OBIETTIVI.find(o=>o.id==='burocrazia'));
-      const st=numeroIntero(s.st_totali);
-      const chips=[];
-      if(rl)chips.push(`<span class="resto-chip">Liste ${rl}/3</span>`);
-      if(rc)chips.push(`<span class="resto-chip">Camere ${rc}/10</span>`);
-      if(rb)chips.push(`<span class="resto-chip">Burocrazia ${rb}/3</span>`);
-      const ultima=ultimaDataPerStaff[s.id]||s.ultimoAggiornamento;
-      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(primaryStaffName(s.id,nomeDaDoc(s.id,s)))}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
-    }).join('');
-    saldi.dataset.loaded='1';
+    saldiPlayer={};
+    staff.forEach(s=>{saldiPlayer[normalizzaStaffId(s.id)]=numeroIntero(s.st_totali);});
+    aggiornaSaldiPickerAccredito();
     archivio.dataset.loaded='1';
     renderArchivio();
   }catch(e){
-    saldi.innerHTML=`<div class="msg-err">Errore saldi: ${escapeHtml(e.message)}</div>`;
     archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;
   }
 }
