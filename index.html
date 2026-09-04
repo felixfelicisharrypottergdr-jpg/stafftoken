@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v47 — importazioni storiche più permissive: FT/ST, valori liberi e Appelli senza formule ricostruibili, 04/09/2026 -->
 <!-- v45 — accesso Staff allineato alle sessioni Firestore + altezza iframe stabile anche dopo focus/scroll, 04/09/2026 -->
 <!-- v41 — saldi del Registro ricalcolati per data storica + rimozione che storna il movimento, 04/09/2026 -->
 <!-- v38 — saldo risultante subito sotto ogni variazione nel registro, 04/09/2026 -->
@@ -2203,7 +2204,8 @@ function nomeMansioneDaRigaImport(riga){
   s=s.replace(/\[[^\]]*\]\(https?:\/\/[^)]+\)/ig,' ');
   s=s.replace(/https?:\/\/[^\s\]<>]+/ig,' ');
   s=s.replace(/\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?/ig,' ');
-  s=s.replace(/\(\s*\d+\s*(?:ST)?\s*\)\s*$/i,'');
+  s=s.replace(/\(\s*[-+]?\d+\s*(?:(?:S|F)T|Staff\s*Token|Felix\s*Token)?\s*\)\s*$/i,'');
+  s=s.replace(/\s*(?:[:=→>-]\s*)?[-+]?\d+\s*(?:(?:S|F)T|Staff\s*Token|Felix\s*Token)\s*$/i,'');
   s=s.replace(/<[^>]+>/g,' ').replace(/\[(?:\/)?(?:b|i|u|color(?:=[^\]]+)?)\]/ig,' ');
   s=s.replace(/\s+/g,' ').replace(/\s*[:;,-]\s*$/,'').trim();
   return s||'Voce importata';
@@ -2369,20 +2371,30 @@ async function analizzaTesto(){
     if(o.tipo==='fisso'){
       let quantita=0; const refs=[]; let scoreImport=0;
       const reportStart=report.length;
+      const righeConValoreStorico=[];
       for(const riga of matches){
         const q=quantitaFissaDaRiga(riga);
         const rr=estraiRiferimenti(riga); refs.push(...rr);
-        quantita+=q;
         const atteso=q*o.ftUnitario;
         const esplicito=stEsplicitiRiga(riga);
-        if(esplicito!==null&&esplicito!==atteso){
-          avvisi.push(`${o.nome}: nella riga è indicato ${esplicito} ST, mentre il valore pieno della regola attuale è ${atteso} ST.`);
+        // Se il vecchio accredito dichiara esplicitamente un valore diverso dalla
+        // regola attuale, non lo "correggiamo": stiamo ricostruendo lo storico.
+        // Importiamo quindi quella singola riga come voce storica manuale.
+        if(esplicito!==null&&esplicito>=0&&esplicito!==atteso&&!o.ripartibile){
+          const nome=nomeMansioneDaRigaImport(riga);
+          creaVoceManuale({nome,st:esplicito,riferimenti:estraiUrl(riga),importAuto:true});
+          report.push({categoria:nome,src:riga,score:esplicito,why:`Valore storico esplicito: ${esplicito} ST (regola attuale: ${atteso} ST)`});
+          righeConValoreStorico.push(riga);
+          scoreImport+=esplicito;
+          avvisi.push(`${nome}: mantenuto il valore storico esplicito di ${esplicito} ST invece di ricalcolarlo con la regola attuale.`);
+          continue;
         }
+        quantita+=q;
         scoreImport+=atteso;
         report.push({categoria:o.nome,src:riga,score:atteso,why:`${q} ${q===1?'voce':'voci'} × ${o.ftUnitario} ST`});
       }
-      impostaAttivita(o.id,{quantita,riferimenti:[...new Set(refs)].join('\n')});
-      if(o.ripartibile){
+      if(quantita>0) impostaAttivita(o.id,{quantita,riferimenti:[...new Set(refs)].join('\n')});
+      if(o.ripartibile&&quantita>0){
         const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
         const totaleRegolamentare=quantita*o.ftUnitario;
         const espliciti=matches.map(stEsplicitiRiga).filter(v=>v!==null);
@@ -2413,7 +2425,8 @@ async function analizzaTesto(){
           avvisi.push(`${o.nome}: ho usato la quota storica di ${quotaStorica} ST indicata dall’accredito, invece del valore pieno di ${totaleRegolamentare} ST.`);
         }
       }
-      trovati.push(`${o.nome}: ${quantita} ${quantita===1?'voce':'voci'} = ${scoreImport} ST`);
+      if(quantita>0) trovati.push(`${o.nome}: ${quantita} ${quantita===1?'voce':'voci'} = ${scoreImport} ST`);
+      else if(righeConValoreStorico.length) trovati.push(`${o.nome}: valore storico importato = ${scoreImport} ST`);
       continue;
     }
 
@@ -2422,13 +2435,22 @@ async function analizzaTesto(){
       const pgM=riga.match(/(\d+)\s*(?:Schede\s*)?PG\s*attivi/i);
       const pg=pgM?numeroIntero(pgM[1]):0;
       let dividi=1;
-      const divM=riga.match(/ST\s*\/\s*(\d+)/i);if(divM)dividi=Math.max(1,numeroIntero(divM[1],1));
+      const divM=riga.match(/(?:ST|FT)\s*\/\s*(\d+)/i);if(divM)dividi=Math.max(1,numeroIntero(divM[1],1));
       if(pg){
         impostaAttivita(o.id,{pg,dividi,riferimenti:estraiUrl(riga)});
         const pool=Math.floor(pg/o.divisore)*o.moltiplicatore;
         const score=pool/dividi;
         report.push({categoria:o.nome,src:riga,score,why:`${pg}/${o.divisore} × ${o.moltiplicatore} ST${dividi>1?' ÷ '+dividi:''}`});
         trovati.push(`${o.nome}: ${pg} PG${dividi>1?', diviso '+dividi:''}`);
+      }else{
+        const esplicito=stEsplicitiRiga(riga);
+        if(esplicito!==null&&esplicito>=0){
+          const nome=nomeMansioneDaRigaImport(riga);
+          creaVoceManuale({nome,st:esplicito,riferimenti:estraiUrl(riga),importAuto:true});
+          report.push({categoria:nome,src:riga,score:esplicito,why:`Valore storico esplicito: ${esplicito} ST`});
+          trovati.push(`${nome}: ${esplicito} ST`);
+          avvisi.push(`${nome}: mancava il numero di PG necessario per ricalcolare l’Appello; ho mantenuto il valore storico esplicito.`);
+        }else nonLetti.push(riga);
       }
     }
   }
@@ -2453,7 +2475,7 @@ async function analizzaTesto(){
       :`<div class="msg-warn">⚠ ${escapeHtml(a)}</div>`).join('');
     const nonLettiHtml=nonLetti.length?`<div class="import-unread"><b>${nonLetti.length} riga${nonLetti.length===1?' non riconosciuta':'he non riconosciute'}:</b><br>${nonLetti.map(escapeHtml).join('<br>')}</div>`:'';
     msg.innerHTML=`<div class="import-report"><div class="import-summary"><strong>${report.length} righe riconosciute</strong><div class="sum-score">+${calc.totale} ST</div></div><div class="import-lines">${righeHtml}</div></div>${avvisiHtml}${nonLettiHtml}`;
-  }else msg.innerHTML='<div class="msg-err">Non ho riconosciuto voci sicure da compilare automaticamente. Nessun campo è stato aggiunto.</div>';
+  }else msg.innerHTML='<div class="msg-err">Non ho trovato valori o voci abbastanza chiari da importare automaticamente. Puoi comunque aggiungerli come voci manuali qui sotto.</div>';
 }
 document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTesto);
 document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
