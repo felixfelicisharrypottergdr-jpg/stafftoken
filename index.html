@@ -1,9 +1,36 @@
 <!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v58</title>
+<title>Gestore Staff Token — v60</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -126,7 +153,10 @@ h1,h2,h3,h4{
 }
 .tabs{
   display:flex;
-  width:min(100%,780px);
+  width:max-content;
+  max-width:100%;
+  margin:0 auto;
+  justify-content:center;
   gap:7px;
   padding:6px;
   border:1px solid var(--line);
@@ -136,7 +166,7 @@ h1,h2,h3,h4{
   box-shadow:0 4px 18px rgba(48,36,42,.06);
 }
 .tab-btn{
-  flex:1;
+  flex:0 0 auto;
   min-width:0;
   border:0;
   background:transparent;
@@ -152,6 +182,52 @@ h1,h2,h3,h4{
 .tab-btn:hover{background:var(--surface-2);color:var(--accent-dark)}
 .tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(251,0,84,.18)}
 .tab-btn i{margin-right:6px}
+.tab-news-badge{
+  display:none;
+  margin-left:7px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:var(--green);
+  color:#243100;
+  font-family:'EB Garamond',serif;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.04em;
+  vertical-align:1px;
+}
+.tab-btn.active .tab-news-badge{background:#fff;color:var(--accent-dark)}
+.update-banner{
+  display:none;
+  width:min(100%,760px);
+  margin:4px auto 14px;
+  border:1px solid rgba(134,201,0,.38);
+  border-radius:14px;
+  background:linear-gradient(135deg,#f7ffe8 0%,#fff8fb 100%);
+  box-shadow:0 4px 15px rgba(63,84,0,.07);
+  padding:11px 14px;
+  cursor:pointer;
+  align-items:center;
+  gap:11px;
+}
+.update-banner.visible{display:flex}
+.update-banner.has-new{border-color:rgba(217,0,76,.34);background:linear-gradient(135deg,#f2ffd8 0%,#fff0f5 100%)}
+.update-banner-icon{
+  width:34px;height:34px;flex:0 0 34px;border-radius:50%;
+  display:grid;place-items:center;
+  background:#fff;border:1px solid rgba(134,201,0,.42);color:#517800;
+}
+.update-banner.has-new .update-banner-icon{background:var(--accent);border-color:var(--accent);color:#fff}
+.update-banner-copy{min-width:0;line-height:1.25}
+.update-banner-copy strong{display:block;font-family:'Cinzel',serif;font-size:12px;color:var(--ink);margin-bottom:2px}
+.update-banner-copy span{display:block;color:var(--muted);font-size:13px}
+.update-banner.has-new .update-banner-copy span{color:#4b303a}
+.update-banner-list{display:flex;flex-wrap:wrap;gap:5px 7px;margin-top:4px}
+.update-banner-entry{appearance:none;border:0;background:rgba(255,255,255,.7);border-radius:999px;padding:4px 9px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--muted);box-shadow:inset 0 0 0 1px rgba(180,0,77,.12);transition:.14s ease}
+.update-banner-entry:hover{transform:translateY(-1px);box-shadow:inset 0 0 0 1px rgba(180,0,77,.28),0 2px 7px rgba(95,0,34,.08)}
+.update-banner-entry.is-new{background:#f0ffd2;color:#365d00;box-shadow:inset 0 0 0 1px rgba(118,185,0,.35)}
+.update-banner-entry strong{display:inline;font-family:inherit;font-size:inherit;margin:0;color:inherit}
+.update-banner-empty{color:var(--muted);font-size:13px}
+.update-banner-arrow{margin-left:auto;color:var(--accent-dark);font-size:12px}
 .view{display:none}
 .view.active{display:block}
 .card{
@@ -557,7 +633,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   body{padding:12px 9px 24px}
   .masthead{padding:20px 15px 17px;border-radius:17px}
   .masthead h1{font-size:27px}
-  .tabs{overflow-x:auto;justify-content:flex-start}
+  .tabs{overflow:visible;justify-content:center;flex-wrap:wrap;width:max-content;max-width:100%}
   .tab-btn{flex:0 0 auto;white-space:nowrap}
   .grid-2,.grid-3,.balance-grid{grid-template-columns:1fr}
   .staff-strip{grid-template-columns:1fr 1fr}
@@ -956,8 +1032,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
     <nav class="tabs" aria-label="Sezioni Gestore Staff Token">
       <button class="tab-btn active" data-tab="registra"><i class="fa-solid fa-pen-nib"></i>Nuovo accredito</button>
       <button class="tab-btn" data-tab="gestione"><i class="fa-solid fa-user-gear"></i>Gestione saldi</button>
-      <button class="tab-btn" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico</button>
+      <button class="tab-btn" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico<span id="registroNewsBadge" class="tab-news-badge">NOVITÀ</span></button>
     </nav>
+  </div>
+
+  <div id="stNovitaBanner" class="update-banner" role="button" tabindex="0" aria-label="Apri il Registro pubblico">
+    <div class="update-banner-icon"><i class="fa-solid fa-sparkles"></i></div>
+    <div class="update-banner-copy"><strong id="stNovitaTitle">Ultimi Staff Token</strong><div id="stNovitaText" class="update-banner-list"><span>Controllo degli ultimi accrediti…</span></div></div>
+    <i class="fa-solid fa-chevron-right update-banner-arrow"></i>
   </div>
 
   <div id="staffAccess" class="access-card hidden">
@@ -991,17 +1073,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <p>Ogni Player ha un unico blocco con saldo attuale e storico dei movimenti, ordinati dal più recente al meno recente.</p>
           </div>
           <button class="secondary" id="btnAggiornaPubblico"><i class="fa-solid fa-rotate"></i> Aggiorna</button>
-        </div>
-        <div class="public-toolbar">
-          <input type="text" id="filtroArchivio" placeholder="Cerca staffer o attività…">
-          <select id="filtroTipo">
-            <option value="">Tutti i movimenti</option>
-            <option value="accredito">Accrediti</option>
-            <option value="correzione">Correzioni</option>
-            <option value="movimento_manuale">Movimenti manuali</option>
-            <option value="spesa_elfo">Spese / restituzioni da Elfo</option>
-            <option value="annullato">Annullati</option>
-          </select>
         </div>
         <div id="archivioActionMsg" aria-live="polite"></div>
         <div id="archivioBox" class="log-list"><div class="loading">Caricamento registro…</div></div>
@@ -1239,6 +1310,13 @@ const firebaseConfig={
 };
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
+const ST_NOVITA_VISITA_KEY='ff_staff_token_ultima_visita_v1';
+let stVisitaPrecedenteMs=0;
+let stVisitaCorrenteMs=Date.now();
+try{
+  stVisitaPrecedenteMs=Number(localStorage.getItem(ST_NOVITA_VISITA_KEY))||0;
+  localStorage.setItem(ST_NOVITA_VISITA_KEY,String(stVisitaCorrenteMs));
+}catch(e){}
 const auth=firebase.auth();
 
 let authPronta=false;
@@ -1452,6 +1530,14 @@ function attivaTab(tab){
 }
 
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>attivaTab(btn.dataset.tab)));
+const stNovitaBanner=document.getElementById('stNovitaBanner');
+if(stNovitaBanner){
+  stNovitaBanner.addEventListener('click',e=>{
+    const voce=e.target.closest('[data-novita-movimento]');
+    vaiAMovimentoRegistro(voce?.dataset.novitaMovimento||stNovitaBanner.dataset.ultimoMovimento||'');
+  });
+  stNovitaBanner.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.target.closest('[data-novita-movimento]')){e.preventDefault();vaiAMovimentoRegistro(stNovitaBanner.dataset.ultimoMovimento||'')}});
+}
 
 try{auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});}catch(e){}
 auth.onAuthStateChanged(user=>{
@@ -2668,6 +2754,58 @@ async function migraAccreditiDaPgAlPlayerSeNecessario(snapStaff,snapLog){
   return changed;
 }
 
+function nomeBrevePlayerNovita(staffId){
+  return primaryStaffName(staffId,staffId||'').replace(/\s+/g,' ').trim();
+}
+async function vaiAMovimentoRegistro(id){
+  attivaTab('registro');
+  await caricaPubblico(false);
+  if(!id)return;
+  const box=document.getElementById('archivioBox');
+  const articolo=box?.querySelector(`[data-log-id="${CSS.escape(id)}"]`);
+  if(!articolo)return;
+  const ledger=articolo.closest('.staff-ledger');
+  const body=articolo.closest('.staff-ledger-body');
+  if(ledger)ledger.open=true;
+  requestAnimationFrame(()=>{
+    if(body){
+      const top=Math.max(0,articolo.offsetTop-10);
+      body.scrollTo({top,behavior:'smooth'});
+    }
+    setTimeout(()=>articolo.scrollIntoView({behavior:'smooth',block:'center'}),120);
+  });
+}
+function aggiornaAvvisoNovitaStaffToken(){
+  const banner=document.getElementById('stNovitaBanner');
+  const title=document.getElementById('stNovitaTitle');
+  const text=document.getElementById('stNovitaText');
+  const badge=document.getElementById('registroNewsBadge');
+  if(!banner||!title||!text)return;
+  const positivi=archivioMovimenti.filter(m=>{
+    if(m.annullato||m.rimossoDalRegistro)return false;
+    const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
+    return isPrimaryStaffId(sid)&&deltaEffettivoMovimento(m)>0;
+  }).sort((a,b)=>timestampMs(b.data)-timestampMs(a.data)||timestampMs(b.registratoIl||b.data)-timestampMs(a.registratoIl||a.data));
+  const nuovi=stVisitaPrecedenteMs?positivi.filter(m=>timestampUltimaModificaMovimento(m)>stVisitaPrecedenteMs):[];
+  const nuoviIds=new Set(nuovi.map(m=>m.id));
+  const ultimiTre=positivi.slice(0,3);
+  banner.classList.add('visible');
+  banner.classList.toggle('has-new',nuovi.length>0);
+  if(badge)badge.style.display=nuovi.length?'inline-block':'none';
+  title.textContent=nuovi.length?'Nuovi Staff Token dall’ultima visita':'Ultimi accrediti Staff Token';
+  banner.dataset.ultimoMovimento=ultimiTre[0]?.id||'';
+  if(!ultimiTre.length){
+    text.innerHTML='<span class="update-banner-empty">Non risultano ancora accrediti registrati.</span>';
+    return;
+  }
+  text.innerHTML=ultimiTre.map(m=>{
+    const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
+    const delta=Math.max(0,deltaEffettivoMovimento(m));
+    const nuova=nuoviIds.has(m.id);
+    return `<button type="button" class="update-banner-entry${nuova?' is-new':''}" data-novita-movimento="${escapeHtml(m.id)}"><strong>${escapeHtml(nomeBrevePlayerNovita(sid))} +${delta} ST</strong> · ${escapeHtml(dataIt(m.data))}${nuova?' · NUOVO':''}</button>`;
+  }).join('');
+}
+
 async function caricaPubblico(forza=false){
   if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){
     await riparaRimozioniV40();
@@ -2712,6 +2850,7 @@ async function caricaPubblico(forza=false){
     aggiornaSaldiPickerAccredito();
     archivio.dataset.loaded='1';
     renderArchivio();
+    aggiornaAvvisoNovitaStaffToken();
   }catch(e){
     archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;
   }
@@ -3073,8 +3212,8 @@ function ripristinaAltezzaRegistro(editor){
 
 function renderArchivio(){
   const box=document.getElementById('archivioBox');
-  const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
-  const tipo=document.getElementById('filtroTipo').value;
+  const q='';
+  const tipo='';
   const ultimi=ultimiMovimentiAttiviPerStaff();
   const saldoCronologico=saldiCronologiciRegistro();
   const saldoMap={};
@@ -3152,13 +3291,13 @@ function renderArchivio(){
         </div>`;
       }
       const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi" aria-label="Rimuovi"><i class="fa-solid fa-xmark"></i></button>`:'';
-      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
+      return `<article class="log-item ${m.annullato?'cancelled':''}" data-log-id="${escapeHtml(m.id)}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
     }).join(''):`<div class="empty">Nessun movimento registrato.</div>`;
     const ultimoMovAgg=g.movimenti.slice().sort((a,b)=>timestampUltimaModificaMovimento(b)-timestampUltimaModificaMovimento(a))[0];
     const ultimoTs=ultimoMovAgg?(ultimoMovAgg.modificatoIl||ultimoMovAgg.registratoIl||ultimoMovAgg.data):null;
     const ultimoTesto=g.movimenti.length?`Ultimo aggiornamento: ${escapeHtml(dataIt(ultimoTs))}`:'Nessun movimento registrato';
     const tone=Math.max(0,LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===g.key))%4;
-    return `<details class="staff-ledger ledger-tone-${tone}"><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">${ultimoTesto}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
+    return `<details class="staff-ledger ledger-tone-${tone}" data-staff-ledger="${escapeHtml(g.key)}"><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">${ultimoTesto}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
   box.querySelectorAll('[data-remove-log-id]').forEach(btn=>btn.addEventListener('click',()=>rimuoviMovimentoDalRegistro(btn.dataset.removeLogId)));
   box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{
@@ -3181,8 +3320,6 @@ function renderArchivio(){
   box.querySelectorAll('.remove-edit-row').forEach(btn=>btn.addEventListener('click',()=>{const ed=btn.closest('.log-edit-editor');btn.closest('.log-edit-row')?.remove();if(ed)setTimeout(()=>adattaAltezzaRegistroInModifica(ed),0)}));
   box.querySelectorAll('.log-edit-editor input,.log-edit-editor textarea').forEach(el=>el.addEventListener('input',()=>{const ed=el.closest('.log-edit-editor');if(ed&&!ed.classList.contains('hidden'))adattaAltezzaRegistroInModifica(ed)}));
 }
-document.getElementById('filtroArchivio').addEventListener('input',renderArchivio);
-document.getElementById('filtroTipo').addEventListener('change',renderArchivio);
 document.getElementById('btnAggiornaPubblico').addEventListener('click',()=>caricaPubblico(true));
 
 
