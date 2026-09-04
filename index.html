@@ -206,7 +206,7 @@ h1,h2,h3,h4{
   background:
     linear-gradient(135deg,rgba(255,248,252,.98) 0%,rgba(255,245,250,.98) 44%,rgba(248,255,233,.98) 100%);
   box-shadow:0 12px 28px rgba(64,44,51,.08), inset 0 1px 0 rgba(255,255,255,.6);
-  padding:22px 22px 18px;
+  padding:22px 74px 26px;
   cursor:pointer;
   align-items:center;
   justify-content:center;
@@ -230,6 +230,7 @@ h1,h2,h3,h4{
 .update-banner.visible{display:flex}
 .update-banner.has-new{border-color:rgba(217,0,76,.34);box-shadow:0 14px 32px rgba(89,28,55,.10), inset 0 1px 0 rgba(255,255,255,.7)}
 .update-banner-icon{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
   width:44px;height:44px;flex:0 0 44px;border-radius:50%;
   display:grid;place-items:center;
   background:linear-gradient(135deg,#fff,#fff5fa);
@@ -262,7 +263,7 @@ h1,h2,h3,h4{
 .update-banner-copy span{display:block;color:var(--muted);font-size:13px}
 .update-banner-subtitle{color:#6f6267;font-size:13px;margin:0 0 10px;text-align:center}
 .update-banner.has-new .update-banner-subtitle{color:#5a4b52}
-.update-banner-list{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:10px 12px;margin-top:2px;justify-content:center;align-items:stretch;width:min(100%,780px);margin-left:auto;margin-right:auto;position:relative;z-index:1}
+.update-banner-list{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:10px 12px;margin-top:2px;margin-bottom:6px;justify-content:center;align-items:stretch;width:min(100%,780px);margin-left:auto;margin-right:auto;position:relative;z-index:1}
 .update-banner-entry{
   appearance:none;
   border:0;
@@ -711,7 +712,8 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 @media(max-width:800px){
   body{padding:12px 9px 24px}
   .masthead{padding:20px 15px 17px;border-radius:17px}
-  .update-banner{padding:20px 14px 16px}
+  .update-banner{padding:20px 14px 22px}
+  .update-banner-icon{display:none}
   .update-banner-list{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:8px 8px}
   .update-banner-copy strong{font-size:20px}
   .update-banner-entry{font-size:11.4px;padding:8px 10px;min-height:38px}
@@ -1200,12 +1202,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <div>
               <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
               <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
-              <div class="hint">Vale sia per l’importazione sia per le voci aggiunte a mano. Se la compili, questa sarà la data del movimento nel Registro; se la lasci vuota viene usato il momento della registrazione.</div>
+              <div class="hint">Vale per le mansioni selezionate e per le voci aggiunte manualmente. Se la compili, questa sarà la data del movimento nel Registro; se la lasci vuota viene usato il momento della registrazione.</div>
             </div>
             <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
           </div>
 
-          <details class="import-details">
+          <details class="import-details" hidden aria-hidden="true">
             <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa un accredito</span><span class="summary-note">facoltativo</span></summary>
             <div class="import-panel">
               <div class="import-panel-title"><i class="fa-solid fa-file-import"></i><div><b>Importazione</b><span>Incolla una singola richiesta già compilata: il tool prova a ricostruire mansioni, ST, link e data storica.</span></div></div>
