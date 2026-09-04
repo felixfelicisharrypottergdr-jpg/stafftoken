@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- v37 — palette più decisa: fucsia e verde più presenti e leggibili, 04/09/2026 -->
+<!-- v36 — barra di navigazione centrata + rimossa sezione Criteri implementati, 04/09/2026 -->
 <!-- v34 — quattro Player Staffer fissi e sempre attivi: rimosso stato attivo/inattivo, 04/09/2026 -->
 <!-- v33 — gestione PG a tendina + terminologia saldo ST, 04/09/2026 -->
 <!-- v32 — PG Staff: consentito solo il passaggio Studente → Adulto, 04/09/2026 -->
@@ -15,7 +17,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v35</title>
+<title>Gestore Staff Token — v37</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -27,21 +29,21 @@
   font-style:normal;
 }
 :root{
-  --bg:#f3f5ef;
+  --bg:#f3f5ee;
   --surface:#ffffff;
   --surface-2:#fff0f5;
-  --surface-3:#eef7e7;
+  --surface-3:#f0f9df;
   --ink:#30242a;
   --muted:#756b70;
-  --line:#e2d7dc;
-  --accent:#fb0054;
-  --accent-dark:#970033;
-  --accent-soft:#ff4f89;
-  --gold:#9eea00;
-  --gold-soft:#f4ffd9;
-  --green:#9eea00;
-  --green-dark:#5f9800;
-  --green-soft:#f4ffd9;
+  --line:#e8cbd6;
+  --accent:#d9004c;
+  --accent-dark:#87002f;
+  --accent-soft:#ff4f88;
+  --gold:#86c900;
+  --gold-soft:#efffd0;
+  --green:#86c900;
+  --green-dark:#4d7600;
+  --green-soft:#efffd0;
   --red:#c81d4b;
   --red-soft:#fff0f4;
   --shadow:0 10px 30px rgba(48,36,42,.08);
@@ -53,7 +55,8 @@ body{
   margin:0;
   padding:22px 14px 90px;
   background:
-    radial-gradient(circle at top left,rgba(255,255,255,.65),transparent 34%),
+    radial-gradient(circle at 8% 0%,rgba(217,0,76,.085),transparent 30%),
+    radial-gradient(circle at 92% 4%,rgba(134,201,0,.105),transparent 28%),
     var(--bg);
   color:var(--ink);
   font-family:'EB Garamond',Georgia,serif;
@@ -130,11 +133,14 @@ h1,h2,h3,h4{
   position:sticky;
   top:0;
   z-index:30;
+  display:flex;
+  justify-content:center;
   padding:8px 0 10px;
   background:linear-gradient(var(--bg) 72%,transparent);
 }
 .tabs{
   display:flex;
+  width:min(100%,780px);
   gap:7px;
   padding:6px;
   border:1px solid var(--line);
@@ -764,6 +770,107 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .staffer-error-card span{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;}
 @media(max-width:620px){#pickerAccredito,#pickerCorreggi,#pickerPgStaff{grid-template-columns:1fr;}}
 
+
+/* ===== v37: fucsia + verde più presenti ===== */
+.masthead{
+  background:linear-gradient(135deg,#fff 0%,#fff5f8 58%,#f4ffdf 100%);
+  border-color:rgba(217,0,76,.30);
+  box-shadow:0 10px 30px rgba(135,0,47,.10),0 2px 0 rgba(134,201,0,.16);
+}
+.masthead:before{border-color:rgba(217,0,76,.18)}
+.masthead:after{border-color:rgba(134,201,0,.28)}
+.crest{
+  background:linear-gradient(145deg,#fff0f5,#f2ffd8);
+  border:2px solid var(--accent);
+  color:var(--accent-dark);
+  box-shadow:inset 0 0 0 5px rgba(255,255,255,.68),0 0 0 2px rgba(134,201,0,.22);
+}
+.eyebrow{color:var(--accent-dark);font-weight:700}
+.tabs{
+  border-color:rgba(217,0,76,.34);
+  box-shadow:0 5px 18px rgba(135,0,47,.10),0 1px 0 rgba(134,201,0,.16);
+}
+.tab-btn{color:#71505c}
+.tab-btn:hover{background:#fff0f5;color:var(--accent-dark)}
+.tab-btn.active{
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  box-shadow:0 5px 14px rgba(135,0,47,.24);
+}
+.card{
+  border-color:rgba(217,0,76,.20);
+  box-shadow:0 4px 16px rgba(135,0,47,.055);
+}
+.card-title{position:relative;padding-bottom:10px}
+.card-title:after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:2px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--accent) 0 40%,var(--green) 40% 58%,rgba(217,0,76,.08) 58% 100%);
+}
+.card-title h2 i,.card-title h3 i{color:var(--accent)}
+.section-label{color:var(--accent-dark)}
+.section-label:after{background:linear-gradient(90deg,rgba(217,0,76,.55),rgba(134,201,0,.72),rgba(217,0,76,.08))}
+.main{
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  box-shadow:0 5px 14px rgba(135,0,47,.20);
+}
+.main:hover{background:var(--accent-dark)}
+.secondary{background:#fff7fa;border-color:rgba(217,0,76,.48);color:var(--accent-dark)}
+.secondary:hover{background:#ffeaf1;border-color:var(--accent)}
+.access-ok,.success-box,.notice{
+  background:linear-gradient(135deg,#f4ffdd,var(--green-soft));
+  border-color:rgba(134,201,0,.52);
+}
+.staffer-choice{border-color:rgba(217,0,76,.38);background:#fffafd}
+.staffer-choice:hover{border-color:var(--accent);background:#fff1f6}
+.staffer-choice.active,
+.movement-sign.add.active,
+#tipoPgStaffPicker .movement-sign.active{
+  background:linear-gradient(135deg,#95dc00,var(--green));
+  border-color:var(--green-dark);
+  color:#213400;
+  box-shadow:0 0 0 3px rgba(134,201,0,.18),0 5px 14px rgba(77,118,0,.16);
+}
+.rule-badge,.resto-chip,.pg-kind{
+  background:var(--green-soft);
+  border-color:rgba(134,201,0,.46);
+  color:var(--green-dark);
+}
+.formula-box{
+  background:linear-gradient(135deg,#f4ffdf,#fff);
+  border-color:rgba(134,201,0,.52);
+  color:#456a00;
+}
+.formula-box i,.preview-item .score,.total-cell .v.green,.msg-ok{color:var(--green-dark)}
+.resto-progress>span{background:linear-gradient(90deg,var(--green),#a6e62a)}
+.total-sticky{
+  background:linear-gradient(105deg,#fff1f6 0%,#fff 48%,#f1ffd8 100%);
+  border-color:rgba(217,0,76,.28);
+  box-shadow:inset 0 -2px 0 rgba(134,201,0,.20);
+}
+.total-sticky.is-ready{border-color:var(--green);background:linear-gradient(105deg,#fff3f7,#fff 44%,#efffd0)}
+.balance-card{border-color:rgba(217,0,76,.22);border-left:5px solid var(--accent)}
+.balance-st,.ledger-balance,.log-st,.pg-pool-balance{color:var(--green-dark)}
+.staff-ledger[open]{border-color:rgba(217,0,76,.48);box-shadow:0 5px 16px rgba(135,0,47,.09)}
+.log-marker{background:var(--green-soft);color:var(--green-dark);border:1px solid rgba(134,201,0,.34)}
+.ref-icon{border-color:rgba(217,0,76,.42);color:var(--accent-dark);background:#fff7fa}
+.review-panel{
+  border-color:rgba(217,0,76,.38);
+  background:linear-gradient(135deg,#fff5f8 0%,#fff 52%,#f5ffe2 100%);
+}
+.import-details{border-color:rgba(217,0,76,.38)!important;background:linear-gradient(180deg,#fff,#fff5f8)!important}
+.import-details>summary:before,.import-panel-title>i{background:rgba(134,201,0,.24)!important;color:var(--green-dark)!important}
+.manual-entry{border-color:rgba(134,201,0,.62)!important;background:rgba(134,201,0,.08)!important}
+.pg-staff-group{border-color:rgba(217,0,76,.32)}
+.pg-staff-group>summary.pg-staff-group-head:hover{background:#fff2f6}
+.pg-staff-group-body{border-top-color:rgba(217,0,76,.20)}
+.pg-assoc-row{border-color:rgba(134,201,0,.42);background:#f8ffe9}
+.pg-pool-info{border-color:rgba(134,201,0,.56);background:linear-gradient(135deg,#f2ffd8,#fbfff3);color:#3f6100}
+.pg-step-number{background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,0,76,.12)}
+
 </style>
 </head>
 <body>
@@ -1053,18 +1160,6 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             <div id="correggiMsg" aria-live="polite"></div>
         </div>
 
-        <div class="card">
-          <div class="card-title">
-            <div>
-              <h2><i class="fa-solid fa-scale-balanced"></i> Criteri implementati</h2>
-              <p>Promemoria operativo del calcolo usato dal tool.</p>
-            </div>
-          </div>
-          <div class="grid-2">
-            <div class="notice"><b>Progressivi persistenti</b><br>Liste della Spesa: ogni 3 → 2 ST.<br>Camere Blindate: ogni 10 → 1 ST.<br>Burocrazia generale: ogni 3 → 1 ST.<br>I resti passano all'accredito successivo.</div>
-            <div class="notice"><b>Conteggi dell'Appello</b><br>Non estivo: ogni 5 Schede PG attivi → 1 ST.<br>Estivo: ogni 3 Schede PG attivi → 2 ST.<br>Il resto dell'Appello non viene conservato tra appelli; il lavoro può essere diviso tra più Staffer.</div>
-          </div>
-        </div>
       </div>
     </section>
   </main>
