@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v31 — selettore Studente/Adulto: stato attivo visibile e click robusto, 04/09/2026 -->
 <!-- v30 — rimozione neutra delle voci extra: nessuna etichetta "errore", 04/09/2026 -->
 <!-- v29 — quattro tende ST fisse (Player) + PG associati separati; pulizia voci create per errore, 04/09/2026 -->
 <!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
@@ -656,6 +657,9 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .movement-sign:hover{transform:translateY(-1px)}
 .movement-sign.add.active{background:var(--green);border-color:#76b900;color:#203000;box-shadow:0 0 0 3px rgba(158,234,0,.16)}
 .movement-sign.remove.active{background:var(--accent);border-color:var(--accent-dark);color:#fff;box-shadow:0 0 0 3px rgba(251,0,84,.12)}
+#tipoPgStaffPicker .movement-sign.active{background:var(--green);border-color:#76b900;color:#203000;box-shadow:0 0 0 3px rgba(158,234,0,.16)}
+#tipoPgStaffPicker .movement-sign.active i{color:#203000}
+#tipoPgStaffPicker .movement-sign:focus-visible{outline:3px solid rgba(251,0,84,.22);outline-offset:2px}
 .compact-grid{gap:10px}
 .optional{font-weight:400;color:var(--muted)}
 .movement-preview{margin-top:12px;padding:11px 13px;border:1px dashed var(--line);border-radius:11px;background:#fafafa;color:var(--muted);font-size:13.5px}
@@ -980,8 +984,8 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 
           <div class="pg-step-label"><span class="pg-step-number">2</span> Indica quale Elfo usa il PG</div>
           <div class="movement-sign-picker" id="tipoPgStaffPicker">
-            <button type="button" class="movement-sign add" data-kind="studenti"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
-            <button type="button" class="movement-sign" data-kind="adulti"><i class="fa-solid fa-briefcase"></i> Adulto</button>
+            <button type="button" class="movement-sign add" data-kind="studenti" aria-pressed="false"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
+            <button type="button" class="movement-sign" data-kind="adulti" aria-pressed="false"><i class="fa-solid fa-briefcase"></i> Adulto</button>
           </div>
           <div class="pg-kind-required"><i class="fa-solid fa-circle-exclamation"></i> Scelta obbligatoria: non viene preselezionato nessun tipo, così non puoi inserire per errore un Adulto tra gli Studenti.</div>
 
@@ -3012,7 +3016,11 @@ function selezionaOwnerPgStaff(nome){
 }
 function selezionaKindPgStaff(kind){
   pgStaffKind=(kind==='adulti'||kind==='studenti')?kind:'';
-  document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(b=>b.classList.toggle('active',!!pgStaffKind&&b.dataset.kind===pgStaffKind));
+  document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(b=>{
+    const attivo=!!pgStaffKind&&b.dataset.kind===pgStaffKind;
+    b.classList.toggle('active',attivo);
+    b.setAttribute('aria-pressed',attivo?'true':'false');
+  });
 }
 function collegaPickerPgStaff(){
   document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(btn=>{
@@ -3021,7 +3029,16 @@ function collegaPickerPgStaff(){
   });
 }
 collegaPickerPgStaff();
-document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(btn=>btn.addEventListener('click',()=>selezionaKindPgStaff(btn.dataset.kind)));
+const tipoPgStaffPicker=document.getElementById('tipoPgStaffPicker');
+if(tipoPgStaffPicker && tipoPgStaffPicker.dataset.bound!=='1'){
+  tipoPgStaffPicker.dataset.bound='1';
+  tipoPgStaffPicker.addEventListener('click',ev=>{
+    const btn=ev.target.closest('.movement-sign[data-kind]');
+    if(!btn||!tipoPgStaffPicker.contains(btn))return;
+    ev.preventDefault();
+    selezionaKindPgStaff(btn.dataset.kind);
+  });
+}
 
 async function risolviNomePgStaffRegistrato(nome,kind){
   const coll=kind==='adulti'?'personaggi_adulti':'personaggi_studenti';
