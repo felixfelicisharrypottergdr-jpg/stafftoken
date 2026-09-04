@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v32 — PG Staff: consentito solo il passaggio Studente → Adulto, 04/09/2026 -->
 <!-- v31 — selettore Studente/Adulto: stato attivo visibile e click robusto, 04/09/2026 -->
 <!-- v30 — rimozione neutra delle voci extra: nessuna etichetta "errore", 04/09/2026 -->
 <!-- v29 — quattro tende ST fisse (Player) + PG associati separati; pulizia voci create per errore, 04/09/2026 -->
@@ -2876,13 +2877,14 @@ function renderPgStaff(){
       return a.nome.localeCompare(b.nome,'it',{sensitivity:'base'});
     });
     const righe=lista.length?lista.map(pg=>{
-      const altroTipo=pg.tipo==='adulti'?'studenti':'adulti';
-      const altroNome=nomeKindPgStaff(altroTipo);
       const isMain=normalizzaNomePgStaff(pg.nome)===normalizzaNomePgStaff(st.nome);
+      const passaggioAdulto=pg.tipo==='studenti'
+        ? `<button type="button" class="secondary btn-cambia-tipo-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Passa questo PG all’Elfo Adulto"><i class="fa-solid fa-arrow-right-arrow-left"></i> Passa ad Adulto</button>`
+        : '';
       return `<div class="pg-assoc-row">
         <div class="pg-assoc-main"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b>${isMain?'<span class="pg-main-badge">PG principale</span>':''}</div>
         <div class="pg-assoc-actions">
-          <button type="button" class="secondary btn-cambia-tipo-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Correggi il tipo di Elfo"><i class="fa-solid fa-arrow-right-arrow-left"></i> Passa ad ${escapeHtml(altroNome)}</button>
+          ${passaggioAdulto}
           <button type="button" class="danger btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}"><i class="fa-solid fa-trash-can"></i> Rimuovi PG</button>
         </div>
       </div>`;
