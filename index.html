@@ -1,36 +1,9 @@
 <!DOCTYPE html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v55</title>
+<title>Gestore Staff Token — v58</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1049,7 +1022,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks"><span class="staffer-choice-name">Lulu Sparks</span><span class="staffer-choice-balance">0 ST</span></button>
             <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass"><span class="staffer-choice-name">Gideon G. Greengrass</span><span class="staffer-choice-balance">0 ST</span></button>
             <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher"><span class="staffer-choice-name">Noah Fisher</span><span class="staffer-choice-balance">0 ST</span></button>
-            <button type="button" class="staffer-choice" data-value="Odette Montclaire" data-aliases="odette|odette montclaire"><span class="staffer-choice-name">Odette Montclaire</span><span class="staffer-choice-balance">0 ST</span></button>
+            <button type="button" class="staffer-choice" data-value="Odette Montclair" data-aliases="odette|odette montclair|odette montclaire"><span class="staffer-choice-name">Odette Montclair</span><span class="staffer-choice-balance">0 ST</span></button>
           </div>
           <input type="hidden" id="staffNomeInput" value="">
           <div class="staffer-picker-help">I quattro pulsanti sono i quattro Player Staffer. I PG associati non compaiono qui: servono soltanto al collegamento con gli Elfi.</div>
@@ -1157,7 +1130,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
               <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu Sparks</button>
               <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon G. Greengrass</button>
               <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher">Noah Fisher</button>
-              <button type="button" class="staffer-choice" data-value="Odette Montclaire" data-aliases="odette|odette montclaire">Odette Montclaire</button>
+              <button type="button" class="staffer-choice" data-value="Odette Montclair" data-aliases="odette|odette montclair|odette montclaire">Odette Montclair</button>
             </div>
             <input type="hidden" id="correggiNome" value="">
 
@@ -1216,7 +1189,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
               <button type="button" class="staffer-choice" data-value="Lulu Sparks">Lulu Sparks</button>
               <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon G. Greengrass</button>
               <button type="button" class="staffer-choice" data-value="Noah Fisher">Noah Fisher</button>
-              <button type="button" class="staffer-choice" data-value="Odette Montclaire">Odette Montclaire</button>
+              <button type="button" class="staffer-choice" data-value="Odette Montclair" data-aliases="odette|odette montclair|odette montclaire">Odette Montclair</button>
             </div>
             <div id="pgStaffPoolInfo" class="pg-pool-info empty">Seleziona uno dei quattro Player: il PG verrà collegato al suo saldo ST condiviso.</div>
 
@@ -1318,7 +1291,7 @@ function normalizzaStaffId(str){
   if(n==='lulu')return 'lulu sparks';
   if(n==='gideon'||n==='gideon g greengrass')return 'gideon g greengrass';
   if(n==='noah'||n==='noah fisher')return 'noah';
-  if(n==='odette'||n==='odette montclaire')return 'odette';
+  if(n==='odette'||n==='odette montclair'||n==='odette montclaire')return 'odette';
   return n;
 }
 function escapeHtml(str){
@@ -1427,14 +1400,38 @@ function iconeRiferimenti(o){
   if(!refs.length)return '';
   return `<span class="ref-icons">${refs.map((url,i)=>`<a class="ref-icon" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" title="Apri riferimento ${i+1}" aria-label="Apri riferimento ${i+1}"><i class="fa-solid fa-link"></i></a>`).join('')}</span>`;
 }
+function escapeRegExpTesto(s){
+  return String(s||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+}
+function rimuoviPrefissoMansione(nome,testo){
+  let t=String(testo||'').trim();
+  const n=String(nome||'').trim();
+  if(!n||!t)return t;
+  const re=new RegExp('^\\s*'+escapeRegExpTesto(n)+'\\s*:\s*','i');
+  while(re.test(t))t=t.replace(re,'').trim();
+  return t;
+}
+function normalizzaNotaEditor(nome,testo){
+  let t=rimuoviPrefissoMansione(nome,testo);
+  t=t.replace(/\s*→\s*[+-]?\d+\s*ST\s*$/i,'').trim();
+  return t;
+}
 function testoObiettivoRegistro(o){
-  if(o?.nome&&o?.formula){
-    return `${o.nome}: ${o.formula}${o.descrizione?' — '+o.descrizione:''}`;
+  const nome=String(o?.nome||'').trim();
+  if(nome&&o?.formula){
+    const formula=rimuoviPrefissoMansione(nome,o.formula);
+    const descrizione=rimuoviPrefissoMansione(nome,o.descrizione||'');
+    return `${nome}: ${formula}${descrizione?' — '+descrizione:''}`;
   }
   let t=String(o?.dettaglio||o?.nome||'Movimento');
   t=t.split(/\s+Riferimento\s*:/i)[0];
   t=t.replace(/https?:\/\/[^\s\]<>]+/g,'').replace(/\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?/gi,'');
-  return t.replace(/\s{2,}/g,' ').trim();
+  t=t.replace(/\s{2,}/g,' ').trim();
+  if(nome){
+    const corpo=rimuoviPrefissoMansione(nome,t);
+    if(corpo!==t)return `${nome}: ${corpo}`;
+  }
+  return t;
 }
 
 function syncProtected(){
@@ -2836,7 +2833,8 @@ function htmlRigaEditorMovimento(o={}){
   const nome=String(o.nome||'');
   const st=Number.isFinite(Number(o.ft))?Number(o.ft):0;
   const refs=String(o.riferimenti||riferimentiDaObiettivo(o).join(' | '));
-  let nota=String(o.descrizione||o.dettaglio||'');
+  let nota=String(o.descrizione||o.formula||o.dettaglio||'');
+  nota=normalizzaNotaEditor(nome,nota);
   return `<div class="log-edit-row">
     <div><label>Mansione</label><input type="text" class="edit-line-name" value="${escapeHtml(nome)}" placeholder="Nome della mansione"></div>
     <div><label>ST</label><input type="number" class="edit-line-st" step="1" value="${escapeHtml(st)}"></div>
@@ -2871,7 +2869,8 @@ async function salvaModificheMovimento(id){
     const nome=row.querySelector('.edit-line-name')?.value.trim()||'';
     const ft=parseInt(row.querySelector('.edit-line-st')?.value,10)||0;
     const riferimenti=row.querySelector('.edit-line-ref')?.value.trim()||'';
-    const nota=row.querySelector('.edit-line-note')?.value.trim()||'';
+    const notaRaw=row.querySelector('.edit-line-note')?.value.trim()||'';
+    const nota=normalizzaNotaEditor(nome,notaRaw);
     return {id:'modifica_manual',nome,ft,riferimenti,descrizione:nota,dettaglio:nota?`${nome}: ${nota} → ${ft} ST`:`${nome}: ${ft} ST`};
   }).filter(r=>r.nome||r.ft||r.riferimenti||r.descrizione);
   if(!righe.length){messaggioArchivio('<div class="msg-err">Lascia almeno una riga di dettaglio nel movimento.</div>');return}
@@ -3309,7 +3308,7 @@ const LEGACY_STAFFER_PG_CONFIG=[
   {nome:'Lulu Sparks',breve:'Lulu Sparks',aliases:'lulu|lulu sparks'},
   {nome:'Gideon G. Greengrass',breve:'Gideon G. Greengrass',aliases:'gideon|gideon g. greengrass|gideon g greengrass'},
   {nome:'Noah Fisher',breve:'Noah Fisher',aliases:'noah|noah fisher'},
-  {nome:'Odette Montclaire',breve:'Odette Montclaire',aliases:'odette|odette montclaire'}
+  {nome:'Odette Montclair',breve:'Odette Montclair',aliases:'odette|odette montclair|odette montclaire'}
 ];
 let STAFFER_PG_CONFIG=LEGACY_STAFFER_PG_CONFIG.slice();
 let EXTRA_STAFF_DOCS=[];
