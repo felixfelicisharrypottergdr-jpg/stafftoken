@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v41 — saldi del Registro ricalcolati per data storica + rimozione che storna il movimento, 04/09/2026 -->
 <!-- v38 — saldo risultante subito sotto ogni variazione nel registro, 04/09/2026 -->
 <!-- v37 — palette più decisa: fucsia e verde più presenti e leggibili, 04/09/2026 -->
 <!-- v36 — barra di navigazione centrata + rimossa sezione Criteri implementati, 04/09/2026 -->
@@ -20,7 +21,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v37</title>
+<title>Gestore Staff Token — v41</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -2401,6 +2402,9 @@ document.getElementById('overrideTotaleAccredito').addEventListener('input',rica
 document.getElementById('btnDataAdesso').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
 
 async function caricaPubblico(forza=false){
+  if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){
+    await riparaRimozioniV40();
+  }
   const saldi=document.getElementById('saldiPubblici');
   const archivio=document.getElementById('archivioBox');
   if(forza||!saldi.dataset.loaded){saldi.innerHTML='<div class="loading">Caricamento saldi…</div>'}
@@ -2648,6 +2652,81 @@ async function salvaModificheMovimento(id){
   }catch(e){messaggioArchivio(`<div class="msg-err">Modifica non salvata: ${escapeHtml(e.message)}</div>`)}
 }
 
+function deltaEffettivoMovimento(m){
+  if(!m||m.annullato)return 0;
+  return Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+}
+
+function saldiCronologiciRegistro(){
+  const result=new Map();
+  const saldoFinaleByStaff={};
+  staffPubblici.forEach(s=>saldoFinaleByStaff[s.id]=numeroIntero(s.st_totali));
+
+  LEGACY_STAFFER_PG_CONFIG.forEach(cfg=>{
+    const staffId=normalizzaStaffId(cfg.nome);
+    const movs=archivioMovimenti
+      .filter(m=>{
+        const sid=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+        return sid===staffId&&!m.annullato&&!m.rimossoDalRegistro;
+      })
+      .sort((a,b)=>{
+        const d=timestampMs(a.data)-timestampMs(b.data);
+        if(d)return d;
+        return timestampMs(a.registratoIl||a.data)-timestampMs(b.registratoIl||b.data);
+      });
+    if(!movs.length)return;
+    const somma=movs.reduce((acc,m)=>acc+deltaEffettivoMovimento(m),0);
+    let corrente=(saldoFinaleByStaff[staffId]??0)-somma;
+    movs.forEach(m=>{
+      const prima=corrente;
+      corrente+=deltaEffettivoMovimento(m);
+      result.set(m.id,{prima,dopo:corrente});
+    });
+  });
+  return result;
+}
+
+async function riparaRimozioniV40(){
+  if(!passwordCorrente||window.__staffTokenRimozioniV40Riparate)return;
+  window.__staffTokenRimozioniV40Riparate=true;
+  try{
+    const snap=await db.collection('staff_token_log').where('rimossoDalRegistro','==',true).get();
+    const daRiparare=[];
+    snap.forEach(d=>{
+      const x={id:d.id,...d.data()};
+      if(x.rimozioneCompensata===true)return;
+      const sid=x.staffId||normalizzaStaffId(x.nomeVisualizzato||'');
+      if(!isPrimaryStaffId(sid))return;
+      daRiparare.push({...x,staffId:sid});
+    });
+    if(!daRiparare.length)return;
+
+    const perStaff=new Map();
+    daRiparare.forEach(m=>{
+      if(!perStaff.has(m.staffId))perStaff.set(m.staffId,[]);
+      perStaff.get(m.staffId).push(m);
+    });
+
+    for(const [staffId,movs] of perStaff){
+      const staffRef=db.collection('staff_token').doc(staffId);
+      const staffSnap=await staffRef.get();
+      if(!staffSnap.exists)continue;
+      const deltaDaStornare=movs.reduce((acc,m)=>acc+deltaEffettivoMovimento(m),0);
+      const nuovoSaldo=numeroIntero(staffSnap.data().st_totali)-deltaDaStornare;
+      const batch=db.batch();
+      batch.set(staffRef,{st_totali:nuovoSaldo,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      movs.forEach(m=>batch.set(db.collection('staff_token_log').doc(m.id),{
+        rimozioneCompensata:true,
+        rimozioneCompensataIl:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true}));
+      await batch.commit();
+    }
+  }catch(e){
+    window.__staffTokenRimozioniV40Riparate=false;
+    console.warn('Riparazione rimozioni v40 non completata:',e);
+  }
+}
+
 async function rimuoviMovimentoDalRegistro(id){
   if(!passwordCorrente){
     messaggioArchivio('<div class="msg-err">Sblocca prima la modalità Staff.</div>');
@@ -2655,13 +2734,33 @@ async function rimuoviMovimentoDalRegistro(id){
   }
   const m=archivioMovimenti.find(x=>x.id===id);
   if(!m||m.rimossoDalRegistro)return;
+  const staffId=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+  if(!staffId)return;
+  const delta=deltaEffettivoMovimento(m);
   try{
-    await db.collection('staff_token_log').doc(id).set({
-      rimossoDalRegistro:true,
-      rimossoIl:firebase.firestore.FieldValue.serverTimestamp()
-    },{merge:true});
-    messaggioArchivio('<div class="msg-ok">Movimento rimosso dal Registro. Il saldo non è stato modificato.</div>');
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc(id);
+    await db.runTransaction(async tx=>{
+      const [staffSnap,logSnap]=await Promise.all([tx.get(staffRef),tx.get(logRef)]);
+      if(!logSnap.exists)throw new Error('Il movimento non esiste più.');
+      const log=logSnap.data();
+      if(log.rimossoDalRegistro)return;
+      const stato=staffSnap.exists?staffSnap.data():{st_totali:0};
+      const nuovoSaldo=numeroIntero(stato.st_totali)-delta;
+      tx.set(staffRef,{
+        st_totali:nuovoSaldo,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      tx.set(logRef,{
+        rimossoDalRegistro:true,
+        rimossoIl:firebase.firestore.FieldValue.serverTimestamp(),
+        rimozioneCompensata:true,
+        rimozioneCompensataIl:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    });
+    messaggioArchivio(`<div class="msg-ok">Movimento rimosso. Il saldo è stato stornato di ${escapeHtml(formatDelta(-delta))}: è come se quel movimento non fosse mai esistito.</div>`);
     await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
   }catch(e){
     messaggioArchivio(`<div class="msg-err">Movimento non rimosso: ${escapeHtml(e.message)}</div>`);
   }
@@ -2672,6 +2771,7 @@ function renderArchivio(){
   const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
   const tipo=document.getElementById('filtroTipo').value;
   const ultimi=ultimiMovimentiAttiviPerStaff();
+  const saldoCronologico=saldiCronologiciRegistro();
   const saldoMap={};
   staffPubblici.forEach(s=>saldoMap[s.id]={saldo:numeroIntero(s.st_totali),nome:nomeDaDoc(s.id,s)});
 
@@ -2738,7 +2838,7 @@ function renderArchivio(){
         </div>`;
       }
       const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi dal Registro" aria-label="Rimuovi dal Registro"><i class="fa-solid fa-xmark"></i></button>`:'';
-      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&m.saldoDopo!==undefined&&delta!==0?`<span class="log-total-after">= ${numeroIntero(m.saldoDopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
+      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
     }).join('');
     return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
