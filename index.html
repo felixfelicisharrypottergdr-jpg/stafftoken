@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v38 — saldo risultante subito sotto ogni variazione nel registro, 04/09/2026 -->
 <!-- v37 — palette più decisa: fucsia e verde più presenti e leggibili, 04/09/2026 -->
 <!-- v36 — barra di navigazione centrata + rimossa sezione Criteri implementati, 04/09/2026 -->
 <!-- v34 — quattro Player Staffer fissi e sempre attivi: rimosso stato attivo/inattivo, 04/09/2026 -->
@@ -515,9 +516,10 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 .log-marker.neutral{background:#f1edef;color:var(--muted)}
 .log-title{font-weight:700;color:var(--ink);font-size:13.5px}
 .log-meta{font-size:11px;color:var(--muted);margin-top:1px}
-.log-st{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--green-dark);white-space:nowrap}
+.log-st{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--green-dark);white-space:nowrap;text-align:right}
 .log-st.negative{color:var(--red)}
 .log-st.neutral{color:var(--muted)}
+.log-st .log-total-after{display:block;margin-top:3px;padding-top:3px;border-top:1px solid currentColor;font-family:'EB Garamond',Georgia,serif;font-size:12px;font-weight:700;line-height:1;color:inherit;opacity:.88}
 .log-details{margin:7px 0 0 40px;font-size:12.6px;line-height:1.45;color:var(--ink)}
 .log-details .line{display:flex;align-items:flex-start;gap:7px;padding:3px 0}
 .log-details .line-text{min-width:0;flex:1}
@@ -2682,7 +2684,7 @@ function renderArchivio(){
           <div class="log-edit-actions"><button type="button" class="secondary add-edit-row" data-add-edit-row="${escapeHtml(m.id)}"><i class="fa-solid fa-plus"></i> Aggiungi riga</button><button type="button" class="mini save-movement-edit" data-save-edit-id="${escapeHtml(m.id)}"><i class="fa-solid fa-check"></i> Salva modifiche</button><button type="button" class="ghost close-movement-edit" data-close-edit-id="${escapeHtml(m.id)}">Chiudi</button></div>
         </div>`;
       }
-      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined&&!m.annullato?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
+      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&m.saldoDopo!==undefined&&delta!==0?`<span class="log-total-after">= ${numeroIntero(m.saldoDopo)} ST</span>`:''}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
     }).join('');
     return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
