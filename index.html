@@ -10,6 +10,7 @@
 <!-- v29 — quattro saldi ST fisse (Player) + PG associati separati; pulizia voci create per errore, 04/09/2026 -->
 <!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
 <!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
+<!-- v39 — import storico: totale dichiarato usato come quota per singola Quest narrativa ripartibile, 04/09/2026 -->
 <!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
 <!-- v23 — ST storici: disassociare un PG non rimborsa gli ST già spesi e non è bloccato dagli usi precedenti, 04/09/2026 -->
 <!-- v22 — sicurezza Staff Token: sessione Staff protetta, nessuna Password nei documenti pubblici, bonifica legacy + PG associati con ID esatto, 04/09/2026 -->
@@ -2297,6 +2298,7 @@ async function analizzaTesto(){
 
     if(o.tipo==='fisso'){
       let quantita=0; const refs=[]; let scoreImport=0;
+      const reportStart=report.length;
       for(const riga of matches){
         const q=quantitaFissaDaRiga(riga);
         const rr=estraiRiferimenti(riga); refs.push(...rr);
@@ -2304,7 +2306,7 @@ async function analizzaTesto(){
         const atteso=q*o.ftUnitario;
         const esplicito=stEsplicitiRiga(riga);
         if(esplicito!==null&&esplicito!==atteso){
-          avvisi.push(`${o.nome}: nella riga è indicato ${esplicito} ST, mentre la regola attuale calcola ${atteso} ST. Ho usato la regola attuale.`);
+          avvisi.push(`${o.nome}: nella riga è indicato ${esplicito} ST, mentre il valore pieno della regola attuale è ${atteso} ST.`);
         }
         scoreImport+=atteso;
         report.push({categoria:o.nome,src:riga,score:atteso,why:`${q} ${q===1?'voce':'voci'} × ${o.ftUnitario} ST`});
@@ -2314,9 +2316,31 @@ async function analizzaTesto(){
         const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
         const totaleRegolamentare=quantita*o.ftUnitario;
         const espliciti=matches.map(stEsplicitiRiga).filter(v=>v!==null);
+        let quotaStorica=null;
         if(espliciti.length){
           const quota=espliciti.reduce((a,b)=>a+b,0);
-          if(quota>0&&quota<=totaleRegolamentare&&quota!==totaleRegolamentare)div.querySelector('.in-quota').value=quota;
+          if(quota>0&&quota<=totaleRegolamentare&&quota!==totaleRegolamentare) quotaStorica=quota;
+        }else if(
+          matches.length===1 &&
+          gruppi.size===1 &&
+          fallbackEspliciti.length===0 &&
+          totaleDichiarato!==null &&
+          totaleDichiarato>0 &&
+          totaleDichiarato<totaleRegolamentare
+        ){
+          // Registro storico: se l'unica attività è ripartibile e il testo dichiara
+          // un totale inferiore al valore pieno, quel totale è la quota realmente
+          // attribuita allo Staffer (es. Quest narrativa da 3 ST condivisa: quota 1 ST).
+          quotaStorica=totaleDichiarato;
+        }
+        if(quotaStorica!==null){
+          div.querySelector('.in-quota').value=quotaStorica;
+          scoreImport=quotaStorica;
+          if(matches.length===1 && report[reportStart]){
+            report[reportStart].score=quotaStorica;
+            report[reportStart].why=`Quota storica attribuita allo Staffer: ${quotaStorica} ST (valore pieno ${totaleRegolamentare} ST)`;
+          }
+          avvisi.push(`${o.nome}: ho usato la quota storica di ${quotaStorica} ST indicata dall’accredito, invece del valore pieno di ${totaleRegolamentare} ST.`);
         }
       }
       trovati.push(`${o.nome}: ${quantita} ${quantita===1?'voce':'voci'} = ${scoreImport} ST`);
