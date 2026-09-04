@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v12</title>
+<title>Gestore Staff Token — v19</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -424,6 +424,22 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   line-height:1.4;
 }
 .notice i{margin-right:6px}
+
+.import-date-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin:10px 0 4px}
+.import-date-row label{margin-top:0}
+.import-date-row .ghost{white-space:nowrap;margin-bottom:0}
+.log-edit-editor{margin-top:9px;padding:12px;border:1px solid var(--line);background:#faf8f9;border-radius:12px}
+.log-edit-editor label{margin:0 0 4px}
+.log-edit-grid{display:grid;grid-template-columns:minmax(190px,1fr) minmax(130px,.45fr);gap:10px;align-items:end}
+.log-edit-objectives{display:grid;gap:8px;margin-top:10px}
+.log-edit-row{display:grid;grid-template-columns:minmax(170px,1.2fr) 90px minmax(180px,1fr) 38px;gap:7px;align-items:end;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.log-edit-row .wide{grid-column:1/-1}
+.log-edit-row input,.log-edit-row textarea,.log-edit-grid input{font-size:13px;padding:8px 9px}
+.log-edit-row textarea{min-height:54px;resize:vertical}
+.log-edit-help{font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:7px}
+.log-edit-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.log-actions .edit-movement{margin-left:auto}
+@media(max-width:760px){.import-date-row,.log-edit-grid,.log-edit-row{grid-template-columns:1fr}.log-edit-row .wide{grid-column:auto}.log-actions .edit-movement{margin-left:0}}
 .success-box{
   margin-top:12px;
   border:1px solid #d6e9c2;
@@ -616,6 +632,27 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 }
 
 
+
+/* ===== v19: gestione saldo per movimenti ===== */
+.balance-current{
+  margin:14px 0 12px; padding:14px 16px; border:1px solid #ccea9c; border-radius:14px;
+  background:linear-gradient(135deg,#f8ffe9,#ffffff); display:grid; grid-template-columns:1fr auto; gap:3px 14px; align-items:center;
+}
+.balance-current-label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.balance-current-value{grid-row:1/3;grid-column:2;font-family:'magic','Cinzel',serif;font-weight:700;font-size:28px;color:#4f7f00;white-space:nowrap}
+.balance-current-sub{font-size:13px;color:var(--muted)}
+.movement-sign-picker{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:7px 0 12px}
+.movement-sign{border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px 12px;cursor:pointer;font-weight:700;font-family:'magic','Cinzel',serif;color:var(--muted);transition:.14s ease}
+.movement-sign:hover{transform:translateY(-1px)}
+.movement-sign.add.active{background:var(--green);border-color:#76b900;color:#203000;box-shadow:0 0 0 3px rgba(158,234,0,.16)}
+.movement-sign.remove.active{background:var(--accent);border-color:var(--accent-dark);color:#fff;box-shadow:0 0 0 3px rgba(251,0,84,.12)}
+.compact-grid{gap:10px}
+.optional{font-weight:400;color:var(--muted)}
+.movement-preview{margin-top:12px;padding:11px 13px;border:1px dashed var(--line);border-radius:11px;background:#fafafa;color:var(--muted);font-size:13.5px}
+.movement-preview.ready{border-style:solid;border-color:#ccea9c;background:#f8ffe9;color:#3f610d}
+.movement-preview.negative{border-color:#ffc2d4;background:#fff4f8;color:#8f153e}
+.movement-preview b{font-family:'magic','Cinzel',serif;font-size:16px}
+
   .import-details{margin:16px 0 18px;border:1px solid rgba(251,0,84,.28);border-radius:16px;background:linear-gradient(180deg,#fff,#fff9fb);box-shadow:0 5px 16px rgba(151,0,51,.06);overflow:hidden}
   .import-details>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:10px;font-family:'magic','Cinzel',serif;font-weight:700;color:var(--bordeaux-dark);user-select:none}
   .import-details>summary::-webkit-details-marker{display:none}
@@ -647,6 +684,30 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .manual-total-status{margin-top:8px;font-size:12.5px;line-height:1.4;color:var(--testo-muted)}
   .manual-total-status.override{color:#6b3b4c}
   @media(max-width:700px){.manual-total-row{grid-template-columns:1fr}.manual-total-row .ghost{width:100%}}
+
+  .review-panel{margin:16px 0 18px;padding:16px;border:1px solid rgba(251,0,84,.28);border-radius:16px;background:linear-gradient(180deg,#fff,#fffafd);}
+  .review-panel .card-title{margin-bottom:12px;}
+  .review-panel .total-sticky{margin-top:12px;}
+
+
+  /* ===== PG DELLO STAFF / collegamento Elfi ===== */
+  .pg-staff-admin{margin-top:18px;}
+  .pg-staff-toolbar{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;align-items:end;}
+  .pg-add-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:14px;}
+  .pg-staff-list{margin-top:14px;display:grid;gap:10px;}
+  .pg-staff-group{border:1px solid rgba(251,0,84,.22);border-radius:12px;background:#fff;padding:12px;}
+  .pg-staff-group-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px;}
+  .pg-staff-group-head b{color:var(--bordeaux-dark);font-family:'magic','Cinzel',serif;font-size:17px;}
+  .pg-staff-count{font-size:12px;color:var(--testo-muted);}
+  .pg-chip-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .pg-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #dfe9c6;background:#f7ffe6;border-radius:999px;padding:6px 8px 6px 11px;font-size:13px;}
+  .pg-chip .pg-kind{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#557500;font-weight:700;}
+  .pg-chip button{border:0;background:transparent;color:var(--rosso);cursor:pointer;padding:2px 4px;font-size:12px;}
+  .pg-empty{color:var(--testo-muted);font-style:italic;font-size:13px;padding:4px 0;}
+  .field-with-action{display:flex;gap:7px;align-items:center;}
+  .field-with-action input{flex:1;}
+  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}}
+
 </style>
 </head>
 <body>
@@ -716,6 +777,8 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             <option value="">Tutti i movimenti</option>
             <option value="accredito">Accrediti</option>
             <option value="correzione">Correzioni</option>
+            <option value="movimento_manuale">Movimenti manuali</option>
+            <option value="spesa_elfo">Spese da Elfo</option>
             <option value="inizializzazione">Inizializzazioni</option>
             <option value="annullato">Annullati</option>
           </select>
@@ -766,6 +829,14 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa o aggiungi manualmente</span><span class="summary-note">facoltativo</span></summary>
             <div class="import-panel">
               <div class="import-panel-title"><i class="fa-solid fa-wand-magic-sparkles"></i><div><b>Importa un accredito</b><span>Incolla un accredito già compilato e il tool proverà a riconoscere Staffer, mansioni, ST e riferimenti.</span></div></div>
+              <div class="import-date-row">
+                <div>
+                  <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
+                  <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
+                  <div class="hint">Scrivila a mano, per esempio <b>19/02/2026 17:54</b>. Puoi anche indicare solo il giorno. Se la lasci vuota, verranno usate data e ora della registrazione.</div>
+                </div>
+                <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
+              </div>
               <label for="testoIncolla">Testo da importare</label>
               <textarea id="testoIncolla" rows="5" placeholder="Incolla qui nome, mansioni e riferimenti…"></textarea>
               <div class="import-minihelp"><i class="fa-solid fa-circle-info"></i><span>I resti già salvati non vengono contati due volte. Un valore finale come <b>(6)</b> viene letto come valore della voce, non come 6 lavori.</span></div>
@@ -797,34 +868,29 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             </div>
           </details>
 
-          <div id="obiettiviContainer"></div>
-        </div>
+          <div class="review-panel">
+            <div class="card-title">
+              <div>
+                <h2>3. Controlla e registra</h2>
+                <p>Il riepilogo si aggiorna mentre selezioni le mansioni qui sotto. Il pulsante si attiva soltanto quando c’è davvero qualcosa da salvare.</p>
+              </div>
+            </div>
+            <div id="riepilogoAttivita"><div class="empty">Seleziona una mansione qui sotto: comparirà subito in questo riepilogo.</div></div>
+            <div class="total-sticky is-empty" id="totalSummary">
+              <div class="total-cell"><div class="k">Saldo attuale</div><div class="v" id="stAttuali">0 ST</div></div>
+              <div class="total-cell"><div class="k">Questo accredito</div><div class="v green" id="stGuadagnati">+0 ST</div></div>
+              <div class="total-cell"><div class="k">Saldo dopo</div><div class="v" id="stFinale">0 ST</div></div>
+              <button class="main" id="btnRegistra" disabled><i class="fa-solid fa-plus"></i> Aggiungi una mansione</button>
+              <div class="register-help" id="registerHelp">Niente verrà registrato finché non selezioni almeno una mansione.</div>
+            </div>
+            <div id="registraMsg" aria-live="polite"></div>
+            <div id="successBox" class="success-box hidden">
+              <h4><i class="fa-solid fa-circle-check"></i> Accredito registrato</h4>
+              <p id="successText"></p>
+            </div>
+          </div>
 
-        <div class="card">
-          <div class="card-title">
-            <div>
-              <h2>3. Controlla e registra</h2>
-              <p>Qui compare soltanto ciò che hai aggiunto nel punto 2. Il pulsante si attiva quando esiste davvero qualcosa da salvare.</p>
-            </div>
-          </div>
-          <div id="riepilogoAttivita"><div class="empty">Aggiungi una mansione nel punto 2: qui comparirà il riepilogo prima del salvataggio.</div></div>
-          <div class="total-sticky is-empty" id="totalSummary">
-            <div class="total-cell"><div class="k">Saldo attuale</div><div class="v" id="stAttuali">0 ST</div></div>
-            <div class="total-cell"><div class="k">Questo accredito</div><div class="v green" id="stGuadagnati">+0 ST</div></div>
-            <div class="total-cell"><div class="k">Saldo dopo</div><div class="v" id="stFinale">0 ST</div></div>
-            <button class="main" id="btnRegistra" disabled><i class="fa-solid fa-plus"></i> Aggiungi una mansione</button>
-            <div class="register-help" id="registerHelp">Niente verrà registrato finché non selezioni almeno una mansione.</div>
-          </div>
-          <div id="registraMsg" aria-live="polite"></div>
-          <div id="successBox" class="success-box hidden">
-            <h4><i class="fa-solid fa-circle-check"></i> Accredito registrato</h4>
-            <p id="successText"></p>
-            <textarea id="bbcodeOutput" class="bbcode-preview" readonly></textarea>
-            <div class="actions" style="margin-top:8px">
-              <button class="secondary" id="btnCopiaBBCode"><i class="fa-regular fa-copy"></i> Copia riepilogo per il forum</button>
-            </div>
-            <div id="copyMsg"></div>
-          </div>
+          <div id="obiettiviContainer"></div>
         </div>
       </div>
     </section>
@@ -872,8 +938,8 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
           <div class="card admin-section">
             <div class="card-title">
               <div>
-                <h2><i class="fa-solid fa-sliders"></i> Correggi saldo</h2>
-                <p>La correzione viene registrata come movimento con la differenza rispetto al saldo precedente.</p>
+                <h2><i class="fa-solid fa-arrow-right-arrow-left"></i> Aumenta o diminuisci saldo</h2>
+                <p>Parti sempre dal totale reale dello Staffer e registra soltanto la variazione, con il relativo riferimento.</p>
               </div>
             </div>
             <label>Staffer</label>
@@ -884,13 +950,84 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
               <button type="button" class="staffer-choice" data-value="Odette" data-aliases="odette">Odette</button>
             </div>
             <input type="hidden" id="correggiNome" value="">
-            <label>Nuovo saldo ST esatto</label>
-            <input type="number" id="correggiValore" step="1">
-            <label>Motivo della correzione</label>
-            <textarea id="correggiMotivo" rows="3" placeholder="Indica perché il saldo viene corretto"></textarea>
-            <button class="main" style="margin-top:11px" id="btnCorreggi">Applica correzione</button>
+
+            <div class="balance-current" id="saldoMovimentoBox">
+              <div class="balance-current-label">Saldo attuale</div>
+              <div class="balance-current-value" id="saldoMovimentoAttuale">— ST</div>
+              <div class="balance-current-sub" id="saldoMovimentoSub">Seleziona uno Staffer.</div>
+            </div>
+
+            <label>Operazione</label>
+            <div class="movement-sign-picker" id="movimentoSegnoPicker">
+              <button type="button" class="movement-sign active add" data-sign="1"><i class="fa-solid fa-plus"></i> Aggiungi</button>
+              <button type="button" class="movement-sign remove" data-sign="-1"><i class="fa-solid fa-minus"></i> Togli</button>
+            </div>
+            <input type="hidden" id="movimentoSegno" value="1">
+
+            <div class="grid-2 compact-grid">
+              <div>
+                <label>Quanti ST</label>
+                <input type="number" id="correggiValore" min="1" step="1" placeholder="Es. 7">
+              </div>
+              <div>
+                <label>Data del movimento / accredito</label>
+                <div class="field-with-action">
+                  <input type="text" id="movimentoData" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
+                  <button type="button" class="ghost" id="btnMovimentoDataAdesso" title="Usa data e ora attuali"><i class="fa-regular fa-clock"></i> Adesso</button>
+                </div>
+              </div>
+            </div>
+            <label>Link / riferimento</label>
+            <input type="text" id="movimentoLink" placeholder="?t=… oppure URL completo">
+            <label>Descrizione <span class="optional">(facoltativa)</span></label>
+            <textarea id="correggiMotivo" rows="2" placeholder="Es. Staff Token usati in Camera Blindata"></textarea>
+
+            <div class="movement-preview" id="movimentoPreview">
+              <span>Seleziona uno Staffer e indica la variazione.</span>
+            </div>
+            <button class="main" style="margin-top:11px" id="btnCorreggi" disabled><i class="fa-solid fa-check"></i> Registra movimento</button>
             <div id="correggiMsg" aria-live="polite"></div>
           </div>
+        </div>
+
+        <div class="card pg-staff-admin">
+          <div class="card-title">
+            <div>
+              <h2><i class="fa-solid fa-users"></i> PG dello Staff</h2>
+              <p>Aggiungi qui i Personaggi che potranno usare gli Staff Token nella loro Camera Blindata. L'associazione viene salvata nello stesso archivio live degli ST.</p>
+            </div>
+          </div>
+
+          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Predisposto per il collegamento con gli Elfi.</b> Dopo l'aggiornamento una tantum di Elfo Studenti e Elfo Adulti, aggiungere o rimuovere un PG qui potrà riflettersi live nella sua Camera Blindata, senza modificare di nuovo il file dell'Elfo.</div></div>
+
+          <div class="pg-staff-toolbar">
+            <div>
+              <label>Staffer proprietario</label>
+              <div class="staffer-picker" id="pickerPgStaff">
+                <button type="button" class="staffer-choice active" data-value="Lulu Sparks">Lulu</button>
+                <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon</button>
+                <button type="button" class="staffer-choice" data-value="Noah">Noah</button>
+                <button type="button" class="staffer-choice" data-value="Odette">Odette</button>
+              </div>
+            </div>
+            <div>
+              <label>Elfo del PG</label>
+              <div class="movement-sign-picker" id="tipoPgStaffPicker">
+                <button type="button" class="movement-sign active add" data-kind="studenti"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
+                <button type="button" class="movement-sign" data-kind="adulti"><i class="fa-solid fa-briefcase"></i> Adulto</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pg-add-row">
+            <div>
+              <label>Nome del PG</label>
+              <input type="text" id="pgStaffNome" placeholder="Es. Raven Chandra" autocomplete="off">
+            </div>
+            <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-user-plus"></i> Aggiungi PG</button>
+          </div>
+          <div id="pgStaffMsg" aria-live="polite"></div>
+          <div id="pgStaffLista" class="pg-staff-list"><div class="loading">Caricamento PG dello Staff…</div></div>
         </div>
 
         <div class="card">
@@ -1001,6 +1138,28 @@ function timestampMs(ts){
   if(typeof ts.toDate==='function')return ts.toDate().getTime();
   if(typeof ts.seconds==='number')return ts.seconds*1000;
   const d=new Date(ts);return Number.isNaN(d.getTime())?0:d.getTime();
+}
+function dataManualeValue(ts){
+  const ms=timestampMs(ts); if(!ms)return '';
+  const d=new Date(ms); const pad=n=>String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function timestampDaInputData(value){
+  const raw=String(value||'').trim();
+  if(!raw)return null;
+  let giorno,mese,anno,ora=0,minuto=0;
+  let m=raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})(?:[ ,T]+(\d{1,2})(?:[:.](\d{1,2}))?)?$/);
+  if(m){
+    giorno=Number(m[1]); mese=Number(m[2]); anno=Number(m[3]); ora=Number(m[4]||0); minuto=Number(m[5]||0);
+  }else{
+    m=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T]+(\d{1,2})(?::(\d{1,2}))?)?$/);
+    if(m){anno=Number(m[1]);mese=Number(m[2]);giorno=Number(m[3]);ora=Number(m[4]||0);minuto=Number(m[5]||0)}
+    else throw new Error('Data non valida. Usa il formato GG/MM/AAAA HH:MM, per esempio 19/02/2026 17:54.');
+  }
+  if(mese<1||mese>12||giorno<1||giorno>31||ora<0||ora>23||minuto<0||minuto>59)throw new Error('Data o ora non valide.');
+  const d=new Date(anno,mese-1,giorno,ora,minuto,0,0);
+  if(d.getFullYear()!==anno||d.getMonth()!==mese-1||d.getDate()!==giorno)throw new Error('La data indicata non esiste.');
+  return firebase.firestore.Timestamp.fromDate(d);
 }
 function normalizzaRiferimento(ref){
   ref=String(ref||'').trim().replace(/^\[URL=/i,'').replace(/\]x?\[\/URL\]$/i,'');
@@ -1457,6 +1616,7 @@ function collegaPickerStaffer(){
         input.value=btn.dataset.value||btn.textContent.trim();
         sincronizzaPicker(picker);
         if(input.id==='staffNomeInput') await caricaStaffer();
+        if(input.id==='correggiNome') await caricaSaldoMovimentoManuale();
       });
     });
   });
@@ -1502,6 +1662,7 @@ function resetFormAccredito(mantieniStaffer=true,mantieniManuali=false){
     div.querySelectorAll('input[type=text],textarea').forEach(i=>i.value='');
   });
   if(!mantieniManuali){svuotaVociManuali();const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';}
+  const dataAcc=document.getElementById('dataAccredito'); if(dataAcc)dataAcc.value='';
   document.getElementById('successBox').classList.add('hidden');
   document.getElementById('registraMsg').textContent='';
   if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;sincronizzaPicker(document.getElementById('pickerAccredito'));mostraStaffInfo()}
@@ -1561,6 +1722,7 @@ function catturaSnapshotAccredito(){
   return{
     staffNome:inputNome.value,
     testoIncolla:document.getElementById('testoIncolla').value,
+    dataAccredito:document.getElementById('dataAccredito')?.value||'',
     analisiHtml:document.getElementById('analisiMsg').innerHTML,
     overrideTotale:document.getElementById('overrideTotaleAccredito')?.value||'',
     manuali:datiVociManuali(),
@@ -1605,6 +1767,7 @@ async function applicaSnapshotAccredito(snap){
     });
   });
   document.getElementById('testoIncolla').value=snap.testoIncolla||'';
+  const dataEl=document.getElementById('dataAccredito'); if(dataEl)dataEl.value=snap.dataAccredito||'';
   document.getElementById('analisiMsg').innerHTML=snap.analisiHtml||'';
   const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value=snap.overrideTotale||'';
   svuotaVociManuali();
@@ -1664,6 +1827,8 @@ async function registraAccredito(){
   const raw=raccogliRaw();
   if(raw.length===0){msg.innerHTML='<div class="msg-err">Seleziona almeno una mansione.</div>';return}
   const overrideTotale=leggiOverrideTotale();
+  let dataAccredito=null;
+  try{dataAccredito=timestampDaInputData(document.getElementById('dataAccredito')?.value||'')}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   const nomeDigitato=inputNome.value.trim()||staffIdCorrente;
   btn.disabled=true;
   btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Registrazione…';
@@ -1702,18 +1867,16 @@ async function registraAccredito(){
         restiDopo:calc.nuoviResti,
         totaleCalcolato:calc.totaleCalcolato,
         totaleManuale:calc.overrideTotale,
-        data:firebase.firestore.FieldValue.serverTimestamp()
+        movimentoPrecedenteId:stato.ultimoMovimentoId||null,
+        data:dataAccredito||firebase.firestore.FieldValue.serverTimestamp(),
+        registratoIl:firebase.firestore.FieldValue.serverTimestamp()
       });
       risultatoTx={calc,prima,dopo,nome:stato.nomeVisualizzato||nomeDigitato};
     });
-    ultimoBBCode=creaBBCode(risultatoTx.nome,risultatoTx.prima,risultatoTx.dopo,risultatoTx.calc);
-    document.getElementById('bbcodeOutput').value=ultimoBBCode;
     document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
-    document.getElementById('successBox').classList.remove('hidden');
     resetFormAccredito(true);
     azzeraHistoryAccredito();
     document.getElementById('successBox').classList.remove('hidden');
-    document.getElementById('bbcodeOutput').value=ultimoBBCode;
     document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
     await caricaStaffer();
     await caricaPubblico(true);
@@ -1735,7 +1898,6 @@ async function copiaTesto(text,msgEl){
     msgEl.innerHTML='<div class="msg-ok">Copiato.</div>';
   }catch(e){msgEl.innerHTML='<div class="msg-err">Non sono riuscito a copiare automaticamente: seleziona il testo sopra.</div>'}
 }
-document.getElementById('btnCopiaBBCode').addEventListener('click',()=>copiaTesto(document.getElementById('bbcodeOutput').value,document.getElementById('copyMsg')));
 
 function impostaAttivita(id,valori={}){
   const div=cont.querySelector(`.activity[data-id="${id}"]`);if(!div)return;
@@ -1998,9 +2160,10 @@ async function analizzaTesto(){
   }else msg.innerHTML='<div class="msg-err">Non ho riconosciuto voci sicure da compilare automaticamente. Nessun campo è stato aggiunto.</div>';
 }
 document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTesto);
-document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
+document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
 document.getElementById('btnResetTotale').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('overrideTotaleAccredito').value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
 document.getElementById('overrideTotaleAccredito').addEventListener('input',ricalcola);
+document.getElementById('btnDataAdesso').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
 
 async function caricaPubblico(forza=false){
   const saldi=document.getElementById('saldiPubblici');
@@ -2013,7 +2176,11 @@ async function caricaPubblico(forza=false){
       db.collection('staff_token_log').orderBy('data','desc').limit(300).get()
     ]);
     const staff=[];snapStaff.forEach(doc=>staff.push({id:doc.id,...doc.data()}));
-    staff.sort((a,b)=>timestampMs(b.ultimoAggiornamento)-timestampMs(a.ultimoAggiornamento)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    archivioMovimenti=[];snapLog.forEach(doc=>archivioMovimenti.push({id:doc.id,...doc.data()}));
+    archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+    const ultimaDataPerStaff={};
+    archivioMovimenti.forEach(m=>{const k=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');if(k&&!ultimaDataPerStaff[k])ultimaDataPerStaff[k]=m.data});
+    staff.sort((a,b)=>timestampMs(ultimaDataPerStaff[b.id]||b.ultimoAggiornamento)-timestampMs(ultimaDataPerStaff[a.id]||a.ultimoAggiornamento)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
     staffPubblici=staff;
     if(!staff.length)saldi.innerHTML='<div class="empty">Nessuno Staffer registrato.</div>';
     else saldi.innerHTML=staff.map(s=>{
@@ -2025,12 +2192,10 @@ async function caricaPubblico(forza=false){
       if(rl)chips.push(`<span class="resto-chip">Liste ${rl}/3</span>`);
       if(rc)chips.push(`<span class="resto-chip">Camere ${rc}/10</span>`);
       if(rb)chips.push(`<span class="resto-chip">Burocrazia ${rb}/3</span>`);
-      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}</div>${s.ultimoAggiornamento?`<div class="balance-updated">Aggiornato ${escapeHtml(dataIt(s.ultimoAggiornamento))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
+      const ultima=ultimaDataPerStaff[s.id]||s.ultimoAggiornamento;
+      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
     }).join('');
     saldi.dataset.loaded='1';
-
-    archivioMovimenti=[];snapLog.forEach(doc=>archivioMovimenti.push({id:doc.id,...doc.data()}));
-    archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
     archivio.dataset.loaded='1';
     renderArchivio();
   }catch(e){
@@ -2046,22 +2211,16 @@ function tipoMovimento(m){
 
 function ultimiMovimentiAttiviPerStaff(){
   const map={};
-  archivioMovimenti.forEach(m=>{
-    if(m.annullato)return;
-    const key=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
-    if(key&&!map[key])map[key]=m.id;
-  });
+  staffPubblici.forEach(s=>{if(s.ultimoMovimentoId)map[s.id]=s.ultimoMovimentoId});
   return map;
 }
 
 function movimentoPrecedenteAttivo(staffId,movimentoId){
-  let trovato=false;
-  for(const m of archivioMovimenti){
-    if((m.staffId||'')!==staffId||m.annullato)continue;
-    if(!trovato){if(m.id===movimentoId)trovato=true;continue}
-    return m.id;
-  }
-  return null;
+  const corrente=archivioMovimenti.find(m=>m.id===movimentoId);
+  if(corrente&&corrente.movimentoPrecedenteId!==undefined)return corrente.movimentoPrecedenteId||null;
+  const attivi=archivioMovimenti.filter(m=>(m.staffId||'')===staffId&&!m.annullato&&m.id!==movimentoId);
+  attivi.sort((a,b)=>timestampMs(b.registratoIl||b.data)-timestampMs(a.registratoIl||a.data));
+  return attivi[0]?.id||null;
 }
 
 function restiPrimaDaMovimento(m,statoCorrente){
@@ -2147,6 +2306,108 @@ async function cancellaMovimentoAccredito(id){
   }
 }
 
+function htmlRigaEditorMovimento(o={}){
+  const nome=String(o.nome||'');
+  const st=Number.isFinite(Number(o.ft))?Number(o.ft):0;
+  const refs=String(o.riferimenti||riferimentiDaObiettivo(o).join(' | '));
+  let nota=String(o.descrizione||o.dettaglio||'');
+  return `<div class="log-edit-row">
+    <div><label>Mansione</label><input type="text" class="edit-line-name" value="${escapeHtml(nome)}" placeholder="Nome della mansione"></div>
+    <div><label>ST</label><input type="number" class="edit-line-st" step="1" value="${escapeHtml(st)}"></div>
+    <div><label>Link / riferimento</label><input type="text" class="edit-line-ref" value="${escapeHtml(refs)}" placeholder="?t=... oppure https://..."></div>
+    <button type="button" class="ghost remove-edit-row" title="Rimuovi questa riga" aria-label="Rimuovi questa riga"><i class="fa-solid fa-xmark"></i></button>
+    <div class="wide"><label>Nota / dettaglio</label><textarea class="edit-line-note" placeholder="Dettaglio facoltativo">${escapeHtml(nota)}</textarea></div>
+  </div>`;
+}
+
+function aggiungiRigaEditorMovimento(id){
+  const cont=document.querySelector(`[data-edit-objectives="${CSS.escape(id)}"]`);
+  if(!cont)return;
+  cont.insertAdjacentHTML('beforeend',htmlRigaEditorMovimento({nome:'',ft:0,riferimenti:'',dettaglio:''}));
+  const row=cont.lastElementChild;
+  row?.querySelector('.remove-edit-row')?.addEventListener('click',()=>row.remove());
+}
+
+async function salvaModificheMovimento(id){
+  if(!passwordCorrente){messaggioArchivio('<div class="msg-err">Sblocca prima la modalità Staff.</div>');return}
+  const m=archivioMovimenti.find(x=>x.id===id);
+  if(!m||m.annullato){messaggioArchivio('<div class="msg-err">Questo movimento non è modificabile.</div>');return}
+  const editor=document.querySelector(`[data-edit-editor="${CSS.escape(id)}"]`);
+  if(!editor)return;
+  const dataRaw=editor.querySelector('.edit-movement-date')?.value||'';
+  let nuovaData; try{nuovaData=timestampDaInputData(dataRaw)}catch(e){messaggioArchivio(`<div class="msg-err">${escapeHtml(e.message)}</div>`);return}
+  if(!nuovaData){messaggioArchivio('<div class="msg-err">Inserisci la data del movimento.</div>');return}
+  const totaleInput=editor.querySelector('.edit-movement-total');
+  const nuovoTotale=parseInt(totaleInput?.value,10);
+  if(!Number.isFinite(nuovoTotale)){messaggioArchivio('<div class="msg-err">Indica il totale ST del movimento.</div>');return}
+  if(tipoMovimento(m)==='accredito'&&nuovoTotale<0){messaggioArchivio('<div class="msg-err">Un accredito non può avere un totale negativo.</div>');return}
+  const righe=[...editor.querySelectorAll('.log-edit-row')].map(row=>{
+    const nome=row.querySelector('.edit-line-name')?.value.trim()||'';
+    const ft=parseInt(row.querySelector('.edit-line-st')?.value,10)||0;
+    const riferimenti=row.querySelector('.edit-line-ref')?.value.trim()||'';
+    const nota=row.querySelector('.edit-line-note')?.value.trim()||'';
+    return {id:'modifica_manual',nome,ft,riferimenti,descrizione:nota,dettaglio:nota?`${nome}: ${nota} → ${ft} ST`:`${nome}: ${ft} ST`};
+  }).filter(r=>r.nome||r.ft||r.riferimenti||r.descrizione);
+  if(!righe.length){messaggioArchivio('<div class="msg-err">Lascia almeno una riga di dettaglio nel movimento.</div>');return}
+
+  const vecchioTotale=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+  const differenza=nuovoTotale-vecchioTotale;
+  const staffId=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+  try{
+    const [staffSnap,logsSnap]=await Promise.all([
+      db.collection('staff_token').doc(staffId).get(),
+      db.collection('staff_token_log').where('staffId','==',staffId).get()
+    ]);
+    if(!staffSnap.exists)throw new Error('Staffer non trovato.');
+    const tutti=[];logsSnap.forEach(d=>tutti.push({id:d.id,...d.data()}));
+    tutti.sort((a,b)=>timestampMs(a.registratoIl||a.data)-timestampMs(b.registratoIl||b.data));
+    const idx=tutti.findIndex(x=>x.id===id);
+    if(differenza!==0&&idx>=0){
+      const resetSuccessivo=tutti.slice(idx+1).find(x=>!x.annullato&&(tipoMovimento(x)==='correzione'||tipoMovimento(x)==='inizializzazione'));
+      if(resetSuccessivo)throw new Error('Esiste una correzione o un allineamento saldo successivo: per sicurezza puoi modificare data e dettagli di questo movimento, ma non il suo totale ST.');
+    }
+    const batch=db.batch();
+    const logRef=db.collection('staff_token_log').doc(id);
+    const updateLog={
+      _pw:passwordCorrente,
+      data:nuovaData,
+      obiettivi:righe,
+      delta:nuovoTotale,
+      guadagnati:nuovoTotale,
+      totaleManuale:nuovoTotale,
+      modificatoIl:firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if(m.saldoDopo!==undefined)updateLog.saldoDopo=numeroIntero(m.saldoDopo)+differenza;
+    batch.set(logRef,updateLog,{merge:true});
+
+    if(differenza!==0){
+      // Il saldo corrente cambia della stessa differenza. I resti progressivi restano invariati.
+      const saldoCorrente=numeroIntero(staffSnap.data().st_totali);
+      batch.set(db.collection('staff_token').doc(staffId),{
+        _pw:passwordCorrente,
+        st_totali:saldoCorrente+differenza,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      if(idx>=0){
+        for(let i=idx+1;i<tutti.length;i++){
+          const x=tutti[i];
+          if(x.annullato)continue;
+          const patch={};
+          if(x.saldoPrima!==undefined)patch.saldoPrima=numeroIntero(x.saldoPrima)+differenza;
+          if(x.saldoDopo!==undefined)patch.saldoDopo=numeroIntero(x.saldoDopo)+differenza;
+          if(Object.keys(patch).length)batch.set(db.collection('staff_token_log').doc(x.id),patch,{merge:true});
+        }
+      }
+    }else{
+      batch.set(db.collection('staff_token').doc(staffId),{_pw:passwordCorrente,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    }
+    await batch.commit();
+    messaggioArchivio(`<div class="msg-ok">Movimento aggiornato${differenza?` e saldo corretto di ${formatDelta(differenza)}`:''}.</div>`);
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){messaggioArchivio(`<div class="msg-err">Modifica non salvata: ${escapeHtml(e.message)}</div>`)}
+}
+
 function renderArchivio(){
   const box=document.getElementById('archivioBox');
   const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
@@ -2184,8 +2445,8 @@ function renderArchivio(){
       const mtipo=tipoMovimento(m);
       const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
       const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
-      const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione saldo':mtipo==='inizializzazione'?'Allineamento saldo':'Accredito';
-      const icon=mtipo==='correzione'?'fa-pen-to-square':mtipo==='inizializzazione'?'fa-scale-balanced':m.annullato?'fa-ban':delta<0?'fa-minus':'fa-plus';
+      const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione saldo':mtipo==='inizializzazione'?'Allineamento saldo':mtipo==='movimento_manuale'?(delta<0?'Spesa manuale':'Aggiunta manuale'):mtipo==='spesa_elfo'?'Spesa da Camera Blindata':'Accredito';
+      const icon=mtipo==='correzione'?'fa-pen-to-square':mtipo==='inizializzazione'?'fa-scale-balanced':mtipo==='spesa_elfo'?'fa-vault':mtipo==='movimento_manuale'?(delta<0?'fa-minus':'fa-plus'):m.annullato?'fa-ban':delta<0?'fa-minus':'fa-plus';
       const details=(m.obiettivi||[]).map(o=>{
         const testo=testoObiettivoRegistro(o);
         const refs=iconeRiferimenti(o);
@@ -2194,18 +2455,36 @@ function renderArchivio(){
       const staffKey=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
       const cancellabile=passwordCorrente&&mtipo==='accredito'&&!m.annullato&&ultimi[staffKey]===m.id;
       const haSuccessivi=!m.annullato&&mtipo==='accredito'&&ultimi[staffKey]!==m.id;
-      const actions=m.annullato
+      let actions=m.annullato
         ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-rotate-left"></i> Saldo ripristinato${m.saldoRipristinato!==undefined?` a ${numeroIntero(m.saldoRipristinato)} ST`:''}.</span></div>`
         :cancellabile
           ?`<div class="log-actions"><span class="why-disabled">Ultimo movimento dello Staffer.</span><button type="button" class="danger cancel-credit" data-cancel-id="${escapeHtml(m.id)}"><i class="fa-solid fa-trash-can-arrow-up"></i> Cancella accredito</button></div>`
           :haSuccessivi&&passwordCorrente
             ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-lock"></i> Non cancellabile: esistono movimenti successivi.</span></div>`
             :'';
+      if(passwordCorrente&&!m.annullato){
+        const righeEditor=(m.obiettivi||[]).map(o=>htmlRigaEditorMovimento(o)).join('')||htmlRigaEditorMovimento({nome:label,ft:delta});
+        actions+=`<div class="log-actions"><button type="button" class="ghost edit-movement" data-edit-movement-id="${escapeHtml(m.id)}"><i class="fa-solid fa-pen-to-square"></i> Modifica</button></div>
+        <div class="log-edit-editor hidden" data-edit-editor="${escapeHtml(m.id)}">
+          <div class="log-edit-grid">
+            <div><label>Data e ora</label><input type="text" class="edit-movement-date" value="${escapeHtml(dataManualeValue(m.data))}" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric"></div>
+            <div><label>Totale ST del movimento</label><input type="number" class="edit-movement-total" step="1" value="${escapeHtml(delta)}"></div>
+          </div>
+          <div class="log-edit-help"><i class="fa-solid fa-circle-info"></i> Puoi correggere data, totale, mansioni, ST delle singole righe e riferimenti. Se cambi il totale, il saldo dello Staffer viene aggiornato automaticamente. I resti progressivi non vengono ricalcolati da questa modifica.</div>
+          <div class="log-edit-objectives" data-edit-objectives="${escapeHtml(m.id)}">${righeEditor}</div>
+          <div class="log-edit-actions"><button type="button" class="secondary add-edit-row" data-add-edit-row="${escapeHtml(m.id)}"><i class="fa-solid fa-plus"></i> Aggiungi riga</button><button type="button" class="mini save-movement-edit" data-save-edit-id="${escapeHtml(m.id)}"><i class="fa-solid fa-check"></i> Salva modifiche</button><button type="button" class="ghost close-movement-edit" data-close-edit-id="${escapeHtml(m.id)}">Chiudi</button></div>
+        </div>`;
+      }
       return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.saldoDopo!==undefined&&!m.annullato?` · saldo dopo: ${numeroIntero(m.saldoDopo)} ST`:''}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
     }).join('');
     return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
   box.querySelectorAll('[data-cancel-id]').forEach(btn=>btn.addEventListener('click',()=>cancellaMovimentoAccredito(btn.dataset.cancelId)));
+  box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);if(ed)ed.classList.toggle('hidden')}));
+  box.querySelectorAll('[data-close-edit-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.closeEditId)}"]`);if(ed)ed.classList.add('hidden')}));
+  box.querySelectorAll('[data-save-edit-id]').forEach(btn=>btn.addEventListener('click',()=>salvaModificheMovimento(btn.dataset.saveEditId)));
+  box.querySelectorAll('[data-add-edit-row]').forEach(btn=>btn.addEventListener('click',()=>aggiungiRigaEditorMovimento(btn.dataset.addEditRow)));
+  box.querySelectorAll('.remove-edit-row').forEach(btn=>btn.addEventListener('click',()=>btn.closest('.log-edit-row')?.remove()));
 }
 document.getElementById('filtroArchivio').addEventListener('input',renderArchivio);
 document.getElementById('filtroTipo').addEventListener('change',renderArchivio);
@@ -2239,39 +2518,257 @@ async function creaOInizializzaStaffer(){
 }
 document.getElementById('btnCreaInit').addEventListener('click',creaOInizializzaStaffer);
 
+let saldoMovimentoCorrente=null;
+
+async function caricaSaldoMovimentoManuale(){
+  const nome=document.getElementById('correggiNome').value.trim();
+  const staffId=normalizzaStaffId(nomeCanonicoStaffer(nome));
+  const val=document.getElementById('saldoMovimentoAttuale');
+  const sub=document.getElementById('saldoMovimentoSub');
+  const msg=document.getElementById('correggiMsg');
+  if(msg)msg.textContent='';
+  saldoMovimentoCorrente=null;
+  if(!staffId){
+    val.textContent='— ST'; sub.textContent='Seleziona uno Staffer.'; aggiornaPreviewMovimentoManuale(); return;
+  }
+  val.textContent='…'; sub.textContent='Caricamento saldo in corso…';
+  try{
+    const snap=await db.collection('staff_token').doc(staffId).get();
+    const stato=snap.exists?snap.data():{st_totali:0,nomeVisualizzato:nome};
+    saldoMovimentoCorrente=numeroIntero(stato.st_totali);
+    val.textContent=`${saldoMovimentoCorrente} ST`;
+    sub.textContent=stato.nomeVisualizzato||nome;
+  }catch(e){
+    val.textContent='— ST'; sub.textContent='Impossibile caricare il saldo.';
+    if(msg)msg.innerHTML=`<div class="msg-err">Errore: ${escapeHtml(e.message)}</div>`;
+  }
+  aggiornaPreviewMovimentoManuale();
+}
+
+function aggiornaPreviewMovimentoManuale(){
+  const preview=document.getElementById('movimentoPreview');
+  const btn=document.getElementById('btnCorreggi');
+  const q=numeroIntero(document.getElementById('correggiValore').value,0);
+  const segno=numeroIntero(document.getElementById('movimentoSegno').value,1)>=0?1:-1;
+  const link=document.getElementById('movimentoLink').value.trim();
+  const staffOk=saldoMovimentoCorrente!==null;
+  const pronto=staffOk&&q>0&&!!link;
+  btn.disabled=!pronto;
+  preview.classList.remove('ready','negative');
+  if(!staffOk){preview.innerHTML='<span>Seleziona uno Staffer per vedere il totale attuale.</span>';return}
+  if(q<=0){preview.innerHTML=`<span>Saldo attuale: <b>${saldoMovimentoCorrente} ST</b>. Indica quanti ST vuoi aggiungere o togliere.</span>`;return}
+  const delta=segno*q;
+  const dopo=saldoMovimentoCorrente+delta;
+  preview.classList.add(delta<0?'negative':'ready');
+  preview.innerHTML=`<span><b>${saldoMovimentoCorrente} ST</b> ${delta<0?'−':'+'} ${q} ST → <b>${dopo} ST</b>${!link?' · aggiungi un riferimento per poter registrare.':''}</span>`;
+}
+
+function impostaSegnoMovimento(segno){
+  const s=segno<0?-1:1;
+  document.getElementById('movimentoSegno').value=String(s);
+  document.querySelectorAll('#movimentoSegnoPicker .movement-sign').forEach(b=>b.classList.toggle('active',Number(b.dataset.sign)===s));
+  aggiornaPreviewMovimentoManuale();
+}
+
+document.querySelectorAll('#movimentoSegnoPicker .movement-sign').forEach(btn=>btn.addEventListener('click',()=>impostaSegnoMovimento(Number(btn.dataset.sign))));
+['correggiValore','movimentoLink','correggiMotivo','movimentoData'].forEach(id=>document.getElementById(id)?.addEventListener('input',aggiornaPreviewMovimentoManuale));
+
 async function correggiSaldoStaffer(){
   const msg=document.getElementById('correggiMsg');msg.textContent='';
   if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Modalità Staff non attiva.</div>';return}
   const nome=document.getElementById('correggiNome').value.trim();
-  const staffId=normalizzaStaffId(nome);
-  const rawVal=document.getElementById('correggiValore').value;
-  const valore=parseInt(rawVal,10);
+  const staffId=normalizzaStaffId(nomeCanonicoStaffer(nome));
+  const q=numeroIntero(document.getElementById('correggiValore').value,0);
+  const segno=numeroIntero(document.getElementById('movimentoSegno').value,1)>=0?1:-1;
+  const riferimento=document.getElementById('movimentoLink').value.trim();
   const motivo=document.getElementById('correggiMotivo').value.trim();
-  if(!staffId||!Number.isFinite(valore)){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer e indica il nuovo saldo.</div>';return}
-  if(!motivo){msg.innerHTML='<div class="msg-err">Indica il motivo: la correzione deve essere leggibile nel registro pubblico.</div>';return}
+  const dataRaw=document.getElementById('movimentoData').value.trim();
+  if(!staffId||q<=0){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer e indica quanti ST vuoi aggiungere o togliere.</div>';return}
+  if(!riferimento){msg.innerHTML='<div class="msg-err">Aggiungi un link o riferimento: ogni variazione manuale deve essere rintracciabile.</div>';return}
+  let dataMovimento=firebase.firestore.FieldValue.serverTimestamp();
+  try{if(dataRaw)dataMovimento=timestampDaInputData(dataRaw)}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   try{
     const staffRef=db.collection('staff_token').doc(staffId);
     const logRef=db.collection('staff_token_log').doc();
+    const delta=segno*q;
     await db.runTransaction(async tx=>{
       const snap=await tx.get(staffRef);
-      const stato=snap.exists?snap.data():{st_totali:0,resti:{}};
+      const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nome};
       const prima=numeroIntero(stato.st_totali);
-      const delta=valore-prima;
-      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:stato.nomeVisualizzato||nome,st_totali:valore,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-      tx.set(logRef,{_pw:passwordCorrente,tipo:'correzione',staffId,nomeVisualizzato:stato.nomeVisualizzato||nome,delta,guadagnati:delta,saldoPrima:prima,saldoDopo:valore,obiettivi:[{id:'correzione',nome:'Correzione saldo',ft:delta,dettaglio:`Correzione da ${prima} a ${valore} ST (${formatDelta(delta)}). Motivo: ${motivo}`}],data:firebase.firestore.FieldValue.serverTimestamp()});
+      const dopo=prima+delta;
+      const nomeVis=stato.nomeVisualizzato||nomeCanonicoStaffer(nome)||nome;
+      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:nomeVis,st_totali:dopo,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(logRef,{
+        _pw:passwordCorrente,
+        tipo:'movimento_manuale',
+        staffId,
+        nomeVisualizzato:nomeVis,
+        delta,
+        guadagnati:delta,
+        saldoPrima:prima,
+        saldoDopo:dopo,
+        obiettivi:[{
+          id:delta<0?'spesa_manuale':'accredito_manuale',
+          nome:delta<0?'Spesa Staff Token':'Aggiunta Staff Token',
+          ft:delta,
+          dettaglio:motivo||`${delta<0?'Spesa':'Aggiunta'} manuale di ${q} ST.`,
+          riferimenti:riferimento
+        }],
+        data:dataMovimento,
+        registratoIl:firebase.firestore.FieldValue.serverTimestamp()
+      });
     });
-    msg.innerHTML='<div class="msg-ok">Saldo corretto e movimento registrato.</div>';
+    msg.innerHTML=`<div class="msg-ok">Movimento registrato: ${formatDelta(delta)}. Saldo aggiornato.</div>`;
+    document.getElementById('correggiValore').value='';
+    document.getElementById('movimentoLink').value='';
+    document.getElementById('correggiMotivo').value='';
+    document.getElementById('movimentoData').value='';
+    await caricaSaldoMovimentoManuale();
     await caricaPubblico(true);
     if(staffIdCorrente===staffId)await caricaStaffer();
   }catch(e){msg.innerHTML=`<div class="msg-err">Errore: ${escapeHtml(e.message)}</div>`}
 }
 document.getElementById('btnCorreggi').addEventListener('click',correggiSaldoStaffer);
 
+// ===== PG DELLO STAFF: configurazione condivisa con gli Elfi =====
+const STAFFER_PG_CONFIG=[
+  {nome:'Lulu Sparks',breve:'Lulu'},
+  {nome:'Gideon G. Greengrass',breve:'Gideon'},
+  {nome:'Noah',breve:'Noah'},
+  {nome:'Odette',breve:'Odette'}
+];
+let pgStaffOwner='Lulu Sparks';
+let pgStaffKind='studenti';
+let pgStaffCache=[];
+
+function normalizzaNomePgStaff(nome){
+  return String(nome||'').trim().toLowerCase().replace(/\s+/g,' ');
+}
+function nomeKindPgStaff(kind){return kind==='adulti'?'Adulto':'Studente'}
+
+function renderPgStaff(){
+  const box=document.getElementById('pgStaffLista');
+  if(!box)return;
+  const perStaff={};
+  STAFFER_PG_CONFIG.forEach(x=>perStaff[normalizzaStaffId(x.nome)]=[]);
+  pgStaffCache.forEach(x=>{if(perStaff[x.staffId])perStaff[x.staffId].push(x)});
+  box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
+    const id=normalizzaStaffId(st.nome);
+    const lista=(perStaff[id]||[]).sort((a,b)=>a.nome.localeCompare(b.nome,'it',{sensitivity:'base'}));
+    const chips=lista.length?lista.map(pg=>`<span class="pg-chip"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b><button type="button" class="btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Rimuovi ${escapeHtml(pg.nome)}"><i class="fa-solid fa-xmark"></i></button></span>`).join(''):'<span class="pg-empty">Nessun PG associato.</span>';
+    return `<div class="pg-staff-group"><div class="pg-staff-group-head"><b>${escapeHtml(st.breve)}</b><span class="pg-staff-count">${lista.length} PG</span></div><div class="pg-chip-list">${chips}</div></div>`;
+  }).join('');
+  box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
+}
+
+async function caricaPgStaff(){
+  const box=document.getElementById('pgStaffLista');
+  if(box)box.innerHTML='<div class="loading">Caricamento PG dello Staff…</div>';
+  try{
+    const snaps=await Promise.all(STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)).get()));
+    pgStaffCache=[];
+    snaps.forEach((snap,i)=>{
+      const st=STAFFER_PG_CONFIG[i];
+      const data=snap.exists?snap.data():{};
+      const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
+      arr.forEach(pg=>{
+        const nome=String(pg&&pg.nome||'').trim(); if(!nome)return;
+        pgStaffCache.push({staffId:normalizzaStaffId(st.nome),staffNome:st.nome,nome,tipo:pg.tipo==='adulti'?'adulti':'studenti'});
+      });
+    });
+    renderPgStaff();
+  }catch(e){if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare i PG dello Staff: ${escapeHtml(e.message)}</div>`}
+}
+
+function selezionaOwnerPgStaff(nome){
+  pgStaffOwner=nome;
+  document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(b=>b.classList.toggle('active',b.dataset.value===nome));
+}
+function selezionaKindPgStaff(kind){
+  pgStaffKind=kind==='adulti'?'adulti':'studenti';
+  document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(b=>b.classList.toggle('active',b.dataset.kind===pgStaffKind));
+}
+document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(btn=>btn.addEventListener('click',()=>selezionaOwnerPgStaff(btn.dataset.value)));
+document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(btn=>btn.addEventListener('click',()=>selezionaKindPgStaff(btn.dataset.kind)));
+
+async function aggiungiPgStaff(){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const nome=document.getElementById('pgStaffNome').value.trim();
+  if(!nome){if(msg)msg.innerHTML='<div class="msg-err">Scrivi il nome del PG.</div>';return}
+  const targetId=normalizzaStaffId(pgStaffOwner);
+  const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
+  try{
+    await db.runTransaction(async tx=>{
+      const snaps=[]; for(const ref of refs)snaps.push(await tx.get(ref));
+      const key=normalizzaNomePgStaff(nome);
+      for(let i=0;i<snaps.length;i++){
+        const arr=Array.isArray(snaps[i].data()?.pgAssociati)?snaps[i].data().pgAssociati:[];
+        const dup=arr.find(pg=>normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===pgStaffKind);
+        if(dup){
+          const owner=STAFFER_PG_CONFIG[i].breve;
+          throw new Error(`${nome} è già associato a ${owner} come PG ${nomeKindPgStaff(pgStaffKind).toLowerCase()}.`);
+        }
+      }
+      const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===targetId);
+      const snap=snaps[idx]; const stato=snap.exists?snap.data():{};
+      const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
+      arr.push({nome,tipo:pgStaffKind});
+      tx.set(refs[idx],{_pw:passwordCorrente,nomeVisualizzato:stato.nomeVisualizzato||pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+    document.getElementById('pgStaffNome').value='';
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} aggiunto ai PG di ${escapeHtml(pgStaffOwner)}.</div>`;
+    await caricaPgStaff();
+  }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non aggiunto: ${escapeHtml(e.message)}</div>`}
+}
+document.getElementById('btnAggiungiPgStaff')?.addEventListener('click',aggiungiPgStaff);
+document.getElementById('pgStaffNome')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aggiungiPgStaff();}});
+
+async function rimuoviPgStaff(staffId,nome,kind){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const ref=db.collection('staff_token').doc(staffId);
+  try{
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref); if(!snap.exists)throw new Error('Staffer non trovato.');
+      const stato=snap.data(); const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati:[];
+      const key=normalizzaNomePgStaff(nome);
+      const nuovo=arr.filter(pg=>!(normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti')));
+      tx.set(ref,{_pw:passwordCorrente,pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} rimosso dai PG abilitati agli Staff Token.</div>`;
+    await caricaPgStaff();
+  }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non rimosso: ${escapeHtml(e.message)}</div>`}
+}
+
+// Data manuale anche per i movimenti di saldo: nessun calendario, ma un tasto rapido “Adesso”.
+document.getElementById('btnMovimentoDataAdesso')?.addEventListener('click',()=>{
+  document.getElementById('movimentoData').value=dataManualeValue(new Date());
+  aggiornaPreviewMovimentoManuale();
+});
+
+let liveRefreshTimer=null;
+function programmaRefreshLive(){
+  clearTimeout(liveRefreshTimer);
+  liveRefreshTimer=setTimeout(async()=>{
+    try{
+      await caricaPubblico(true);
+      if(document.getElementById('correggiNome')?.value)await caricaSaldoMovimentoManuale();
+      if(staffIdCorrente)await caricaStaffer();
+      await caricaPgStaff();
+    }catch(e){console.warn('Refresh live Staff Token:',e)}
+  },220);
+}
+// Il Gestore resta sincronizzato anche se il saldo viene modificato da un altro tool (es. Elfo/Camera Blindata).
+try{db.collection('staff_token').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
+
 caricaListaStaffer();
+caricaPgStaff();
 caricaPubblico(true);
 sincronizzaTuttiPicker();
 mostraStaffInfo();
 ricalcola();
+aggiornaPreviewMovimentoManuale();
 attivaTab('registra');
 </script>
 </body>
