@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+<!-- v21 — integrazione Elfi: spesa/rimborso live da Camera Blindata + protezione PG con usi attivi, 04/09/2026 -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v19</title>
+<title>Gestore Staff Token — v21</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -778,7 +779,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             <option value="accredito">Accrediti</option>
             <option value="correzione">Correzioni</option>
             <option value="movimento_manuale">Movimenti manuali</option>
-            <option value="spesa_elfo">Spese da Elfo</option>
+            <option value="spesa_elfo">Spese / restituzioni da Elfo</option>
             <option value="inizializzazione">Inizializzazioni</option>
             <option value="annullato">Annullati</option>
           </select>
@@ -2445,8 +2446,8 @@ function renderArchivio(){
       const mtipo=tipoMovimento(m);
       const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
       const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
-      const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione saldo':mtipo==='inizializzazione'?'Allineamento saldo':mtipo==='movimento_manuale'?(delta<0?'Spesa manuale':'Aggiunta manuale'):mtipo==='spesa_elfo'?'Spesa da Camera Blindata':'Accredito';
-      const icon=mtipo==='correzione'?'fa-pen-to-square':mtipo==='inizializzazione'?'fa-scale-balanced':mtipo==='spesa_elfo'?'fa-vault':mtipo==='movimento_manuale'?(delta<0?'fa-minus':'fa-plus'):m.annullato?'fa-ban':delta<0?'fa-minus':'fa-plus';
+      const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione saldo':mtipo==='inizializzazione'?'Allineamento saldo':mtipo==='movimento_manuale'?(delta<0?'Spesa manuale':'Aggiunta manuale'):mtipo==='spesa_elfo'?(m.azione==='rimborso'||delta>0?'Restituzione da Camera Blindata':'Spesa da Camera Blindata'):'Accredito';
+      const icon=mtipo==='correzione'?'fa-pen-to-square':mtipo==='inizializzazione'?'fa-scale-balanced':mtipo==='spesa_elfo'?(m.azione==='rimborso'||delta>0?'fa-rotate-left':'fa-vault'):mtipo==='movimento_manuale'?(delta<0?'fa-minus':'fa-plus'):m.annullato?'fa-ban':delta<0?'fa-minus':'fa-plus';
       const details=(m.obiettivi||[]).map(o=>{
         const testo=testoObiettivoRegistro(o);
         const refs=iconeRiferimenti(o);
@@ -2462,7 +2463,7 @@ function renderArchivio(){
           :haSuccessivi&&passwordCorrente
             ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-lock"></i> Non cancellabile: esistono movimenti successivi.</span></div>`
             :'';
-      if(passwordCorrente&&!m.annullato){
+      if(passwordCorrente&&!m.annullato&&mtipo!=='spesa_elfo'){
         const righeEditor=(m.obiettivi||[]).map(o=>htmlRigaEditorMovimento(o)).join('')||htmlRigaEditorMovimento({nome:label,ft:delta});
         actions+=`<div class="log-actions"><button type="button" class="ghost edit-movement" data-edit-movement-id="${escapeHtml(m.id)}"><i class="fa-solid fa-pen-to-square"></i> Modifica</button></div>
         <div class="log-edit-editor hidden" data-edit-editor="${escapeHtml(m.id)}">
@@ -2729,6 +2730,16 @@ async function rimuoviPgStaff(staffId,nome,kind){
   if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
   const ref=db.collection('staff_token').doc(staffId);
   try{
+    const usageSnap=await db.collection('staff_token_usi').where('pgId','==',nome).get();
+    const activeUsage=usageSnap.docs.some(d=>{
+      const x=d.data()||{};
+      return x.active===true
+        && String(x.staffId||'')===String(staffId)
+        && (x.pgKind==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti');
+    });
+    if(activeUsage){
+      throw new Error('Questo PG ha ancora Staff Token attivi in Camera Blindata. Rimuovi prima gli ST dai suoi Post, poi potrai togliere l’associazione.');
+    }
     await db.runTransaction(async tx=>{
       const snap=await tx.get(ref); if(!snap.exists)throw new Error('Staffer non trovato.');
       const stato=snap.data(); const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati:[];
@@ -2761,6 +2772,7 @@ function programmaRefreshLive(){
 }
 // Il Gestore resta sincronizzato anche se il saldo viene modificato da un altro tool (es. Elfo/Camera Blindata).
 try{db.collection('staff_token').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
+try{db.collection('staff_token_usi').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
 
 caricaListaStaffer();
 caricaPgStaff();
