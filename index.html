@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v30 — rimozione neutra delle voci extra: nessuna etichetta "errore", 04/09/2026 -->
 <!-- v29 — quattro tende ST fisse (Player) + PG associati separati; pulizia voci create per errore, 04/09/2026 -->
 <!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
 <!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
@@ -12,7 +13,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v29</title>
+<title>Gestore Staff Token — v30</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -959,11 +960,10 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
           <div class="staffer-admin-title"><i class="fa-solid fa-user-shield"></i> Le 4 tende ST</div>
           <div id="stafferStatusLista" class="staffer-admin-list"><div class="loading">Caricamento Staffer…</div></div>
 
-          <details class="smart-import" id="stafferErratiDetails" style="margin:12px 0 14px">
-            <summary><i class="fa-solid fa-broom"></i> Voci create per errore <span class="summary-note">solo se presenti</span></summary>
-            <div id="stafferErratiLista" class="staffer-admin-list" style="margin-top:10px"><div class="empty">Nessuna voce errata.</div></div>
+          <div id="stafferExtraBox" class="hidden" style="margin:12px 0 14px">
+            <div id="stafferErratiLista" class="staffer-admin-list"></div>
             <div id="stafferErratiMsg" aria-live="polite"></div>
-          </details>
+          </div>
 
           <div class="staffer-admin-separator"></div>
           <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG collegati agli Staff Token</div>
@@ -2916,17 +2916,17 @@ function renderStafferStatus(){
 
 function renderStafferErrati(){
   const box=document.getElementById('stafferErratiLista');
-  const details=document.getElementById('stafferErratiDetails');
+  const extraBox=document.getElementById('stafferExtraBox');
   if(!box)return;
   if(!EXTRA_STAFF_DOCS.length){
-    box.innerHTML='<div class="empty">Nessuna voce creata per errore.</div>';
-    if(details)details.open=false;
+    box.innerHTML='';
+    if(extraBox)extraBox.classList.add('hidden');
     return;
   }
-  if(details)details.open=true;
+  if(extraBox)extraBox.classList.remove('hidden');
   box.innerHTML=EXTRA_STAFF_DOCS.map(x=>{
     const nome=String(x.nomeVisualizzato||x.id||'').trim()||x.id;
-    return `<div class="staffer-error-card"><div><b>${escapeHtml(nome)}</b><span>Questa voce non è una delle 4 tende ST principali. Puoi rimuoverla dall'interfaccia e poi associare correttamente il PG a Lulu, Gideon, Noah o Odette.</span></div><button type="button" class="danger" data-hide-extra-staff="${escapeHtml(x.id)}"><i class="fa-solid fa-trash-can"></i> Rimuovi voce errata</button></div>`;
+    return `<div class="staffer-error-card"><div><b>${escapeHtml(nome)}</b><span>Questo nome non fa parte delle 4 tende ST principali. Puoi rimuoverlo dal Gestore; se è un PG dello Staff, puoi poi associarlo alla tenda corretta.</span></div><button type="button" class="danger" data-hide-extra-staff="${escapeHtml(x.id)}"><i class="fa-solid fa-trash-can"></i> Rimuovi</button></div>`;
   }).join('');
   box.querySelectorAll('[data-hide-extra-staff]').forEach(btn=>btn.addEventListener('click',()=>rimuoviVoceStafferErrata(btn.dataset.hideExtraStaff,btn)));
 }
@@ -2942,7 +2942,7 @@ async function rimuoviVoceStafferErrata(staffId,btn){
       stafferAttivo:false,
       stafferStatoAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()
     },{merge:true});
-    if(msg)msg.innerHTML='<div class="msg-ok">Voce errata rimossa dal Gestore. Ora puoi collegare quel nome come PG alla tenda corretta.</div>';
+    if(msg)msg.innerHTML='<div class="msg-ok">Voce rimossa dal Gestore.</div>';
     await caricaPgStaff();
     await caricaPubblico(true);
   }catch(e){
