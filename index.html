@@ -1,10 +1,14 @@
 <!DOCTYPE html>
+<!-- v25 — audit finale segnalazioni: blocco transazionale accrediti su Staffer inattivo + versione UI coerente, 04/09/2026 -->
+<!-- v24 — Staffer attivo/non attivo: cessazione incarico senza toccare saldo, usi o storico; Elfi live, 04/09/2026 -->
+<!-- v23 — ST storici: disassociare un PG non rimborsa gli ST già spesi e non è bloccato dagli usi precedenti, 04/09/2026 -->
+<!-- v22 — sicurezza Staff Token: sessione Staff protetta, nessuna Password nei documenti pubblici, bonifica legacy + PG associati con ID esatto, 04/09/2026 -->
 <!-- v21 — integrazione Elfi: spesa/rimborso live da Camera Blindata + protezione PG con usi attivi, 04/09/2026 -->
 <html lang="it">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v21</title>
+<title>Gestore Staff Token — v25</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -705,6 +709,13 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .pg-chip .pg-kind{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#557500;font-weight:700;}
   .pg-chip button{border:0;background:transparent;color:var(--rosso);cursor:pointer;padding:2px 4px;font-size:12px;}
   .pg-empty{color:var(--testo-muted);font-style:italic;font-size:13px;padding:4px 0;}
+  .pg-staff-group.is-inactive{opacity:.78;background:#faf7f8;border-style:dashed}
+  .staffer-state-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:3px}
+  .staffer-state-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border:1px solid #cfe99f;background:#f7ffe6;color:#557500}
+  .staffer-state-badge.inactive{border-color:#e5c7cf;background:#fff4f7;color:#9a3151}
+  .staffer-status-btn{margin-left:auto}
+  .staffer-choice.staffer-inactive{opacity:.52;filter:grayscale(.35)}
+  #pickerAccredito .staffer-choice.staffer-inactive{cursor:not-allowed}
   .field-with-action{display:flex;gap:7px;align-items:center;}
   .field-with-action input{flex:1;}
   @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}}
@@ -999,7 +1010,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
             </div>
           </div>
 
-          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Predisposto per il collegamento con gli Elfi.</b> Dopo l'aggiornamento una tantum di Elfo Studenti e Elfo Adulti, aggiungere o rimuovere un PG qui potrà riflettersi live nella sua Camera Blindata, senza modificare di nuovo il file dell'Elfo.</div></div>
+          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Collegamento live con gli Elfi.</b> Aggiungere o rimuovere un PG si riflette nella sua Camera Blindata. Puoi anche segnare uno Staffer come <b>«Non è più Staffer»</b>: saldo, usi e movimenti storici restano invariati, ma da quel momento nessun suo PG vedrà più il tasto per usare nuovi ST.</div></div>
 
           <div class="pg-staff-toolbar">
             <div>
@@ -1023,7 +1034,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
           <div class="pg-add-row">
             <div>
               <label>Nome del PG</label>
-              <input type="text" id="pgStaffNome" placeholder="Es. Raven Chandra" autocomplete="off">
+              <input type="text" id="pgStaffNome" placeholder="Nome e Cognome esatti del PG" autocomplete="off">
             </div>
             <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-user-plus"></i> Aggiungi PG</button>
           </div>
@@ -1074,6 +1085,8 @@ let authPronta=false;
 let passwordCorrente=null;
 let staffIdCorrente=null;
 let staffAttuale=null;
+let STAFF_STATUS_CACHE={};
+function stafferAttivoDaData(data){return !(data&&data.stafferAttivo===false);}
 let archivioMovimenti=[];
 let staffPubblici=[];
 let ultimoBBCode='';
@@ -1214,9 +1227,12 @@ function attivaTab(tab){
 
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>attivaTab(btn.dataset.tab)));
 
+try{auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});}catch(e){}
 auth.onAuthStateChanged(user=>{
   if(!user){auth.signInAnonymously().catch(()=>{});return}
   authPronta=true;
+  // Ogni nuovo caricamento del Gestore riparte bloccato: la Password va reinserita.
+  db.collection('staff_edit_sessions').doc(user.uid).delete().catch(()=>{});
 });
 
 async function aspettaAuth(){
@@ -1231,24 +1247,59 @@ async function aspettaAuth(){
   });
 }
 
+async function bonificaPasswordPubblicheLegacy(){
+  // Le vecchie versioni del Gestore inserivano _pw nei documenti pubblici.
+  // Con la v43 non serve più: lo rimuoviamo in batch appena la sessione Staff è valida.
+  const deleteField=firebase.firestore.FieldValue.delete();
+  const collections=['staff_token','staff_token_log'];
+  let puliti=0;
+  for(const nomeColl of collections){
+    const snap=await db.collection(nomeColl).get();
+    let batch=db.batch(),ops=0;
+    for(const d of snap.docs){
+      const data=d.data()||{};
+      if(!Object.prototype.hasOwnProperty.call(data,'_pw'))continue;
+      batch.update(d.ref,{_pw:deleteField});ops++;puliti++;
+      if(ops>=400){await batch.commit();batch=db.batch();ops=0;}
+    }
+    if(ops>0)await batch.commit();
+  }
+  return puliti;
+}
+
+async function creaSessioneStaff(pw){
+  await aspettaAuth();
+  const user=auth.currentUser;if(!user)throw new Error('Autenticazione non disponibile.');
+  const ref=db.collection('staff_edit_sessions').doc(user.uid);
+  await ref.set({uid:user.uid,proof:pw,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  await ref.update({proof:firebase.firestore.FieldValue.delete()});
+}
+
 async function verificaPassword(){
   const pw=document.getElementById('gatePassword').value;
   const err=document.getElementById('gateErr');
   err.textContent='';
   if(!pw){err.textContent='Inserisci la password.';return}
   try{
-    await aspettaAuth();
-    await db.collection('config').doc('_ping').set({_pw:pw,t:firebase.firestore.FieldValue.serverTimestamp()});
-    passwordCorrente=pw;
+    await creaSessioneStaff(pw);
+    // Non conserviamo la Password in memoria: da qui in poi basta la sessione Firestore.
+    passwordCorrente=true;
     document.getElementById('gatePassword').value='';
     syncProtected();
+    const puliti=await bonificaPasswordPubblicheLegacy();
+    if(puliti>0){err.textContent='Accesso riuscito · bonificati '+puliti+' record legacy.';}
     caricaListaStaffer();
-  }catch(e){err.textContent='Password errata o scrittura non disponibile.'}
+  }catch(e){
+    passwordCorrente=null;
+    try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(_e){}
+    err.textContent='Password errata o sessione Staff non disponibile.';
+  }
 }
-function bloccaStaff(){
+async function bloccaStaff(){
   passwordCorrente=null;
   staffIdCorrente=null;
   staffAttuale=null;
+  try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(e){console.warn('Chiusura sessione Staff:',e)}
   syncProtected();
 }
 document.getElementById('btnSblocca').addEventListener('click',verificaPassword);
@@ -1491,8 +1542,9 @@ function mostraStaffInfo(){
   const rCamere=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='camere_blindate'));
   const rBuro=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='burocrazia'));
   const nome=escapeHtml(staffAttuale.nomeVisualizzato||document.getElementById('staffNomeInput').value||staffIdCorrente);
-  info.innerHTML=`<div class="staff-strip">
-    <div class="staff-metric"><div class="k">Staffer</div><div class="v">${nome}</div><div class="sub">stato caricato dal registro</div></div>
+  const attivo=stafferAttivoDaData(staffAttuale);
+  info.innerHTML=`${attivo?'':`<div class="msg-warn"><b>Non è più Staffer.</b> Saldo e storico sono conservati, ma non sono consentiti nuovi accrediti o nuovi usi ST dagli Elfi.</div>`}<div class="staff-strip">
+    <div class="staff-metric"><div class="k">Staffer</div><div class="v">${nome}</div><div class="sub">${attivo?'Staffer attivo':'Non più Staffer'}</div></div>
     <div class="staff-metric"><div class="k">Saldo</div><div class="v big">${numeroIntero(staffAttuale.st_totali)} ST</div></div>
     <div class="staff-metric"><div class="k">Liste</div><div class="v">${rListe}/3</div><div class="resto-progress"><span style="width:${rListe/3*100}%"></span></div></div>
     <div class="staff-metric"><div class="k">Camere</div><div class="v">${rCamere}/10</div><div class="resto-progress"><span style="width:${rCamere/10*100}%"></span></div></div>
@@ -1560,7 +1612,8 @@ function ricalcola(){
   const btnRegistra=document.getElementById('btnRegistra');
   const registerHelp=document.getElementById('registerHelp');
   const totalSummary=document.getElementById('totalSummary');
-  const pronto=!!staffIdCorrente&&raw.length>0&&calc.errori.length===0;
+  const stafferAttivo=!!staffIdCorrente&&stafferAttivoDaData(staffAttuale);
+  const pronto=stafferAttivo&&raw.length>0&&calc.errori.length===0;
   btnRegistra.disabled=!pronto;
   totalSummary.classList.toggle('is-ready',pronto);
   totalSummary.classList.toggle('is-empty',raw.length===0);
@@ -1571,6 +1624,9 @@ function ricalcola(){
   }else if(!staffIdCorrente){
     btnRegistra.innerHTML='<i class="fa-solid fa-user"></i> Seleziona uno Staffer';
     registerHelp.textContent='Le mansioni sono pronte: seleziona prima chi deve ricevere gli Staff Token.';
+  }else if(!stafferAttivo){
+    btnRegistra.innerHTML='<i class="fa-solid fa-user-slash"></i> Non è più Staffer';
+    registerHelp.textContent='Questo Staffer è stato disattivato: saldo e storico restano consultabili, ma non può ricevere nuovi accrediti né abilitare nuovi utilizzi dagli Elfi.';
   }else if(calc.errori.length>0){
     btnRegistra.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Correggi i dati';
     registerHelp.textContent='Controlla gli errori evidenziati nel riepilogo prima di registrare.';
@@ -1643,6 +1699,8 @@ async function caricaStaffer(){
     const doc=await db.collection('staff_token').doc(id).get();
     if(doc.exists)staffAttuale=doc.data();
     else staffAttuale={st_totali:0,resti:{},nomeVisualizzato:raw};
+    STAFF_STATUS_CACHE[id]=stafferAttivoDaData(staffAttuale);
+    if(typeof aggiornaStatoStafferUI==="function")aggiornaStatoStafferUI();
   }catch(e){
     document.getElementById('staffInfo').innerHTML=`<div class="msg-err">Errore nel caricamento: ${escapeHtml(e.message)}</div>`;
     return;
@@ -1840,6 +1898,10 @@ async function registraAccredito(){
     await db.runTransaction(async tx=>{
       const snap=await tx.get(staffRef);
       const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nomeDigitato};
+      /* Controllo anche DENTRO la transazione: se un altro Staffer disattiva
+         questa persona mentre la schermata è già aperta, un vecchio stato UI
+         non può comunque registrare un nuovo accredito. */
+      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è segnato come «Non è più Staffer». Riattivalo prima di registrare nuovi accrediti.');
       const calc=applicaOverrideTotale(calcolaMovimento(raw,stato),overrideTotale);
       if(calc.errori.length)throw new Error(calc.errori.join(' '));
       const prima=numeroIntero(stato.st_totali);
@@ -1847,7 +1909,6 @@ async function registraAccredito(){
       const dettagli=calc.righe.map(r=>({id:r.id,nome:r.nome,ft:r.st,dettaglio:creaDettaglioLog(r),formula:r.formula,riferimenti:r.riferimenti||'',descrizione:r.descrizione||''}));
       const restiPrima={...((stato&&stato.resti)||{})};
       tx.set(staffRef,{
-        _pw:passwordCorrente,
         nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
         st_totali:dopo,
         resti:calc.nuoviResti,
@@ -1855,7 +1916,6 @@ async function registraAccredito(){
         ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
       tx.set(logRef,{
-        _pw:passwordCorrente,
         tipo:'accredito',
         staffId:staffIdCorrente,
         nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
@@ -2194,7 +2254,8 @@ async function caricaPubblico(forza=false){
       if(rc)chips.push(`<span class="resto-chip">Camere ${rc}/10</span>`);
       if(rb)chips.push(`<span class="resto-chip">Burocrazia ${rb}/3</span>`);
       const ultima=ultimaDataPerStaff[s.id]||s.ultimoAggiornamento;
-      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
+      const attivo=stafferAttivoDaData(s);
+      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(nomeDaDoc(s.id,s))}${attivo?'':' <span class="staffer-state-badge inactive">Non più Staffer</span>'}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
     }).join('');
     saldi.dataset.loaded='1';
     archivio.dataset.loaded='1';
@@ -2285,14 +2346,12 @@ async function cancellaMovimentoAccredito(id){
       const nuovoSaldo=saldoPrima!==null?saldoPrima:numeroIntero(stato.st_totali)-delta;
       const restiPrima=restiPrimaDaMovimento(log,stato);
       tx.set(staffRef,{
-        _pw:passwordCorrente,
         st_totali:nuovoSaldo,
         resti:restiPrima,
         ultimoMovimentoId:precedenteId||null,
         ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
       tx.set(logRef,{
-        _pw:passwordCorrente,
         annullato:true,
         annullatoIl:firebase.firestore.FieldValue.serverTimestamp(),
         saldoRipristinato:nuovoSaldo,
@@ -2370,7 +2429,6 @@ async function salvaModificheMovimento(id){
     const batch=db.batch();
     const logRef=db.collection('staff_token_log').doc(id);
     const updateLog={
-      _pw:passwordCorrente,
       data:nuovaData,
       obiettivi:righe,
       delta:nuovoTotale,
@@ -2385,7 +2443,6 @@ async function salvaModificheMovimento(id){
       // Il saldo corrente cambia della stessa differenza. I resti progressivi restano invariati.
       const saldoCorrente=numeroIntero(staffSnap.data().st_totali);
       batch.set(db.collection('staff_token').doc(staffId),{
-        _pw:passwordCorrente,
         st_totali:saldoCorrente+differenza,
         ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
@@ -2400,7 +2457,7 @@ async function salvaModificheMovimento(id){
         }
       }
     }else{
-      batch.set(db.collection('staff_token').doc(staffId),{_pw:passwordCorrente,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      batch.set(db.collection('staff_token').doc(staffId),{ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     }
     await batch.commit();
     messaggioArchivio(`<div class="msg-ok">Movimento aggiornato${differenza?` e saldo corretto di ${formatDelta(differenza)}`:''}.</div>`);
@@ -2510,8 +2567,8 @@ async function creaOInizializzaStaffer(){
       const snap=await tx.get(staffRef);
       const prima=snap.exists?numeroIntero(snap.data().st_totali):0;
       const resti={...((snap.exists&&snap.data().resti)||{}),listeSpesa:restoListe,camereBlindate:restoCamere,pool10:restoCamere,burocrazia:restoBuro};
-      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:nome,st_totali:st,resti,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-      tx.set(logRef,{_pw:passwordCorrente,tipo:'inizializzazione',staffId,nomeVisualizzato:nome,delta:st-prima,guadagnati:st-prima,saldoPrima:prima,saldoDopo:st,restiDopo:resti,obiettivi:[{id:'inizializzazione',nome:'Allineamento stato storico',ft:st-prima,dettaglio:`Saldo impostato a ${st} ST; resti: Liste ${restoListe}/3, Camere ${restoCamere}/10, Burocrazia ${restoBuro}/3. ${nota||''}`.trim()}],data:firebase.firestore.FieldValue.serverTimestamp()});
+      tx.set(staffRef,{nomeVisualizzato:nome,st_totali:st,resti,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(logRef,{tipo:'inizializzazione',staffId,nomeVisualizzato:nome,delta:st-prima,guadagnati:st-prima,saldoPrima:prima,saldoDopo:st,restiDopo:resti,obiettivi:[{id:'inizializzazione',nome:'Allineamento stato storico',ft:st-prima,dettaglio:`Saldo impostato a ${st} ST; resti: Liste ${restoListe}/3, Camere ${restoCamere}/10, Burocrazia ${restoBuro}/3. ${nota||''}`.trim()}],data:firebase.firestore.FieldValue.serverTimestamp()});
     });
     msg.innerHTML='<div class="msg-ok">Stato salvato e registrato nell’archivio.</div>';
     await caricaListaStaffer();await caricaPubblico(true);
@@ -2598,9 +2655,8 @@ async function correggiSaldoStaffer(){
       const prima=numeroIntero(stato.st_totali);
       const dopo=prima+delta;
       const nomeVis=stato.nomeVisualizzato||nomeCanonicoStaffer(nome)||nome;
-      tx.set(staffRef,{_pw:passwordCorrente,nomeVisualizzato:nomeVis,st_totali:dopo,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(staffRef,{nomeVisualizzato:nomeVis,st_totali:dopo,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
       tx.set(logRef,{
-        _pw:passwordCorrente,
         tipo:'movimento_manuale',
         staffId,
         nomeVisualizzato:nomeVis,
@@ -2647,6 +2703,21 @@ function normalizzaNomePgStaff(nome){
 }
 function nomeKindPgStaff(kind){return kind==='adulti'?'Adulto':'Studente'}
 
+function aggiornaStatoStafferUI(){
+  document.querySelectorAll('.staffer-choice').forEach(btn=>{
+    const id=normalizzaStaffId(btn.dataset.value||'');
+    const inactive=STAFF_STATUS_CACHE[id]===false;
+    btn.classList.toggle('staffer-inactive',inactive);
+    if(btn.closest('#pickerAccredito')){
+      btn.disabled=inactive;
+      btn.title=inactive?'Non è più Staffer: non può ricevere nuovi accrediti.':'';
+    }else{
+      btn.disabled=false;
+      if(inactive)btn.title='Non è più Staffer: saldo e storico restano disponibili.';
+      else if(btn.title&&/Non è più Staffer/.test(btn.title))btn.title='';
+    }
+  });
+}
 function renderPgStaff(){
   const box=document.getElementById('pgStaffLista');
   if(!box)return;
@@ -2655,11 +2726,21 @@ function renderPgStaff(){
   pgStaffCache.forEach(x=>{if(perStaff[x.staffId])perStaff[x.staffId].push(x)});
   box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
     const id=normalizzaStaffId(st.nome);
+    const attivo=STAFF_STATUS_CACHE[id]!==false;
     const lista=(perStaff[id]||[]).sort((a,b)=>a.nome.localeCompare(b.nome,'it',{sensitivity:'base'}));
     const chips=lista.length?lista.map(pg=>`<span class="pg-chip"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b><button type="button" class="btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Rimuovi ${escapeHtml(pg.nome)}"><i class="fa-solid fa-xmark"></i></button></span>`).join(''):'<span class="pg-empty">Nessun PG associato.</span>';
-    return `<div class="pg-staff-group"><div class="pg-staff-group-head"><b>${escapeHtml(st.breve)}</b><span class="pg-staff-count">${lista.length} PG</span></div><div class="pg-chip-list">${chips}</div></div>`;
+    return `<div class="pg-staff-group${attivo?'':' is-inactive'}">
+      <div class="pg-staff-group-head">
+        <div><b>${escapeHtml(st.breve)}</b><div class="staffer-state-line"><span class="staffer-state-badge${attivo?'':' inactive'}">${attivo?'Staffer attivo':'Non più Staffer'}</span><span class="pg-staff-count">${lista.length} PG associati</span></div></div>
+        <button type="button" class="${attivo?'danger':'secondary'} staffer-status-btn" data-staffer-status="${escapeHtml(id)}" data-active="${attivo?'1':'0'}">${attivo?'<i class="fa-solid fa-user-slash"></i> Non è più Staffer':'<i class="fa-solid fa-user-check"></i> Riattiva Staffer'}</button>
+      </div>
+      <div class="pg-chip-list">${chips}</div>
+      ${attivo?'':`<div class="hint" style="margin-top:8px">Gli ST già consumati restano consumati. I PG associati restano memorizzati, ma negli Elfi non compare più alcun tasto per nuovi utilizzi.</div>`}
+    </div>`;
   }).join('');
   box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
+  box.querySelectorAll('[data-staffer-status]').forEach(btn=>btn.addEventListener('click',()=>gestisciStatoStaffer(btn)));
+  aggiornaStatoStafferUI();
 }
 
 async function caricaPgStaff(){
@@ -2668,9 +2749,12 @@ async function caricaPgStaff(){
   try{
     const snaps=await Promise.all(STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)).get()));
     pgStaffCache=[];
+    STAFF_STATUS_CACHE={};
     snaps.forEach((snap,i)=>{
       const st=STAFFER_PG_CONFIG[i];
       const data=snap.exists?snap.data():{};
+      const sid=normalizzaStaffId(st.nome);
+      STAFF_STATUS_CACHE[sid]=stafferAttivoDaData(data);
       const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
       arr.forEach(pg=>{
         const nome=String(pg&&pg.nome||'').trim(); if(!nome)return;
@@ -2679,6 +2763,37 @@ async function caricaPgStaff(){
     });
     renderPgStaff();
   }catch(e){if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare i PG dello Staff: ${escapeHtml(e.message)}</div>`}
+}
+
+async function gestisciStatoStaffer(btn){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const staffId=String(btn&&btn.dataset.stafferStatus||'');
+  const currentlyActive=String(btn&&btn.dataset.active||'1')==='1';
+  if(!staffId)return;
+  if(btn.dataset.confirmState!=='1'){
+    btn.dataset.confirmState='1';
+    btn.innerHTML=currentlyActive?'<i class="fa-solid fa-triangle-exclamation"></i> Conferma: non è più Staffer':'<i class="fa-solid fa-rotate"></i> Conferma riattivazione';
+    setTimeout(()=>{if(btn&&document.body.contains(btn)&&btn.dataset.confirmState==='1'){delete btn.dataset.confirmState;renderPgStaff()}},4500);
+    return;
+  }
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Salvo…';
+  try{
+    await db.collection('staff_token').doc(staffId).set({
+      stafferAttivo:!currentlyActive,
+      stafferStatoAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+    if(msg)msg.innerHTML=currentlyActive
+      ? '<div class="msg-ok">Staffer disattivato. Saldo, ST consumati, associazioni e storico restano invariati; i tasti ST spariscono live dagli Elfi.</div>'
+      : '<div class="msg-ok">Staffer riattivato. I PG già associati tornano automaticamente abilitati negli Elfi.</div>';
+    await caricaPgStaff();
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){
+    if(msg)msg.innerHTML=`<div class="msg-err">Stato Staffer non aggiornato: ${escapeHtml(e.message)}</div>`;
+    btn.disabled=false;
+  }
 }
 
 function selezionaOwnerPgStaff(nome){
@@ -2692,12 +2807,28 @@ function selezionaKindPgStaff(kind){
 document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(btn=>btn.addEventListener('click',()=>selezionaOwnerPgStaff(btn.dataset.value)));
 document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(btn=>btn.addEventListener('click',()=>selezionaKindPgStaff(btn.dataset.kind)));
 
+async function risolviNomePgStaffRegistrato(nome,kind){
+  const coll=kind==='adulti'?'personaggi_adulti':'personaggi_studenti';
+  const key=normalizzaNomePgStaff(nome);
+  const snap=await db.collection(coll).get();
+  const matches=snap.docs.filter(d=>{
+    const data=d.data()||{};
+    return data._deleted!==true && normalizzaNomePgStaff(d.id)===key;
+  });
+  if(matches.length===1)return matches[0].id;
+  if(matches.length>1)throw new Error('Più PG corrispondono a questo nome: seleziona l’identificativo esatto.');
+  throw new Error('PG non trovato nell’elenco '+(kind==='adulti'?'Adulti':'Studenti')+'. Inserisci Nome e Cognome esatti.');
+}
+
 async function aggiungiPgStaff(){
   const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
   if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
-  const nome=document.getElementById('pgStaffNome').value.trim();
-  if(!nome){if(msg)msg.innerHTML='<div class="msg-err">Scrivi il nome del PG.</div>';return}
+  const digitato=document.getElementById('pgStaffNome').value.trim();
+  if(!digitato){if(msg)msg.innerHTML='<div class="msg-err">Scrivi Nome e Cognome del PG.</div>';return}
+  let nome;
+  try{nome=await risolviNomePgStaffRegistrato(digitato,pgStaffKind);}catch(e){if(msg)msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   const targetId=normalizzaStaffId(pgStaffOwner);
+  if(STAFF_STATUS_CACHE[targetId]===false){if(msg)msg.innerHTML='<div class="msg-err">Questo Staffer è segnato come «Non è più Staffer». Riattivalo prima di associare nuovi PG.</div>';return}
   const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
   try{
     await db.runTransaction(async tx=>{
@@ -2713,9 +2844,10 @@ async function aggiungiPgStaff(){
       }
       const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===targetId);
       const snap=snaps[idx]; const stato=snap.exists?snap.data():{};
+      if(stato.stafferAttivo===false)throw new Error('Questo Staffer è segnato come «Non è più Staffer». Riattivalo prima di associare nuovi PG.');
       const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
       arr.push({nome,tipo:pgStaffKind});
-      tx.set(refs[idx],{_pw:passwordCorrente,nomeVisualizzato:stato.nomeVisualizzato||pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(refs[idx],{nomeVisualizzato:stato.nomeVisualizzato||pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     });
     document.getElementById('pgStaffNome').value='';
     if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} aggiunto ai PG di ${escapeHtml(pgStaffOwner)}.</div>`;
@@ -2730,24 +2862,17 @@ async function rimuoviPgStaff(staffId,nome,kind){
   if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
   const ref=db.collection('staff_token').doc(staffId);
   try{
-    const usageSnap=await db.collection('staff_token_usi').where('pgId','==',nome).get();
-    const activeUsage=usageSnap.docs.some(d=>{
-      const x=d.data()||{};
-      return x.active===true
-        && String(x.staffId||'')===String(staffId)
-        && (x.pgKind==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti');
-    });
-    if(activeUsage){
-      throw new Error('Questo PG ha ancora Staff Token attivi in Camera Blindata. Rimuovi prima gli ST dai suoi Post, poi potrai togliere l’associazione.');
-    }
+    /* La disassociazione controlla soltanto gli usi FUTURI. Gli Staff Token già
+       spesi restano consumati e conservati nello storico: non vengono rimborsati
+       e non devono impedire di togliere il PG dall'elenco degli abilitati. */
     await db.runTransaction(async tx=>{
       const snap=await tx.get(ref); if(!snap.exists)throw new Error('Staffer non trovato.');
       const stato=snap.data(); const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati:[];
       const key=normalizzaNomePgStaff(nome);
       const nuovo=arr.filter(pg=>!(normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti')));
-      tx.set(ref,{_pw:passwordCorrente,pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(ref,{pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     });
-    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} rimosso dai PG abilitati agli Staff Token.</div>`;
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} rimosso dai PG abilitati agli Staff Token. Gli ST già spesi restano consumati e nello storico.</div>`;
     await caricaPgStaff();
   }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non rimosso: ${escapeHtml(e.message)}</div>`}
 }
