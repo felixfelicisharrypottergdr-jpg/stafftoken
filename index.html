@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
 <!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
 <!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
 <!-- v25 — audit finale segnalazioni: blocco transazionale accrediti su Staffer inattivo + versione UI coerente, 04/09/2026 -->
@@ -10,7 +11,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v27</title>
+<title>Gestore Staff Token — v28</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -716,14 +717,24 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .pg-add-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:14px;}
   .pg-staff-list{margin-top:14px;display:grid;gap:10px;}
   .pg-staff-group{border:1px solid rgba(251,0,84,.22);border-radius:12px;background:#fff;padding:12px;}
-  .pg-staff-group-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px;}
-  .pg-staff-group-head b{color:var(--bordeaux-dark);font-family:'magic','Cinzel',serif;font-size:17px;}
-  .pg-staff-count{font-size:12px;color:var(--testo-muted);}
-  .pg-chip-list{display:flex;flex-wrap:wrap;gap:8px;}
-  .pg-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid #dfe9c6;background:#f7ffe6;border-radius:999px;padding:6px 8px 6px 11px;font-size:13px;}
-  .pg-chip .pg-kind{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#557500;font-weight:700;}
-  .pg-chip button{border:0;background:transparent;color:var(--rosso);cursor:pointer;padding:2px 4px;font-size:12px;}
-  .pg-empty{color:var(--testo-muted);font-style:italic;font-size:13px;padding:4px 0;}
+  .pg-staff-group-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px;}
+  .pg-staff-group-head b{color:var(--accent-dark);font-family:'magic','Cinzel',serif;font-size:17px;}
+  .pg-staff-count{font-size:12px;color:var(--muted);}
+  .pg-pool-balance{font-family:'Cinzel',serif;font-weight:800;color:var(--green-dark);font-size:15px;white-space:nowrap;text-align:right;}
+  .pg-pool-balance small{display:block;font-family:'EB Garamond',serif;font-size:11px;font-weight:400;color:var(--muted);margin-top:2px;}
+  .pg-chip-list{display:grid;gap:7px;}
+  .pg-assoc-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #dfe9c6;background:#fbfff4;border-radius:10px;padding:8px 9px;}
+  .pg-assoc-main{display:flex;align-items:center;gap:8px;min-width:0;}
+  .pg-assoc-main b{font-family:'EB Garamond',Georgia,serif;color:var(--ink);font-size:14px;overflow-wrap:anywhere;}
+  .pg-kind{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef7d9;border:1px solid #cfe99f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#557500;font-weight:800;white-space:nowrap;}
+  .pg-assoc-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .pg-assoc-actions button{margin:0;white-space:nowrap;}
+  .pg-empty{color:var(--muted);font-style:italic;font-size:13px;padding:4px 0;}
+  .pg-pool-info{margin:10px 0 2px;padding:10px 12px;border:1px solid #cfe99f;border-radius:11px;background:#f8ffe9;color:#486b13;font-size:13px;line-height:1.4;}
+  .pg-pool-info.empty{border-color:var(--line);background:#fafafa;color:var(--muted);font-style:normal;text-align:left;padding:10px 12px;}
+  .pg-step-label{display:flex;align-items:center;gap:7px;margin:14px 0 6px;font-family:'Cinzel',serif;font-size:12px;font-weight:800;color:var(--accent-dark);}
+  .pg-step-number{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--accent);color:#fff;font-family:Arial,sans-serif;font-size:11px;}
+  .pg-kind-required{margin-top:5px;color:var(--accent-dark);font-size:11.5px;font-weight:700;}
   .pg-staff-group.is-inactive{opacity:.78;background:#faf7f8;border-style:dashed}
   .staffer-state-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:3px}
   .staffer-state-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;border:1px solid #cfe99f;background:#f7ffe6;color:#557500}
@@ -733,7 +744,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   #pickerAccredito .staffer-choice.staffer-inactive{cursor:not-allowed}
   .field-with-action{display:flex;gap:7px;align-items:center;}
   .field-with-action input{flex:1;}
-  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}}
+  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-pool-balance{text-align:left}}
 
 </style>
 </head>
@@ -940,7 +951,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
           <div class="staffer-create-box">
             <div>
               <label for="nuovoStafferNome">Aggiungi Staffer</label>
-              <div class="hint">Aggiunge una nuova persona allo Staff con saldo iniziale di 0 ST.</div>
+              <div class="hint">Aggiunge una nuova persona allo Staff con saldo iniziale di 0 ST. <b>Studente/Adulto non appartiene allo Staffer:</b> si sceglie obbligatoriamente per ciascun suo PG nella sezione qui sotto, perché lo stesso Player può avere PG in entrambi gli Elfi.</div>
             </div>
             <div class="pg-add-row">
               <input type="text" id="nuovoStafferNome" placeholder="Nome dello Staffer" autocomplete="off">
@@ -950,34 +961,32 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
           </div>
 
           <div class="staffer-admin-separator"></div>
-          <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG che possono usare gli Staff Token</div>
-          <div class="hint" style="margin-bottom:10px">Associa qui i PG dello Staffer. Solo questi PG vedranno il saldo ST e il tasto di utilizzo nella propria Camera Blindata.</div>
+          <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG collegati agli Staff Token</div>
+          <div class="clarity-banner"><i class="fa-solid fa-wallet"></i><div><b>Gli ST appartengono al Player Staffer, non al singolo PG.</b> Lulu, Gideon, Noah e Odette hanno ciascuno un unico saldo condiviso: tutti i PG associati alla stessa persona spendono da quella stessa riserva. L'elenco dei PG serve <b>solo</b> a far comparire negli Elfi il saldo live e il tasto per usare/restituire 1 ST dalla Camera Blindata.</div></div>
 
-          <div class="pg-staff-toolbar">
-            <div>
-              <label>Staffer proprietario</label>
-              <div class="staffer-picker" id="pickerPgStaff">
-                <button type="button" class="staffer-choice active" data-value="Lulu Sparks">Lulu</button>
-                <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon</button>
-                <button type="button" class="staffer-choice" data-value="Noah">Noah</button>
-                <button type="button" class="staffer-choice" data-value="Odette">Odette</button>
-              </div>
-            </div>
-            <div>
-              <label>Elfo del PG</label>
-              <div class="movement-sign-picker" id="tipoPgStaffPicker">
-                <button type="button" class="movement-sign active add" data-kind="studenti"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
-                <button type="button" class="movement-sign" data-kind="adulti"><i class="fa-solid fa-briefcase"></i> Adulto</button>
-              </div>
-            </div>
+          <div class="pg-step-label"><span class="pg-step-number">1</span> Scegli il Player Staffer / saldo condiviso</div>
+          <div class="staffer-picker" id="pickerPgStaff">
+            <button type="button" class="staffer-choice" data-value="Lulu Sparks">Lulu</button>
+            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon</button>
+            <button type="button" class="staffer-choice" data-value="Noah">Noah</button>
+            <button type="button" class="staffer-choice" data-value="Odette">Odette</button>
           </div>
+          <div id="pgStaffPoolInfo" class="pg-pool-info empty">Seleziona uno Staffer: il PG verrà collegato al suo unico saldo ST condiviso.</div>
 
+          <div class="pg-step-label"><span class="pg-step-number">2</span> Indica quale Elfo usa il PG</div>
+          <div class="movement-sign-picker" id="tipoPgStaffPicker">
+            <button type="button" class="movement-sign add" data-kind="studenti"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
+            <button type="button" class="movement-sign" data-kind="adulti"><i class="fa-solid fa-briefcase"></i> Adulto</button>
+          </div>
+          <div class="pg-kind-required"><i class="fa-solid fa-circle-exclamation"></i> Scelta obbligatoria: non viene preselezionato nessun tipo, così non puoi inserire per errore un Adulto tra gli Studenti.</div>
+
+          <div class="pg-step-label"><span class="pg-step-number">3</span> Inserisci il PG da collegare</div>
           <div class="pg-add-row">
             <div>
               <label>Nome del PG</label>
               <input type="text" id="pgStaffNome" placeholder="Nome e Cognome esatti del PG" autocomplete="off">
             </div>
-            <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-user-plus"></i> Aggiungi PG</button>
+            <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-link"></i> Collega PG</button>
           </div>
           <div id="pgStaffMsg" aria-live="polite"></div>
           <div id="pgStaffLista" class="pg-staff-list"><div class="loading">Caricamento PG dello Staff…</div></div>
@@ -1761,7 +1770,7 @@ async function caricaListaStaffer(){
     if(ia>=0||ib>=0){if(ia<0)return 1;if(ib<0)return -1;return ia-ib;}
     return a[1].nome.localeCompare(b[1].nome,'it',{sensitivity:'base'});
   }).map(x=>x[1]);
-  if(!STAFFER_PG_CONFIG.some(x=>x.nome===pgStaffOwner))pgStaffOwner=STAFFER_PG_CONFIG[0]?.nome||'';
+  if(pgStaffOwner&&!STAFFER_PG_CONFIG.some(x=>x.nome===pgStaffOwner))pgStaffOwner='';
   aggiornaPickerStafferDinamici();
   return snap;
 }
@@ -2775,9 +2784,10 @@ const LEGACY_STAFFER_PG_CONFIG=[
   {nome:'Odette',breve:'Odette'}
 ];
 let STAFFER_PG_CONFIG=LEGACY_STAFFER_PG_CONFIG.slice();
-let pgStaffOwner='Lulu Sparks';
-let pgStaffKind='studenti';
+let pgStaffOwner='';
+let pgStaffKind='';
 let pgStaffCache=[];
+let STAFF_BALANCE_CACHE={};
 
 function normalizzaNomePgStaff(nome){
   return String(nome||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -2799,6 +2809,22 @@ function aggiornaStatoStafferUI(){
     }
   });
 }
+function aggiornaPoolPgStaffInfo(){
+  const box=document.getElementById('pgStaffPoolInfo');
+  if(!box)return;
+  if(!pgStaffOwner){
+    box.className='pg-pool-info empty';
+    box.textContent='Seleziona uno Staffer: il PG verrà collegato al suo unico saldo ST condiviso.';
+    return;
+  }
+  const id=normalizzaStaffId(pgStaffOwner);
+  const st=STAFFER_PG_CONFIG.find(x=>normalizzaStaffId(x.nome)===id);
+  const saldo=Number(STAFF_BALANCE_CACHE[id]||0);
+  const n=pgStaffCache.filter(pg=>pg.staffId===id).length;
+  box.className='pg-pool-info';
+  box.innerHTML=`<b>Tenda ST di ${escapeHtml(st?.breve||pgStaffOwner)}:</b> ${saldo} ST disponibili, condivisi da tutti i suoi PG associati (${n}). Il PG che aggiungi qui non riceve un saldo proprio.`;
+}
+
 function renderPgStaff(){
   const box=document.getElementById('pgStaffLista');
   if(!box)return;
@@ -2808,21 +2834,34 @@ function renderPgStaff(){
   box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
     const id=normalizzaStaffId(st.nome);
     const attivo=STAFF_STATUS_CACHE[id]!==false;
+    const saldo=Number(STAFF_BALANCE_CACHE[id]||0);
     const lista=(perStaff[id]||[]).sort((a,b)=>a.nome.localeCompare(b.nome,'it',{sensitivity:'base'}));
-    const chips=lista.length?lista.map(pg=>`<span class="pg-chip"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b><button type="button" class="btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Rimuovi ${escapeHtml(pg.nome)}"><i class="fa-solid fa-xmark"></i></button></span>`).join(''):'<span class="pg-empty">Nessun PG associato.</span>';
+    const righe=lista.length?lista.map(pg=>{
+      const altroTipo=pg.tipo==='adulti'?'studenti':'adulti';
+      const altroNome=nomeKindPgStaff(altroTipo);
+      return `<div class="pg-assoc-row">
+        <div class="pg-assoc-main"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b></div>
+        <div class="pg-assoc-actions">
+          <button type="button" class="secondary btn-cambia-tipo-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Correggi il tipo di Elfo"><i class="fa-solid fa-arrow-right-arrow-left"></i> Passa ad ${escapeHtml(altroNome)}</button>
+          <button type="button" class="danger btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}"><i class="fa-solid fa-trash-can"></i> Rimuovi PG</button>
+        </div>
+      </div>`;
+    }).join(''):'<span class="pg-empty">Nessun PG collegato a questo saldo ST.</span>';
     return `<div class="pg-staff-group${attivo?'':' is-inactive'}">
       <div class="pg-staff-group-head">
-        <div><b>${escapeHtml(st.breve)}</b><div class="staffer-state-line"><span class="staffer-state-badge${attivo?'':' inactive'}">${attivo?'Staffer attivo':'Fuori dallo Staff'}</span><span class="pg-staff-count">${lista.length} PG associati</span></div></div>
+        <div><b>Tenda ST di ${escapeHtml(st.breve)}</b><div class="staffer-state-line"><span class="staffer-state-badge${attivo?'':' inactive'}">${attivo?'Staffer attivo':'Fuori dallo Staff'}</span><span class="pg-staff-count">${lista.length} PG collegati · un solo saldo condiviso</span></div></div>
+        <div class="pg-pool-balance">${saldo} ST<small>saldo del Player</small></div>
       </div>
-      <div class="pg-chip-list">${chips}</div>
-      ${attivo?'':`<div class="hint" style="margin-top:8px">I PG restano associati ma non possono usare nuovi ST finché lo Staffer non viene rimesso nello Staff.</div>`}
+      <div class="pg-chip-list">${righe}</div>
+      ${attivo?'':`<div class="hint" style="margin-top:8px">I PG restano memorizzati soltanto per il collegamento con gli Elfi, ma non possono usare nuovi ST finché lo Staffer non viene rimesso nello Staff.</div>`}
     </div>`;
   }).join('');
   box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
+  box.querySelectorAll('.btn-cambia-tipo-pg-staff').forEach(btn=>btn.addEventListener('click',()=>cambiaTipoPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
   renderStafferStatus();
   aggiornaStatoStafferUI();
+  aggiornaPoolPgStaffInfo();
 }
-
 function renderStafferStatus(){
   const box=document.getElementById('stafferStatusLista');
   if(!box)return;
@@ -2847,9 +2886,11 @@ async function caricaPgStaff(){
     const docsById=new Map(snap.docs.map(d=>[d.id,d]));
     pgStaffCache=[];
     STAFF_STATUS_CACHE={};
+    STAFF_BALANCE_CACHE={};
     STAFFER_PG_CONFIG.forEach(st=>{
       const sid=normalizzaStaffId(st.nome),doc=docsById.get(sid),data=doc?doc.data():{};
       STAFF_STATUS_CACHE[sid]=stafferAttivoDaData(data);
+      STAFF_BALANCE_CACHE[sid]=Number(data.st_totali||0);
       const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
       arr.forEach(pg=>{
         const nome=String(pg&&pg.nome||'').trim();if(!nome)return;
@@ -2925,12 +2966,13 @@ async function gestisciStatoStaffer(btn){
 }
 
 function selezionaOwnerPgStaff(nome){
-  pgStaffOwner=nome;
-  document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(b=>b.classList.toggle('active',b.dataset.value===nome));
+  pgStaffOwner=String(nome||'');
+  document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(b=>b.classList.toggle('active',b.dataset.value===pgStaffOwner));
+  aggiornaPoolPgStaffInfo();
 }
 function selezionaKindPgStaff(kind){
-  pgStaffKind=kind==='adulti'?'adulti':'studenti';
-  document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(b=>b.classList.toggle('active',b.dataset.kind===pgStaffKind));
+  pgStaffKind=(kind==='adulti'||kind==='studenti')?kind:'';
+  document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(b=>b.classList.toggle('active',!!pgStaffKind&&b.dataset.kind===pgStaffKind));
 }
 function collegaPickerPgStaff(){
   document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(btn=>{
@@ -2957,6 +2999,8 @@ async function risolviNomePgStaffRegistrato(nome,kind){
 async function aggiungiPgStaff(){
   const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
   if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  if(!pgStaffOwner){if(msg)msg.innerHTML='<div class="msg-err">Seleziona prima a quale Player Staffer appartiene il PG: tutti i suoi PG useranno lo stesso saldo ST.</div>';return}
+  if(pgStaffKind!=='studenti'&&pgStaffKind!=='adulti'){if(msg)msg.innerHTML='<div class="msg-err">Scegli esplicitamente se il PG usa l’Elfo Studente o l’Elfo Adulto.</div>';return}
   const digitato=document.getElementById('pgStaffNome').value.trim();
   if(!digitato){if(msg)msg.innerHTML='<div class="msg-err">Scrivi Nome e Cognome del PG.</div>';return}
   let nome;
@@ -2985,12 +3029,54 @@ async function aggiungiPgStaff(){
       tx.set(refs[idx],{nomeVisualizzato:stato.nomeVisualizzato||pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     });
     document.getElementById('pgStaffNome').value='';
-    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} aggiunto ai PG di ${escapeHtml(pgStaffOwner)}.</div>`;
+    const ownerBreve=STAFFER_PG_CONFIG.find(st=>normalizzaStaffId(st.nome)===targetId)?.breve||pgStaffOwner;
+    selezionaKindPgStaff('');
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} collegato alla tenda ST di ${escapeHtml(ownerBreve)}. Per il prossimo PG scegli di nuovo Studente o Adulto.</div>`;
     await caricaPgStaff();
   }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non aggiunto: ${escapeHtml(e.message)}</div>`}
 }
 document.getElementById('btnAggiungiPgStaff')?.addEventListener('click',aggiungiPgStaff);
 document.getElementById('pgStaffNome')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aggiungiPgStaff();}});
+
+async function cambiaTipoPgStaff(staffId,nome,kindAttuale){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const nuovoKind=kindAttuale==='adulti'?'studenti':'adulti';
+  let nomeRegistrato;
+  try{nomeRegistrato=await risolviNomePgStaffRegistrato(nome,nuovoKind);}catch(e){
+    if(msg)msg.innerHTML=`<div class="msg-err">Non posso cambiare ${escapeHtml(nome)} in ${escapeHtml(nomeKindPgStaff(nuovoKind))}: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
+  try{
+    await db.runTransaction(async tx=>{
+      const snaps=[]; for(const ref of refs)snaps.push(await tx.get(ref));
+      const key=normalizzaNomePgStaff(nomeRegistrato);
+      for(let i=0;i<snaps.length;i++){
+        const arr=Array.isArray(snaps[i].data()?.pgAssociati)?snaps[i].data().pgAssociati:[];
+        const dup=arr.find(pg=>normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===nuovoKind);
+        if(dup)throw new Error(`${nomeRegistrato} risulta già collegato come ${nomeKindPgStaff(nuovoKind)}.`);
+      }
+      const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===staffId);
+      if(idx<0)throw new Error('Staffer non trovato.');
+      const stato=snaps[idx].exists?snaps[idx].data():{};
+      const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
+      const oldKey=normalizzaNomePgStaff(nome);
+      let cambiato=false;
+      const nuovo=arr.map(pg=>{
+        const tipo=(pg&&pg.tipo)==='adulti'?'adulti':'studenti';
+        if(!cambiato&&normalizzaNomePgStaff(pg&&pg.nome)===oldKey&&tipo===(kindAttuale==='adulti'?'adulti':'studenti')){
+          cambiato=true;return {nome:nomeRegistrato,tipo:nuovoKind};
+        }
+        return pg;
+      });
+      if(!cambiato)throw new Error('Associazione PG non trovata.');
+      tx.set(refs[idx],{pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nomeRegistrato)} corretto: ora è collegato come PG ${escapeHtml(nomeKindPgStaff(nuovoKind))}. Il saldo ST del Player non cambia.</div>`;
+    await caricaPgStaff();
+  }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">Tipo del PG non modificato: ${escapeHtml(e.message)}</div>`}
+}
 
 async function rimuoviPgStaff(staffId,nome,kind){
   const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
@@ -3007,7 +3093,7 @@ async function rimuoviPgStaff(staffId,nome,kind){
       const nuovo=arr.filter(pg=>!(normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti')));
       tx.set(ref,{pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
     });
-    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} rimosso dai PG abilitati agli Staff Token. Gli ST già spesi restano consumati e nello storico.</div>`;
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} scollegato dalla tenda ST del Player. Non comparirà più il comando ST nel suo Elfo; saldo e ST già spesi non cambiano.</div>`;
     await caricaPgStaff();
   }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non rimosso: ${escapeHtml(e.message)}</div>`}
 }
