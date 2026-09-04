@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- v52 — Registro: quattro Player sempre visibili e tutte le tendine chiuse, 04/09/2026 -->
+<!-- v51 — totale a sinistra nei metodi + saldo Player aggiornato subito dopo registrazione, 04/09/2026 -->
 <!-- v50 — Rinomina PG con migrazione ST + registrazione separata per Importa/Manuale/Clic, 04/09/2026 -->
 <!-- v49 — Importa/Manuale separati + registro compatto con scroll e righe alternate, 04/09/2026 -->
 <!-- v48 — Registro unico + saldo sui pulsanti Player, 04/09/2026 -->
@@ -28,7 +30,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v50</title>
+<title>Gestore Staff Token — v52</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -618,9 +620,9 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 }
 .import-help b{color:var(--bordeaux-dark)}
 .import-report{margin-top:12px; border:1px solid #d9efb5; border-radius:12px; overflow:hidden; background:#fff}
-.import-summary{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 13px; background:#f5ffe8; border-bottom:1px solid #d9efb5}
+.import-summary{display:flex; align-items:center; justify-content:flex-start; flex-wrap:wrap; gap:8px; padding:11px 13px; background:#f5ffe8; border-bottom:1px solid #d9efb5}
 .import-summary strong{font-family:'magic','Cinzel',serif; color:#4e7800; font-size:15px}
-.import-summary .sum-score{font-family:'magic','Cinzel',serif; font-weight:700; font-size:20px; color:#4e7800; white-space:nowrap}
+.import-summary .sum-score{font-family:'magic','Cinzel',serif; font-weight:700; font-size:20px; color:#4e7800; white-space:nowrap}.import-summary .sum-score:before{content:'Totale: ';font-family:'EB Garamond',Georgia,serif;font-size:12px;font-weight:700;color:#58712e;text-transform:uppercase;letter-spacing:.04em}
 .import-lines{padding:4px 12px}
 .import-line{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:start; padding:10px 2px; border-bottom:1px dashed #e4ecd7}
 .import-line:last-child{border-bottom:0}
@@ -804,7 +806,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .pg-rename-help{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35;}
   .method-register{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding:11px 12px;border:1px solid rgba(134,201,0,.42);border-radius:12px;background:linear-gradient(135deg,#f8ffe9,#fff);}
   .method-register.import-save{border-color:rgba(180,0,77,.28);background:linear-gradient(135deg,#fff5f9,#fff);}
-  .method-register-info{font-size:12.5px;color:var(--muted);line-height:1.35;}
+  .method-register-info{font-size:12.5px;color:var(--muted);line-height:1.35;}.method-register-info>span:first-child{font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-dark);margin-right:4px;}
   .method-register-info b{font-family:'Cinzel',serif;color:var(--green-dark);font-size:14px;}
   .method-register.import-save .method-register-info b{color:var(--accent-dark);}
   .method-register .main{margin:0;min-width:190px;}
@@ -1831,13 +1833,13 @@ function aggiornaMetodoRegistrazione(metodo,dati){
   if(raw.length===0){
     info.textContent=cfg.empty; btn.innerHTML=cfg.label;
   }else if(!staffIdCorrente){
-    info.innerHTML=`<b>+${calc.totale} ST</b> · seleziona prima il Player.`;
+    info.innerHTML=`<span>Totale</span> <b>+${calc.totale} ST</b> · seleziona prima il Player.`;
     btn.innerHTML='<i class="fa-solid fa-user"></i> Seleziona un Player';
   }else if(calc.errori.length){
     info.innerHTML=`<span class="msg-err">${escapeHtml(calc.errori[0])}</span>`;
     btn.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Correggi i dati';
   }else{
-    info.innerHTML=`<b>+${calc.totale} ST</b> · saldo ${attuali} → <b>${attuali+calc.totale} ST</b>`;
+    info.innerHTML=`<span>Totale</span> <b>+${calc.totale} ST</b> · saldo ${attuali} → <b>${attuali+calc.totale} ST</b>`;
     btn.innerHTML=cfg.label;
   }
 }
@@ -2230,6 +2232,11 @@ async function registraAccredito(metodo='click',btn=null){
       });
       risultatoTx={calc,prima,dopo,nome:stato.nomeVisualizzato||nomeDigitato};
     });
+    // Aggiorna subito il saldo mostrato nei quattro pulsanti della prima pagina,
+    // senza aspettare il successivo refresh del Registro/onSnapshot.
+    saldiPlayer[staffIdCorrente]=numeroIntero(risultatoTx.dopo);
+    if(staffAttuale)staffAttuale={...staffAttuale,st_totali:numeroIntero(risultatoTx.dopo)};
+    aggiornaSaldiPickerAccredito();
     pulisciMetodoDopoRegistrazione(metodo);
     azzeraHistoryAccredito();
     if(msg)msg.innerHTML=`<div class="msg-ok"><i class="fa-solid fa-circle-check"></i> Accredito registrato: <b>+${risultatoTx.calc.totale} ST</b> · saldo ${risultatoTx.dopo} ST.</div>`;
@@ -2936,13 +2943,21 @@ function renderArchivio(){
   staffPubblici.forEach(s=>saldoMap[s.id]={saldo:numeroIntero(s.st_totali),nome:nomeDaDoc(s.id,s)});
 
   const gruppi=new Map();
+  // Senza filtri il Registro mostra sempre tutti e quattro i Player principali,
+  // anche se uno di loro non ha ancora alcun movimento.
+  LEGACY_STAFFER_PG_CONFIG.forEach(cfg=>{
+    const key=normalizzaStaffId(cfg.nome);
+    if(!q&&!tipo)gruppi.set(key,{key,nome:cfg.nome,movimenti:[]});
+    else if(q&&cfg.nome.toLowerCase().includes(q)&&!tipo)gruppi.set(key,{key,nome:cfg.nome,movimenti:[]});
+  });
+
   archivioMovimenti.forEach(m=>{
     if(m.rimossoDalRegistro)return;
     const staffKeyRaw=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
     if(!isPrimaryStaffId(staffKeyRaw))return;
     const mtipo=tipoMovimento(m);
     if(tipo&&mtipo!==tipo)return;
-    const key=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+    const key=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
     const nome=primaryStaffName(key,m.nomeVisualizzato||saldoMap[key]?.nome||m.staffId||'—');
     const testoMov=[mtipo,...(m.obiettivi||[]).flatMap(o=>[o.nome,o.dettaglio,o.formula,o.descrizione])].join(' ').toLowerCase();
     const nomeMatch=!q||nome.toLowerCase().includes(q);
@@ -2953,9 +2968,9 @@ function renderArchivio(){
 
   const lista=[...gruppi.values()].map(g=>{
     g.movimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
-    g.ultimo=timestampMs(g.movimenti[0]?.data);
+    g.ultimo=timestampMs(g.movimenti[0]?.data)||0;
     return g;
-  }).sort((a,b)=>b.ultimo-a.ultimo||a.nome.localeCompare(b.nome,'it'));
+  }).sort((a,b)=>b.ultimo-a.ultimo||LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===a.key)-LEGACY_STAFFER_PG_CONFIG.findIndex(x=>normalizzaStaffId(x.nome)===b.key));
 
   if(!lista.length){box.innerHTML='<div class="empty">Nessun movimento corrisponde ai filtri.</div>';return}
 
@@ -2963,7 +2978,7 @@ function renderArchivio(){
     const saldoDoc=saldoMap[g.key];
     const primo=g.movimenti[0];
     const saldo=saldoDoc?saldoDoc.saldo:(primo?.annullato&&primo?.saldoRipristinato!==undefined?numeroIntero(primo.saldoRipristinato):numeroIntero(primo?.saldoDopo));
-    const movHtml=g.movimenti.map(m=>{
+    const movHtml=g.movimenti.length?g.movimenti.map(m=>{
       const mtipo=tipoMovimento(m);
       const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
       const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
@@ -2992,8 +3007,9 @@ function renderArchivio(){
       }
       const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi" aria-label="Rimuovi"><i class="fa-solid fa-xmark"></i></button>`:'';
       return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
-    }).join('');
-    return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
+    }).join(''):`<div class="empty">Nessun movimento registrato.</div>`;
+    const ultimoTesto=g.movimenti.length?`Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}`:'Nessun movimento registrato';
+    return `<details class="staff-ledger"><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">${ultimoTesto}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
   box.querySelectorAll('[data-remove-log-id]').forEach(btn=>btn.addEventListener('click',()=>rimuoviMovimentoDalRegistro(btn.dataset.removeLogId)));
   box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);if(ed)ed.classList.toggle('hidden')}));
@@ -3080,6 +3096,7 @@ async function correggiSaldoStaffer(){
     const staffRef=db.collection('staff_token').doc(staffId);
     const logRef=db.collection('staff_token_log').doc();
     const delta=segno*q;
+    let saldoDopoTx=null;
     await db.runTransaction(async tx=>{
       const snap=await tx.get(staffRef);
       const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nome};
@@ -3105,7 +3122,12 @@ async function correggiSaldoStaffer(){
         data:dataMovimento,
         registratoIl:firebase.firestore.FieldValue.serverTimestamp()
       });
+      saldoDopoTx=dopo;
     });
+    if(saldoDopoTx!==null){
+      saldiPlayer[staffId]=numeroIntero(saldoDopoTx);
+      aggiornaSaldiPickerAccredito();
+    }
     msg.innerHTML=`<div class="msg-ok">Movimento registrato: ${formatDelta(delta)}. Saldo aggiornato.</div>`;
     document.getElementById('correggiValore').value='';
     document.getElementById('movimentoLink').value='';
