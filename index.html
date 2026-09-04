@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v50 — Rinomina PG con migrazione ST + registrazione separata per Importa/Manuale/Clic, 04/09/2026 -->
 <!-- v49 — Importa/Manuale separati + registro compatto con scroll e righe alternate, 04/09/2026 -->
 <!-- v48 — Registro unico + saldo sui pulsanti Player, 04/09/2026 -->
 <!-- v47 — importazioni storiche più permissive: FT/ST, valori liberi e Appelli senza formule ricostruibili, 04/09/2026 -->
@@ -27,7 +28,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v49</title>
+<title>Gestore Staff Token — v50</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -737,6 +738,9 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .manual-zone-head b{font-family:'magic','Cinzel',serif;color:var(--bordeaux-dark)}
   .manual-entry{display:grid;grid-template-columns:minmax(180px,1.5fr) 110px minmax(180px,1.5fr) auto;gap:8px;align-items:end;padding:10px;margin-top:8px;border:1px solid rgba(158,234,0,.55);border-radius:12px;background:rgba(158,234,0,.07)}
   .manual-entry.import-auto{border-style:dashed;background:rgba(158,234,0,.12)}
+  .import-auto-zone{margin-top:12px;padding-top:12px;border-top:1px dashed rgba(180,0,77,.18)}
+  .import-auto-zone.hidden{display:none!important}
+  .import-auto-zone-head{font-family:'Cinzel',serif;font-size:11.5px;font-weight:800;color:var(--accent-dark);margin-bottom:7px}
   .manual-entry.import-auto .manual-name{font-weight:700}
   .manual-entry label{margin-top:0}
   .manual-entry .manual-remove{height:40px;align-self:end}
@@ -794,6 +798,17 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .pg-kind{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef7d9;border:1px solid #cfe99f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#557500;font-weight:800;white-space:nowrap;}
   .pg-assoc-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
   .pg-assoc-actions button{margin:0;white-space:nowrap;}
+  .pg-rename-editor{grid-column:1/-1;margin-top:8px;padding:10px;border:1px dashed rgba(180,0,77,.28);border-radius:10px;background:#fff8fb;}
+  .pg-rename-row{display:grid;grid-template-columns:minmax(180px,1fr) auto auto;gap:8px;align-items:end;}
+  .pg-rename-row label{margin-top:0;}
+  .pg-rename-help{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.35;}
+  .method-register{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding:11px 12px;border:1px solid rgba(134,201,0,.42);border-radius:12px;background:linear-gradient(135deg,#f8ffe9,#fff);}
+  .method-register.import-save{border-color:rgba(180,0,77,.28);background:linear-gradient(135deg,#fff5f9,#fff);}
+  .method-register-info{font-size:12.5px;color:var(--muted);line-height:1.35;}
+  .method-register-info b{font-family:'Cinzel',serif;color:var(--green-dark);font-size:14px;}
+  .method-register.import-save .method-register-info b{color:var(--accent-dark);}
+  .method-register .main{margin:0;min-width:190px;}
+  .method-register-msg{width:100%;}
   .pg-empty{color:var(--muted);font-style:italic;font-size:13px;padding:4px 0;}
   .pg-pool-info{margin:10px 0 2px;padding:10px 12px;border:1px solid #cfe99f;border-radius:11px;background:#f8ffe9;color:#486b13;font-size:13px;line-height:1.4;}
   .pg-pool-info.empty{border-color:var(--line);background:#fafafa;color:var(--muted);font-style:normal;text-align:left;padding:10px 12px;}
@@ -812,7 +827,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
   .staffer-manage-details>summary .summary-note{margin-left:auto;font-family:'EB Garamond',serif;font-weight:400;font-size:13px;color:var(--muted);}
   .staffer-manage-panel{padding:0 16px 16px;border-top:1px solid rgba(180,0,77,.12);}
   .staffer-manage-panel .notice{margin-top:14px;}
-  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-pool-balance{text-align:left}.staffer-manage-details>summary{align-items:flex-start}.staffer-manage-details>summary .summary-note{margin-left:0}}
+  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-rename-row{grid-template-columns:1fr}.method-register{align-items:stretch}.method-register .main{width:100%}.pg-pool-balance{text-align:left}.staffer-manage-details>summary{align-items:flex-start}.staffer-manage-details>summary .summary-note{margin-left:0}}
 
 
 /* ===== v29: quattro Player fisse + pulizia voci errate ===== */
@@ -1052,6 +1067,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
                 <button type="button" class="ghost" id="btnPulisciImport"><i class="fa-solid fa-eraser"></i> Pulisci</button>
               </div>
               <div id="analisiMsg" aria-live="polite"></div>
+              <div id="importAutoZone" class="import-auto-zone hidden">
+                <div class="import-auto-zone-head">Voci importate modificabili</div>
+                <div id="importAutoEntriesContainer"></div>
+              </div>
 
               <div class="manual-total-box">
                 <div class="manual-total-row">
@@ -1063,6 +1082,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
                   <button type="button" class="ghost" id="btnResetTotale"><i class="fa-solid fa-rotate-left"></i> Automatico</button>
                 </div>
                 <div id="manualTotalStatus" class="manual-total-status">Totale automatico attivo.</div>
+              </div>
+              <div class="method-register import-save">
+                <div class="method-register-info" id="methodInfoImport">Nessuna importazione pronta.</div>
+                <button type="button" class="main method-register-btn" id="btnRegistraImport" data-method="import"><i class="fa-solid fa-file-import"></i> Registra importazione</button>
+                <div id="registraMsgImport" class="method-register-msg" aria-live="polite"></div>
               </div>
             </div>
           </details>
@@ -1078,32 +1102,21 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
                 </div>
                 <div id="manualEntriesContainer"><div class="manual-empty">Nessuna voce manuale aggiunta.</div></div>
               </div>
+              <div class="method-register">
+                <div class="method-register-info" id="methodInfoManual">Nessuna voce manuale pronta.</div>
+                <button type="button" class="main method-register-btn" id="btnRegistraManuale" data-method="manual"><i class="fa-solid fa-pen-to-square"></i> Registra manualmente</button>
+                <div id="registraMsgManual" class="method-register-msg" aria-live="polite"></div>
+              </div>
             </div>
           </details>
 
-          <div class="review-panel">
-            <div class="card-title">
-              <div>
-                <h2>3. Controlla e registra</h2>
-                <p>Il riepilogo si aggiorna mentre selezioni le mansioni qui sotto. Il pulsante si attiva soltanto quando c’è davvero qualcosa da salvare.</p>
-              </div>
-            </div>
-            <div id="riepilogoAttivita"><div class="empty">Seleziona una mansione qui sotto: comparirà subito in questo riepilogo.</div></div>
-            <div class="total-sticky is-empty" id="totalSummary">
-              <div class="total-cell"><div class="k">Saldo attuale</div><div class="v" id="stAttuali">0 ST</div></div>
-              <div class="total-cell"><div class="k">Questo accredito</div><div class="v green" id="stGuadagnati">+0 ST</div></div>
-              <div class="total-cell"><div class="k">Saldo dopo</div><div class="v" id="stFinale">0 ST</div></div>
-              <button class="main" id="btnRegistra" disabled><i class="fa-solid fa-plus"></i> Aggiungi una mansione</button>
-              <div class="register-help" id="registerHelp">Niente verrà registrato finché non selezioni almeno una mansione.</div>
-            </div>
-            <div id="registraMsg" aria-live="polite"></div>
-            <div id="successBox" class="success-box hidden">
-              <h4><i class="fa-solid fa-circle-check"></i> Accredito registrato</h4>
-              <p id="successText"></p>
-            </div>
+          <div id="obiettiviContainer"></div>
+          <div class="method-register">
+            <div class="method-register-info" id="methodInfoClick">Seleziona una o più mansioni dall’elenco.</div>
+            <button type="button" class="main method-register-btn" id="btnRegistraClick" data-method="click"><i class="fa-solid fa-check"></i> Registra accredito</button>
+            <div id="registraMsgClick" class="method-register-msg" aria-live="polite"></div>
           </div>
 
-          <div id="obiettiviContainer"></div>
         </div>
       </div>
     </section>
@@ -1508,6 +1521,8 @@ document.getElementById('btnBlocca').addEventListener('click',bloccaStaff);
 
 const cont=document.getElementById('obiettiviContainer');
 const manualCont=document.getElementById('manualEntriesContainer');
+const importAutoCont=document.getElementById('importAutoEntriesContainer');
+const importAutoZone=document.getElementById('importAutoZone');
 
 function htmlCampi(o){
   if(o.tipo==='soglia'){
@@ -1565,6 +1580,8 @@ function creaRigaObiettivo(o){
   });
   chk.addEventListener('change',()=>{
     div.classList.toggle('selected',chk.checked);
+    if(chk.checked)div.dataset.entrySource='click';
+    else delete div.dataset.entrySource;
     ricalcola();
   });
   div.addEventListener('input',ricalcola);
@@ -1584,8 +1601,18 @@ OBIETTIVI.forEach(o=>{
 });
 
 
+function aggiornaVuotiVoci(){
+  if(manualCont&&!manualCont.querySelector('.manual-entry'))manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+  if(importAutoCont&&!importAutoCont.querySelector('.manual-entry')){
+    importAutoCont.innerHTML='';
+    if(importAutoZone)importAutoZone.classList.add('hidden');
+  }else if(importAutoZone){importAutoZone.classList.remove('hidden')}
+}
 function creaVoceManuale(dati={}){
-  if(manualCont.querySelector('.manual-empty'))manualCont.innerHTML='';
+  const target=dati.importAuto?importAutoCont:manualCont;
+  if(!target)return null;
+  if(target.querySelector('.manual-empty'))target.innerHTML='';
+  if(dati.importAuto&&importAutoZone)importAutoZone.classList.remove('hidden');
   const row=document.createElement('div');
   row.className='manual-entry';
   if(dati.importAuto){row.dataset.importAuto='1';row.classList.add('import-auto')}
@@ -1596,25 +1623,26 @@ function creaVoceManuale(dati={}){
     <button type="button" class="ghost manual-remove" title="Rimuovi voce" aria-label="Rimuovi voce"><i class="fa-solid fa-trash-can"></i></button>`;
   row.querySelector('.manual-remove').addEventListener('click',()=>{
     salvaStatoPerUndo();
-    row.remove();
-    if(!manualCont.querySelector('.manual-entry'))manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
-    ricalcola();
-    aggiornaSnapshotCorrenteDopoAzione();
+    row.remove();aggiornaVuotiVoci();ricalcola();aggiornaSnapshotCorrenteDopoAzione();
   });
-  manualCont.appendChild(row);
+  target.appendChild(row);aggiornaVuotiVoci();
   return row;
 }
 function svuotaVociManuali(){
   manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+  if(importAutoCont)importAutoCont.innerHTML='';
+  if(importAutoZone)importAutoZone.classList.add('hidden');
 }
-function datiVociManuali(){
-  return [...manualCont.querySelectorAll('.manual-entry')].map(row=>({
+function leggiVociDaContainer(container){
+  if(!container)return [];
+  return [...container.querySelectorAll('.manual-entry')].map(row=>({
     nome:(row.querySelector('.manual-name')?.value||'').trim(),
     st:Math.max(0,numeroIntero(row.querySelector('.manual-st')?.value)),
     riferimenti:(row.querySelector('.manual-ref')?.value||'').trim(),
     importAuto:row.dataset.importAuto==='1'
   }));
 }
+function datiVociManuali(){return [...leggiVociDaContainer(importAutoCont),...leggiVociDaContainer(manualCont)]}
 document.getElementById('btnAggiungiManuale').addEventListener('click',()=>{
   salvaStatoPerUndo();
   const row=creaVoceManuale();
@@ -1623,13 +1651,16 @@ document.getElementById('btnAggiungiManuale').addEventListener('click',()=>{
   aggiornaSnapshotCorrenteDopoAzione();
 });
 manualCont.addEventListener('input',ricalcola);
+importAutoCont?.addEventListener('input',ricalcola);
 
-function raccogliRaw(){
+function raccogliRaw(metodo='all'){
   const raw=[];
   cont.querySelectorAll('.activity.selected').forEach(div=>{
+    const source=div.dataset.entrySource||'click';
+    if(metodo!=='all'&&source!==metodo)return;
     const o=OBIETTIVI.find(x=>x.id===div.dataset.id);
     if(!o)return;
-    const item={id:o.id,tipo:o.tipo};
+    const item={id:o.id,tipo:o.tipo,source};
     if(o.tipo==='soglia'||o.tipo==='fisso'){
       item.quantita=Math.max(0,numeroIntero(div.querySelector('.in-quantita')?.value));
       if(o.tipo==='fisso'&&o.ripartibile){
@@ -1649,8 +1680,10 @@ function raccogliRaw(){
     raw.push(item);
   });
   datiVociManuali().forEach((m,i)=>{
+    const source=m.importAuto?'import':'manual';
+    if(metodo!=='all'&&source!==metodo)return;
     if(!m.nome&&!m.st&&!m.riferimenti)return;
-    raw.push({id:`manuale_${i}`,tipo:'manuale',nomeManuale:m.nome,st:m.st,riferimenti:m.riferimenti});
+    raw.push({id:`manuale_${source}_${i}`,tipo:'manuale',source,nomeManuale:m.nome,st:m.st,riferimenti:m.riferimenti});
   });
   return raw;
 }
@@ -1777,27 +1810,50 @@ function applicaOverrideTotale(calc,override){
   }
   return copia;
 }
-function ricalcola(){
-  const raw=raccogliRaw();
+function calcolaPerMetodo(metodo){
+  const raw=raccogliRaw(metodo);
   const stato=staffAttuale||{st_totali:0,resti:{}};
-  const calc=applicaOverrideTotale(calcolaMovimento(raw,stato),leggiOverrideTotale());
-  aggiornaFormulaCards(calc);
-  const box=document.getElementById('riepilogoAttivita');
-  if(raw.length===0){box.innerHTML='<div class="empty">Aggiungi una mansione nel punto 2: qui comparirà il riepilogo prima del salvataggio.</div>'}
-  else{
-    const righe=calc.righe.map(r=>`<li class="preview-item"><div><div class="name">${escapeHtml(r.nome)}</div><div class="detail">${escapeHtml(r.formula)}${r.descrizione?'<br>'+escapeHtml(r.descrizione):''}${r.riferimenti?'<br>'+linkifySafe(r.riferimenti):''}</div></div><div class="score">${formatDelta(r.st)}</div></li>`).join('');
-    const errs=calc.errori.map(e=>`<div class="msg-err">• ${escapeHtml(e)}</div>`).join('');
-    box.innerHTML=`${righe?'<ul class="preview-list">'+righe+'</ul>':''}${errs}`;
-  }
+  const override=metodo==='import'?leggiOverrideTotale():null;
+  return {raw,calc:applicaOverrideTotale(calcolaMovimento(raw,stato),override),stato};
+}
+function aggiornaMetodoRegistrazione(metodo,dati){
+  const cfg={
+    import:{info:'methodInfoImport',btn:'btnRegistraImport',empty:'Nessuna importazione pronta.',label:'<i class="fa-solid fa-file-import"></i> Registra importazione'},
+    manual:{info:'methodInfoManual',btn:'btnRegistraManuale',empty:'Nessuna voce manuale pronta.',label:'<i class="fa-solid fa-pen-to-square"></i> Registra manualmente'},
+    click:{info:'methodInfoClick',btn:'btnRegistraClick',empty:'Seleziona una o più mansioni dall’elenco.',label:'<i class="fa-solid fa-check"></i> Registra accredito'}
+  }[metodo];
+  const info=document.getElementById(cfg.info),btn=document.getElementById(cfg.btn);
+  if(!info||!btn)return;
+  const {raw,calc,stato}=dati;
   const attuali=numeroIntero(stato.st_totali);
-  document.getElementById('stAttuali').textContent=`${attuali} ST`;
-  document.getElementById('stGuadagnati').textContent=`+${calc.totale} ST`;
-  document.getElementById('stFinale').textContent=`${attuali+calc.totale} ST`;
+  const pronto=!!staffIdCorrente&&raw.length>0&&calc.errori.length===0;
+  btn.disabled=!pronto;
+  if(raw.length===0){
+    info.textContent=cfg.empty; btn.innerHTML=cfg.label;
+  }else if(!staffIdCorrente){
+    info.innerHTML=`<b>+${calc.totale} ST</b> · seleziona prima il Player.`;
+    btn.innerHTML='<i class="fa-solid fa-user"></i> Seleziona un Player';
+  }else if(calc.errori.length){
+    info.innerHTML=`<span class="msg-err">${escapeHtml(calc.errori[0])}</span>`;
+    btn.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Correggi i dati';
+  }else{
+    info.innerHTML=`<b>+${calc.totale} ST</b> · saldo ${attuali} → <b>${attuali+calc.totale} ST</b>`;
+    btn.innerHTML=cfg.label;
+  }
+}
+function ricalcola(){
+  const importData=calcolaPerMetodo('import');
+  const manualData=calcolaPerMetodo('manual');
+  const clickData=calcolaPerMetodo('click');
+  // Le formule delle schede si riferiscono alle attività selezionate (importate o cliccate).
+  const calcAll=applicaOverrideTotale(calcolaMovimento(raccogliRaw('all'),staffAttuale||{st_totali:0,resti:{}}),null);
+  aggiornaFormulaCards(calcAll);
   const mts=document.getElementById('manualTotalStatus');
   if(mts){
+    const calc=importData.calc;
     if(calc.overrideTotale===null){
       mts.className='manual-total-status';
-      mts.textContent=`Totale automatico attivo: ${calc.totaleCalcolato} ST.`;
+      mts.textContent=`Totale automatico importazione: ${calc.totaleCalcolato} ST.`;
     }else if(calc.overrideTotale===calc.totaleCalcolato){
       mts.className='manual-total-status';
       mts.textContent=`Totale manuale impostato a ${calc.overrideTotale} ST: coincide con il calcolo automatico.`;
@@ -1806,29 +1862,10 @@ function ricalcola(){
       mts.innerHTML=`<b>Correzione manuale attiva:</b> ${calc.totaleCalcolato} ST calcolati → <b>${calc.overrideTotale} ST</b> registrati (${formatDelta(calc.overrideTotale-calc.totaleCalcolato)}).`;
     }
   }
-
-  const btnRegistra=document.getElementById('btnRegistra');
-  const registerHelp=document.getElementById('registerHelp');
-  const totalSummary=document.getElementById('totalSummary');
-  const pronto=!!staffIdCorrente&&raw.length>0&&calc.errori.length===0;
-  btnRegistra.disabled=!pronto;
-  totalSummary.classList.toggle('is-ready',pronto);
-  totalSummary.classList.toggle('is-empty',raw.length===0);
-
-  if(raw.length===0){
-    btnRegistra.innerHTML='<i class="fa-solid fa-plus"></i> Aggiungi una mansione';
-    registerHelp.textContent='Niente verrà registrato finché non selezioni almeno una mansione.';
-  }else if(!staffIdCorrente){
-    btnRegistra.innerHTML='<i class="fa-solid fa-user"></i> Seleziona uno Staffer';
-    registerHelp.textContent='Le mansioni sono pronte: seleziona prima chi deve ricevere gli Staff Token.';
-  }else if(calc.errori.length>0){
-    btnRegistra.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Correggi i dati';
-    registerHelp.textContent='Controlla gli errori evidenziati nel riepilogo prima di registrare.';
-  }else{
-    btnRegistra.innerHTML='<i class="fa-solid fa-check"></i> Registra accredito';
-    registerHelp.textContent='Tutto pronto: controlla il riepilogo e registra solo quando i dati sono corretti.';
-  }
-  return calc;
+  aggiornaMetodoRegistrazione('import',importData);
+  aggiornaMetodoRegistrazione('manual',manualData);
+  aggiornaMetodoRegistrazione('click',clickData);
+  return importData.calc;
 }
 
 const inputNome=document.getElementById('staffNomeInput');
@@ -1960,6 +1997,7 @@ async function caricaStaffer(){
 function resetFormAccredito(mantieniStaffer=true,mantieniManuali=false){
   cont.querySelectorAll('.activity').forEach(div=>{
     div.classList.remove('selected');
+    delete div.dataset.entrySource;
     const chk=div.querySelector('.activity-check');if(chk)chk.checked=false;
     div.querySelectorAll('input[type=number]').forEach(i=>{
       if(i.classList.contains('in-dividi')) i.value='1';
@@ -1970,8 +2008,7 @@ function resetFormAccredito(mantieniStaffer=true,mantieniManuali=false){
   });
   if(!mantieniManuali){svuotaVociManuali();const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';}
   const dataAcc=document.getElementById('dataAccredito'); if(dataAcc)dataAcc.value='';
-  document.getElementById('successBox').classList.add('hidden');
-  document.getElementById('registraMsg').textContent='';
+  ['registraMsgImport','registraMsgManual','registraMsgClick'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;sincronizzaPicker(document.getElementById('pickerAccredito'));mostraStaffInfo()}
   ricalcola();
 }
@@ -2018,7 +2055,7 @@ function catturaSnapshotAccredito(){
   const attivita={};
   cont.querySelectorAll('.activity').forEach(div=>{
     const id=div.dataset.id;
-    const campi={selected:div.classList.contains('selected')};
+    const campi={selected:div.classList.contains('selected'),source:div.dataset.entrySource||''};
     div.querySelectorAll('input,textarea').forEach((el,i)=>{
       if(el.classList.contains('activity-check'))return;
       const key=[...el.classList].find(c=>c.startsWith('in-'))||`campo-${i}`;
@@ -2067,6 +2104,7 @@ async function applicaSnapshotAccredito(snap){
     const data=snap.attivita?.[div.dataset.id]||{};
     const chk=div.querySelector('.activity-check');
     chk.checked=!!data.selected; div.classList.toggle('selected',!!data.selected);
+    if(data.selected)div.dataset.entrySource=data.source||'click'; else delete div.dataset.entrySource;
     div.querySelectorAll('input,textarea').forEach((el,i)=>{
       if(el.classList.contains('activity-check'))return;
       const key=[...el.classList].find(c=>c.startsWith('in-'))||`campo-${i}`;
@@ -2124,22 +2162,46 @@ document.getElementById('contenutoRegistra').addEventListener('change',e=>{
 });
 setTimeout(inizializzaHistory,0);
 
-async function registraAccredito(){
-  const msg=document.getElementById('registraMsg');
-  const btn=document.getElementById('btnRegistra');
-  msg.textContent='';
-  document.getElementById('successBox').classList.add('hidden');
-  if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
-  if(!staffIdCorrente){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer.</div>';return}
-  const raw=raccogliRaw();
-  if(raw.length===0){msg.innerHTML='<div class="msg-err">Seleziona almeno una mansione.</div>';return}
-  const overrideTotale=leggiOverrideTotale();
+function pulisciActivityMetodo(metodo){
+  cont.querySelectorAll('.activity').forEach(div=>{
+    if((div.dataset.entrySource||'click')!==metodo)return;
+    div.classList.remove('selected'); delete div.dataset.entrySource;
+    const chk=div.querySelector('.activity-check');if(chk)chk.checked=false;
+    div.querySelectorAll('input[type=number]').forEach(i=>{
+      if(i.classList.contains('in-dividi'))i.value='1';
+      else if(i.classList.contains('in-quota'))i.value='';
+      else i.value='0';
+    });
+    div.querySelectorAll('input[type=text],textarea').forEach(i=>i.value='');
+  });
+}
+function pulisciMetodoDopoRegistrazione(metodo){
+  pulisciActivityMetodo(metodo);
+  if(metodo==='import'){
+    rimuoviVociAutoImportate();
+    const testo=document.getElementById('testoIncolla');if(testo)testo.value='';
+    const analisi=document.getElementById('analisiMsg');if(analisi)analisi.textContent='';
+    const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';
+  }else if(metodo==='manual'){
+    manualCont.querySelectorAll('.manual-entry:not([data-import-auto="1"])').forEach(row=>row.remove());
+    if(!manualCont.querySelector('.manual-entry'))manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+  }
+  const dataAcc=document.getElementById('dataAccredito');if(dataAcc)dataAcc.value='';
+}
+async function registraAccredito(metodo='click',btn=null){
+  const msgId=metodo==='import'?'registraMsgImport':metodo==='manual'?'registraMsgManual':'registraMsgClick';
+  const msg=document.getElementById(msgId);
+  if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  if(!staffIdCorrente){if(msg)msg.innerHTML='<div class="msg-err">Seleziona un Player.</div>';return}
+  const raw=raccogliRaw(metodo);
+  if(raw.length===0){if(msg)msg.innerHTML='<div class="msg-err">Non ci sono voci da registrare in questo metodo.</div>';return}
+  const overrideTotale=metodo==='import'?leggiOverrideTotale():null;
   const dataAccreditoRaw=String(document.getElementById('dataAccredito')?.value||'').trim();
   let dataAccredito=null;
-  try{if(dataAccreditoRaw)dataAccredito=timestampDaInputData(dataAccreditoRaw)}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
+  try{if(dataAccreditoRaw)dataAccredito=timestampDaInputData(dataAccreditoRaw)}catch(e){if(msg)msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   const nomeDigitato=inputNome.value.trim()||staffIdCorrente;
-  btn.disabled=true;
-  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Registrazione…';
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Registrazione…';}
   try{
     const staffRef=db.collection('staff_token').doc(staffIdCorrente);
     const logRef=db.collection('staff_token_log').doc();
@@ -2154,48 +2216,32 @@ async function registraAccredito(){
       const dettagli=calc.righe.map(r=>({id:r.id,nome:r.nome,ft:r.st,dettaglio:creaDettaglioLog(r),formula:r.formula,riferimenti:r.riferimenti||'',descrizione:r.descrizione||''}));
       const restiPrima={...((stato&&stato.resti)||{})};
       tx.set(staffRef,{
-        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
-        st_totali:dopo,
-        resti:calc.nuoviResti,
-        ultimoMovimentoId:logRef.id,
-        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,st_totali:dopo,resti:calc.nuoviResti,
+        ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
       tx.set(logRef,{
-        tipo:'accredito',
-        staffId:staffIdCorrente,
-        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
-        obiettivi:dettagli,
-        guadagnati:calc.totale,
-        delta:calc.totale,
-        saldoPrima:prima,
-        saldoDopo:dopo,
-        restiPrima,
-        restiDopo:calc.nuoviResti,
-        totaleCalcolato:calc.totaleCalcolato,
-        totaleManuale:calc.overrideTotale,
+        tipo:'accredito',metodoInserimento:metodo,staffId:staffIdCorrente,nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
+        obiettivi:dettagli,guadagnati:calc.totale,delta:calc.totale,saldoPrima:prima,saldoDopo:dopo,
+        restiPrima,restiDopo:calc.nuoviResti,totaleCalcolato:calc.totaleCalcolato,totaleManuale:calc.overrideTotale,
         movimentoPrecedenteId:stato.ultimoMovimentoId||null,
         data:dataAccreditoRaw?firebase.firestore.Timestamp.fromMillis(dataAccredito.toMillis()):firebase.firestore.FieldValue.serverTimestamp(),
-        dataImpostataManualmente:!!dataAccreditoRaw,
-        dataManualeTesto:dataAccreditoRaw?dataManualeValue(dataAccredito):'',
+        dataImpostataManualmente:!!dataAccreditoRaw,dataManualeTesto:dataAccreditoRaw?dataManualeValue(dataAccredito):'',
         registratoIl:firebase.firestore.FieldValue.serverTimestamp()
       });
       risultatoTx={calc,prima,dopo,nome:stato.nomeVisualizzato||nomeDigitato};
     });
-    document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
-    resetFormAccredito(true);
+    pulisciMetodoDopoRegistrazione(metodo);
     azzeraHistoryAccredito();
-    document.getElementById('successBox').classList.remove('hidden');
-    document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
+    if(msg)msg.innerHTML=`<div class="msg-ok"><i class="fa-solid fa-circle-check"></i> Accredito registrato: <b>+${risultatoTx.calc.totale} ST</b> · saldo ${risultatoTx.dopo} ST.</div>`;
     await caricaStaffer();
     await caricaPubblico(true);
   }catch(e){
-    msg.innerHTML=`<div class="msg-err">Accredito non registrato: ${escapeHtml(e.message)}</div>`;
+    if(msg)msg.innerHTML=`<div class="msg-err">Accredito non registrato: ${escapeHtml(e.message)}</div>`;
   }finally{
-    btn.innerHTML='<i class="fa-solid fa-check"></i> Registra accredito';
     ricalcola();
   }
 }
-document.getElementById('btnRegistra').addEventListener('click',registraAccredito);
+document.querySelectorAll('.method-register-btn').forEach(btn=>btn.addEventListener('click',()=>registraAccredito(btn.dataset.method||'click',btn)));
 
 async function copiaTesto(text,msgEl){
   try{
@@ -2209,7 +2255,7 @@ async function copiaTesto(text,msgEl){
 
 function impostaAttivita(id,valori={}){
   const div=cont.querySelector(`.activity[data-id="${id}"]`);if(!div)return;
-  const chk=div.querySelector('.activity-check');chk.checked=true;div.classList.add('selected');
+  const chk=div.querySelector('.activity-check');chk.checked=true;div.classList.add('selected');div.dataset.entrySource='import';
   if(valori.quantita!==undefined&&div.querySelector('.in-quantita'))div.querySelector('.in-quantita').value=valori.quantita;
   if(valori.pg!==undefined&&div.querySelector('.in-pg'))div.querySelector('.in-pg').value=valori.pg;
   if(valori.dividi!==undefined&&div.querySelector('.in-dividi'))div.querySelector('.in-dividi').value=valori.dividi;
@@ -2254,8 +2300,8 @@ function nomeMansioneDaRigaImport(riga){
   return s||'Voce importata';
 }
 function rimuoviVociAutoImportate(){
-  manualCont.querySelectorAll('.manual-entry[data-import-auto="1"]').forEach(row=>row.remove());
-  if(!manualCont.querySelector('.manual-entry'))manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+  if(importAutoCont)importAutoCont.querySelectorAll('.manual-entry[data-import-auto="1"]').forEach(row=>row.remove());
+  aggiornaVuotiVoci();
 }
 function quantitaFissaDaRiga(riga){
   const refs=estraiRiferimenti(riga);
@@ -2323,9 +2369,8 @@ async function analizzaTesto(){
   }
   if(!staffAttuale&&inputNome.value.trim())await caricaStaffer();
 
-  // Ogni analisi riparte da zero: premere due volte non può sommare i risultati precedenti.
-  // Le voci manuali inserite dall'utente restano; le fallback create automaticamente dall'import vengono rigenerate.
-  resetFormAccredito(true,true);
+  // Ogni analisi rigenera soltanto l'importazione precedente: le voci manuali e le mansioni cliccate restano indipendenti.
+  pulisciActivityMetodo('import');
   rimuoviVociAutoImportate();
   if(dataEl){
     if(dataStorica) dataEl.value=dataStorica.valore;
@@ -2521,7 +2566,7 @@ async function analizzaTesto(){
   }else msg.innerHTML='<div class="msg-err">Non ho trovato valori o voci abbastanza chiari da importare automaticamente. Puoi comunque aggiungerli come voci manuali qui sotto.</div>';
 }
 document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTesto);
-document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
+document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';pulisciActivityMetodo('import');rimuoviVociAutoImportate();ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
 document.getElementById('btnResetTotale').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('overrideTotaleAccredito').value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
 document.getElementById('overrideTotaleAccredito').addEventListener('input',ricalcola);
 document.getElementById('btnDataAdesso').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
@@ -3144,7 +3189,17 @@ function renderPgStaff(){
         <div class="pg-assoc-main"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b>${isMain?'<span class="pg-main-badge">PG principale</span>':''}</div>
         <div class="pg-assoc-actions">
           ${passaggioAdulto}
+          <button type="button" class="secondary btn-rinomina-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}"><i class="fa-solid fa-pen"></i> Rinomina</button>
           <button type="button" class="danger btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}"><i class="fa-solid fa-trash-can"></i> Rimuovi PG</button>
+        </div>
+        <div class="pg-rename-editor hidden">
+          <div class="pg-rename-row">
+            <div><label>Nuovo nome del PG</label><input type="text" class="pg-rename-input" value="${escapeHtml(pg.nome)}" autocomplete="off"></div>
+            <button type="button" class="main btn-salva-rinomina-pg"><i class="fa-solid fa-check"></i> Salva nome</button>
+            <button type="button" class="ghost btn-annulla-rinomina-pg">Annulla</button>
+          </div>
+          <div class="pg-rename-help">Usalo dopo aver aggiornato il nome nell’Elfo. Associazione, usi ST e movimenti da Camera Blindata vengono migrati al nuovo nome senza cambiare il saldo.</div>
+          <div class="pg-rename-msg" aria-live="polite"></div>
         </div>
       </div>`;
     }).join(''):'<span class="pg-empty">Nessun PG collegato a questo saldo ST.</span>';
@@ -3161,6 +3216,16 @@ function renderPgStaff(){
   }).join('');
   box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
   box.querySelectorAll('.btn-cambia-tipo-pg-staff').forEach(btn=>btn.addEventListener('click',()=>cambiaTipoPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
+  box.querySelectorAll('.btn-rinomina-pg-staff').forEach(btn=>btn.addEventListener('click',()=>{
+    const row=btn.closest('.pg-assoc-row'),editor=row?.querySelector('.pg-rename-editor');
+    if(editor)editor.classList.toggle('hidden');
+    if(editor&&!editor.classList.contains('hidden'))editor.querySelector('.pg-rename-input')?.focus();
+  }));
+  box.querySelectorAll('.btn-annulla-rinomina-pg').forEach(btn=>btn.addEventListener('click',()=>btn.closest('.pg-rename-editor')?.classList.add('hidden')));
+  box.querySelectorAll('.btn-salva-rinomina-pg').forEach(btn=>btn.addEventListener('click',()=>{
+    const row=btn.closest('.pg-assoc-row'),renameBtn=row?.querySelector('.btn-rinomina-pg-staff'),input=row?.querySelector('.pg-rename-input');
+    if(renameBtn&&input)rinominaPgStaff(renameBtn.dataset.staff,renameBtn.dataset.pg,renameBtn.dataset.kind,input.value,row);
+  }));
   aggiornaPoolPgStaffInfo();
 }
 
@@ -3304,6 +3369,98 @@ async function aggiungiPgStaff(){
 }
 document.getElementById('btnAggiungiPgStaff')?.addEventListener('click',aggiungiPgStaff);
 document.getElementById('pgStaffNome')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aggiungiPgStaff();}});
+
+function staffTokenHashPerRinomina(v){
+  let s=String(v||''),h=2166136261;
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}
+  return (h>>>0).toString(16).padStart(8,'0');
+}
+function staffTokenUsageIdRinominato(data,nuovoNome){
+  const kind=data&&data.pgKind==='adulti'?'adulti':'studenti';
+  const raw=[kind,String(nuovoNome||'').trim(),String(data?.monthId==null?'':data.monthId),String(data?.postId==null?'':data.postId),String(data?.globalNo==null?'':data.globalNo)].join('|');
+  return 'st_'+staffTokenHashPerRinomina(raw);
+}
+function sostituisciNomeStorico(testo,vecchio,nuovo){
+  if(typeof testo!=='string'||!vecchio)return testo;
+  return testo.split(vecchio).join(nuovo);
+}
+function aggiornaObiettiviNomePg(obiettivi,vecchio,nuovo){
+  if(!Array.isArray(obiettivi))return obiettivi;
+  return obiettivi.map(o=>{
+    if(!o||typeof o!=='object')return o;
+    const c={...o};
+    ['nome','dettaglio','formula','descrizione'].forEach(k=>{if(typeof c[k]==='string')c[k]=sostituisciNomeStorico(c[k],vecchio,nuovo)});
+    return c;
+  });
+}
+async function rinominaPgStaff(staffId,nomeVecchio,kind,nuovoDigitato,row){
+  const globalMsg=document.getElementById('pgStaffMsg');if(globalMsg)globalMsg.textContent='';
+  const localMsg=row?.querySelector('.pg-rename-msg');if(localMsg)localMsg.textContent='';
+  if(!passwordCorrente){if(localMsg)localMsg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const vecchio=String(nomeVecchio||'').trim(),tipo=kind==='adulti'?'adulti':'studenti';
+  const richiesto=String(nuovoDigitato||'').trim();
+  if(!richiesto){if(localMsg)localMsg.innerHTML='<div class="msg-err">Scrivi il nuovo nome del PG.</div>';return}
+  if(normalizzaNomePgStaff(vecchio)===normalizzaNomePgStaff(richiesto)){if(localMsg)localMsg.innerHTML='<div class="msg-err">Il nuovo nome coincide con quello attuale.</div>';return}
+  let nuovo;
+  try{nuovo=await risolviNomePgStaffRegistrato(richiesto,tipo)}catch(e){if(localMsg)localMsg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
+  const staffRef=db.collection('staff_token').doc(staffId);
+  const saveBtn=row?.querySelector('.btn-salva-rinomina-pg');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Aggiorno…'}
+  try{
+    const [staffSnap,usiSnap,logSnap]=await Promise.all([
+      staffRef.get(),
+      db.collection('staff_token_usi').where('staffId','==',staffId).get(),
+      db.collection('staff_token_log').where('staffId','==',staffId).get()
+    ]);
+    if(!staffSnap.exists)throw new Error('Saldo Staffer non trovato.');
+    const stato=staffSnap.data()||{},arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
+    const oldKey=normalizzaNomePgStaff(vecchio),newKey=normalizzaNomePgStaff(nuovo);
+    const esisteAltrove=STAFFER_PG_CONFIG.some(st=>{
+      const sid=normalizzaStaffId(st.nome);
+      return pgStaffCache.some(pg=>pg.staffId===sid&&normalizzaNomePgStaff(pg.nome)===newKey&&pg.tipo===tipo&&!(sid===staffId&&normalizzaNomePgStaff(pg.nome)===oldKey));
+    });
+    if(esisteAltrove)throw new Error(`${nuovo} è già associato a un Player Staffer.`);
+    let trovato=false;
+    const nuovoArr=arr.map(pg=>{
+      const pt=(pg&&pg.tipo)==='adulti'?'adulti':'studenti';
+      if(!trovato&&normalizzaNomePgStaff(pg&&pg.nome)===oldKey&&pt===tipo){trovato=true;return {nome:nuovo,tipo};}
+      return pg;
+    });
+    if(!trovato)throw new Error('Associazione PG non trovata.');
+
+    const usi=[];usiSnap.forEach(d=>{const x=d.data()||{};if(normalizzaNomePgStaff(x.pgId)===oldKey&&(x.pgKind==='adulti'?'adulti':'studenti')===tipo)usi.push({id:d.id,data:x})});
+    const usageMap=new Map();
+    for(const u of usi)usageMap.set(u.id,staffTokenUsageIdRinominato(u.data,nuovo));
+    const collisioni=await Promise.all([...new Set(usageMap.values())].map(id=>db.collection('staff_token_usi').doc(id).get()));
+    const collisione=collisioni.find(snap=>snap.exists&&!usi.some(u=>u.id===snap.id));
+    if(collisione)throw new Error('Esiste già un uso ST con il nuovo nome sullo stesso post. Controlla il PG prima di rinominarlo.');
+
+    const logs=[];logSnap.forEach(d=>{const x=d.data()||{};if(normalizzaNomePgStaff(x.pgId)===oldKey)logs.push({id:d.id,data:x})});
+    const writes=1+usi.length*2+logs.length;
+    if(writes>450)throw new Error('Ci sono troppi record storici da migrare in una sola operazione.');
+    const batch=db.batch();
+    const aliases=Array.isArray(stato.pgAliasStorici)?stato.pgAliasStorici.slice():[];
+    aliases.push({da:vecchio,a:nuovo,tipo,rinominatoIl:new Date().toISOString()});
+    batch.set(staffRef,{pgAssociati:nuovoArr,pgAliasStorici:aliases.slice(-80),pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+
+    for(const u of usi){
+      const newId=usageMap.get(u.id),newRef=db.collection('staff_token_usi').doc(newId),oldRef=db.collection('staff_token_usi').doc(u.id);
+      const copied={...u.data,pgId:nuovo,migratedFrom:u.id,renamedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+      batch.set(newRef,copied,{merge:true});
+      if(newId!==u.id)batch.set(oldRef,{active:false,migratedTo:newId,migratedPgId:nuovo,renamedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    }
+    for(const l of logs){
+      const patch={pgId:nuovo,pgIdPrecedente:vecchio,pgRinominatoIl:firebase.firestore.FieldValue.serverTimestamp()};
+      if(l.data.usageId&&usageMap.has(l.data.usageId))patch.usageId=usageMap.get(l.data.usageId);
+      if(Array.isArray(l.data.obiettivi))patch.obiettivi=aggiornaObiettiviNomePg(l.data.obiettivi,vecchio,nuovo);
+      batch.set(db.collection('staff_token_log').doc(l.id),patch,{merge:true});
+    }
+    await batch.commit();
+    if(localMsg)localMsg.innerHTML=`<div class="msg-ok"><b>${escapeHtml(vecchio)}</b> → <b>${escapeHtml(nuovo)}</b>. Associazione, ${usi.length} us${usi.length===1?'o':'i'} ST e ${logs.length} moviment${logs.length===1?'o':'i'} della Camera Blindata aggiornati. Il saldo non è cambiato.</div>`;
+    await caricaPgStaff();await caricaPubblico(true);
+  }catch(e){if(localMsg)localMsg.innerHTML=`<div class="msg-err">Nome non aggiornato: ${escapeHtml(e.message)}</div>`}
+  finally{if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML='<i class="fa-solid fa-check"></i> Salva nome'}}
+}
 
 async function cambiaTipoPgStaff(staffId,nome,kindAttuale){
   const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
