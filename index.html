@@ -198,36 +198,108 @@ h1,h2,h3,h4{
 .tab-btn.active .tab-news-badge{background:#fff;color:var(--accent-dark)}
 .update-banner{
   display:none;
-  width:min(100%,760px);
-  margin:4px auto 14px;
-  border:1px solid rgba(134,201,0,.38);
-  border-radius:14px;
-  background:linear-gradient(135deg,#f7ffe8 0%,#fff8fb 100%);
-  box-shadow:0 4px 15px rgba(63,84,0,.07);
-  padding:11px 14px;
+  position:relative;
+  width:min(100%,860px);
+  margin:6px auto 8px;
+  border:1px solid rgba(190,0,80,.22);
+  border-radius:20px;
+  background:
+    radial-gradient(circle at top left, rgba(251,0,84,.08), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(155,220,0,.12), transparent 24%),
+    linear-gradient(135deg,#fffdfd 0%,#fff7fb 44%,#f8ffe9 100%);
+  box-shadow:0 10px 26px rgba(64,44,51,.08);
+  padding:25px 18px 15px;
   cursor:pointer;
   align-items:center;
-  gap:11px;
+  justify-content:center;
+  gap:14px;
+  overflow:hidden;
+}
+.update-banner::before{
+  content:'';
+  position:absolute;inset:0 auto 0 0;width:7px;
+  background:linear-gradient(180deg,var(--accent),var(--green));
+}
+.update-banner::after{
+  content:'';
+  position:absolute;
+  top:10px;left:50%;transform:translateX(-50%);
+  width:min(74%,520px);height:4px;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent) 0 38%,var(--green) 38% 62%,rgba(217,0,76,.12) 62% 100%);
+  box-shadow:0 1px 0 rgba(255,255,255,.55);
 }
 .update-banner.visible{display:flex}
-.update-banner.has-new{border-color:rgba(217,0,76,.34);background:linear-gradient(135deg,#f2ffd8 0%,#fff0f5 100%)}
+.update-banner.has-new{border-color:rgba(217,0,76,.32);box-shadow:0 12px 30px rgba(89,28,55,.1)}
 .update-banner-icon{
+  width:50px;height:50px;flex:0 0 50px;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,#fff,#fff5fa);
+  border:2px solid rgba(190,0,80,.22);
+  color:var(--accent-dark);
+  box-shadow:0 4px 12px rgba(95,0,34,.08), inset 0 0 0 3px rgba(255,255,255,.75);
+  font-size:18px;
+}
+.update-banner.has-new .update-banner-icon{
+  background:linear-gradient(135deg,var(--accent),#d0005e);
+  border-color:rgba(255,255,255,.65);
+  color:#fff;
+}
+.update-banner-copy{min-width:0;line-height:1.25;flex:1;text-align:center}
+.update-banner-copy strong{
+  display:block;
+  font-family:'magic','Cinzel Decorative','Cinzel',serif;
+  font-size:26px;
+  line-height:1;
+  color:var(--accent-dark);
+  margin-bottom:4px;
+}
+.update-banner-copy span{display:block;color:var(--muted);font-size:13px}
+.update-banner-subtitle{color:#6f6267;font-size:13px;margin:0 0 8px;text-align:center}
+.update-banner.has-new .update-banner-subtitle{color:#5a4b52}
+.update-banner-list{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:8px 10px;margin-top:2px;justify-content:center;align-items:stretch;width:min(100%,760px);margin-left:auto;margin-right:auto}
+.update-banner-entry{
+  appearance:none;
+  border:0;
+  background:rgba(255,255,255,.94);
+  border-radius:999px;
+  padding:7px 11px;
+  cursor:pointer;
+  font:inherit;
+  font-size:12.5px;
+  line-height:1.2;
+  color:#6b4f58;
+  box-shadow:inset 0 0 0 1px rgba(180,0,77,.16), 0 2px 8px rgba(70,55,62,.05);
+  transition:.14s ease;
+  display:flex;align-items:center;gap:6px;
+  width:100%;
+  justify-content:center;
+  text-align:center;
+}
+.update-banner-entry::before{
+  content:'';
+  width:9px;height:9px;border-radius:50%;flex:0 0 9px;
+  background:linear-gradient(135deg,var(--accent),#f26f98);
+  box-shadow:0 0 0 3px rgba(251,0,84,.08);
+}
+.update-banner-entry:hover{transform:translateY(-1px);box-shadow:inset 0 0 0 1px rgba(180,0,77,.26),0 6px 14px rgba(95,0,34,.08)}
+.update-banner-entry.is-new{
+  background:linear-gradient(135deg,#fbfff0,#f4ffd9);
+  color:#355300;
+  box-shadow:inset 0 0 0 1px rgba(118,185,0,.34),0 2px 8px rgba(82,115,0,.08);
+}
+.update-banner-entry.is-new::before{background:linear-gradient(135deg,var(--green-dark),var(--green));box-shadow:0 0 0 3px rgba(140,205,0,.14)}
+.update-banner-entry strong{display:inline;font-family:inherit;font-size:11.5px;font-weight:700;margin:0;color:#5e0d34}
+.update-banner-entry.is-new strong{color:#274300}
+.update-banner-empty{color:var(--muted);font-size:13px}
+.update-banner-arrow{
+  position:absolute;right:16px;top:50%;transform:translateY(-50%);
   width:34px;height:34px;flex:0 0 34px;border-radius:50%;
   display:grid;place-items:center;
-  background:#fff;border:1px solid rgba(134,201,0,.42);color:#517800;
+  background:#fff;
+  box-shadow:inset 0 0 0 1px rgba(180,0,77,.14);
+  color:var(--accent-dark);
+  font-size:12px
 }
-.update-banner.has-new .update-banner-icon{background:var(--accent);border-color:var(--accent);color:#fff}
-.update-banner-copy{min-width:0;line-height:1.25}
-.update-banner-copy strong{display:block;font-family:'Cinzel',serif;font-size:12px;color:var(--ink);margin-bottom:2px}
-.update-banner-copy span{display:block;color:var(--muted);font-size:13px}
-.update-banner.has-new .update-banner-copy span{color:#4b303a}
-.update-banner-list{display:flex;flex-wrap:wrap;gap:5px 7px;margin-top:4px}
-.update-banner-entry{appearance:none;border:0;background:rgba(255,255,255,.7);border-radius:999px;padding:4px 9px;cursor:pointer;font:inherit;font-size:12.5px;color:var(--muted);box-shadow:inset 0 0 0 1px rgba(180,0,77,.12);transition:.14s ease}
-.update-banner-entry:hover{transform:translateY(-1px);box-shadow:inset 0 0 0 1px rgba(180,0,77,.28),0 2px 7px rgba(95,0,34,.08)}
-.update-banner-entry.is-new{background:#f0ffd2;color:#365d00;box-shadow:inset 0 0 0 1px rgba(118,185,0,.35)}
-.update-banner-entry strong{display:inline;font-family:inherit;font-size:inherit;margin:0;color:inherit}
-.update-banner-empty{color:var(--muted);font-size:13px}
-.update-banner-arrow{margin-left:auto;color:var(--accent-dark);font-size:12px}
 .view{display:none}
 .view.active{display:block}
 .card{
@@ -632,6 +704,7 @@ input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-all
 @media(max-width:800px){
   body{padding:12px 9px 24px}
   .masthead{padding:20px 15px 17px;border-radius:17px}
+  .update-banner{padding:23px 14px 14px}
   .masthead h1{font-size:27px}
   .tabs{overflow:visible;justify-content:center;flex-wrap:wrap;width:max-content;max-width:100%}
   .tab-btn{flex:0 0 auto;white-space:nowrap}
@@ -1028,18 +1101,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
     <p>Saldi e registro sono pubblici. Gli accrediti si calcolano secondo le soglie e i valori del regolamento.</p>
   </header>
 
+  <div id="stNovitaBanner" class="update-banner" role="button" tabindex="0" aria-label="Apri il Registro pubblico">
+    <div class="update-banner-icon"><i class="fa-solid fa-pen-nib"></i></div>
+    <div class="update-banner-copy"><strong id="stNovitaTitle">Ultimi accrediti</strong><div class="update-banner-subtitle">Tocca una voce per aprire subito il movimento nel Registro pubblico.</div><div id="stNovitaText" class="update-banner-list"><span>Controllo degli ultimi accrediti…</span></div></div>
+    <i class="fa-solid fa-chevron-right update-banner-arrow"></i>
+  </div>
+
   <div class="nav-shell">
     <nav class="tabs" aria-label="Sezioni Gestore Staff Token">
       <button class="tab-btn active" data-tab="registra"><i class="fa-solid fa-pen-nib"></i>Nuovo accredito</button>
       <button class="tab-btn" data-tab="gestione"><i class="fa-solid fa-user-gear"></i>Gestione saldi</button>
       <button class="tab-btn" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico<span id="registroNewsBadge" class="tab-news-badge">NOVITÀ</span></button>
     </nav>
-  </div>
-
-  <div id="stNovitaBanner" class="update-banner" role="button" tabindex="0" aria-label="Apri il Registro pubblico">
-    <div class="update-banner-icon"><i class="fa-solid fa-sparkles"></i></div>
-    <div class="update-banner-copy"><strong id="stNovitaTitle">Ultimi Staff Token</strong><div id="stNovitaText" class="update-banner-list"><span>Controllo degli ultimi accrediti…</span></div></div>
-    <i class="fa-solid fa-chevron-right update-banner-arrow"></i>
   </div>
 
   <div id="staffAccess" class="access-card hidden">
@@ -1092,7 +1165,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
           <div class="staffer-picker" id="pickerAccredito" data-input="staffNomeInput">
             <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks"><span class="staffer-choice-name">Lulu Sparks</span><span class="staffer-choice-balance">0 ST</span></button>
             <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass"><span class="staffer-choice-name">Gideon G. Greengrass</span><span class="staffer-choice-balance">0 ST</span></button>
-            <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher"><span class="staffer-choice-name">Noah Fisher</span><span class="staffer-choice-balance">0 ST</span></button>
+            <button type="button" class="staffer-choice" data-value="Elara Travers" data-aliases="elara|elara travers|noah|noah fisher"><span class="staffer-choice-name">Elara Travers</span><span class="staffer-choice-balance">0 ST</span></button>
             <button type="button" class="staffer-choice" data-value="Odette Montclair" data-aliases="odette|odette montclair|odette montclaire"><span class="staffer-choice-name">Odette Montclair</span><span class="staffer-choice-balance">0 ST</span></button>
           </div>
           <input type="hidden" id="staffNomeInput" value="">
@@ -1200,7 +1273,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <div class="staffer-picker" id="pickerCorreggi" data-input="correggiNome">
               <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu Sparks</button>
               <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon G. Greengrass</button>
-              <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher">Noah Fisher</button>
+              <button type="button" class="staffer-choice" data-value="Elara Travers" data-aliases="elara|elara travers|noah|noah fisher">Elara Travers</button>
               <button type="button" class="staffer-choice" data-value="Odette Montclair" data-aliases="odette|odette montclair|odette montclaire">Odette Montclair</button>
             </div>
             <input type="hidden" id="correggiNome" value="">
@@ -1259,7 +1332,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <div class="staffer-picker" id="pickerPgStaff">
               <button type="button" class="staffer-choice" data-value="Lulu Sparks">Lulu Sparks</button>
               <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon G. Greengrass</button>
-              <button type="button" class="staffer-choice" data-value="Noah Fisher">Noah Fisher</button>
+              <button type="button" class="staffer-choice" data-value="Elara Travers">Elara Travers</button>
               <button type="button" class="staffer-choice" data-value="Odette Montclair" data-aliases="odette|odette montclair|odette montclaire">Odette Montclair</button>
             </div>
             <div id="pgStaffPoolInfo" class="pg-pool-info empty">Seleziona uno dei quattro Player: il PG verrà collegato al suo saldo ST condiviso.</div>
@@ -1368,7 +1441,7 @@ function normalizzaStaffId(str){
   // mostriamo il nome completo del PG principale sui quattro pulsanti.
   if(n==='lulu')return 'lulu sparks';
   if(n==='gideon'||n==='gideon g greengrass')return 'gideon g greengrass';
-  if(n==='noah'||n==='noah fisher')return 'noah';
+  if(n==='elara'||n==='elara travers'||n==='noah'||n==='noah fisher')return 'elara';
   if(n==='odette'||n==='odette montclair'||n==='odette montclaire')return 'odette';
   return n;
 }
@@ -2491,7 +2564,7 @@ async function analizzaTesto(){
   if(overrideEl) delete overrideEl.dataset.importAuthoritative;
 
   salvaStatoPerUndo();
-  // quindi non deve mai sostituire Lulu/Gideon/Noah/Odette.
+  // quindi non deve mai sostituire Lulu/Gideon/Elara/Odette.
   if(!staffAttuale&&inputNome.value.trim())await caricaStaffer();
 
   // Ogni analisi rigenera soltanto l'importazione precedente: le voci manuali e le mansioni cliccate restano indipendenti.
@@ -2788,17 +2861,17 @@ function aggiornaAvvisoNovitaStaffToken(){
   }).sort((a,b)=>timestampMs(b.data)-timestampMs(a.data)||timestampMs(b.registratoIl||b.data)-timestampMs(a.registratoIl||a.data));
   const nuovi=stVisitaPrecedenteMs?positivi.filter(m=>timestampUltimaModificaMovimento(m)>stVisitaPrecedenteMs):[];
   const nuoviIds=new Set(nuovi.map(m=>m.id));
-  const ultimiTre=positivi.slice(0,3);
+  const ultimiQuattro=positivi.slice(0,4);
   banner.classList.add('visible');
   banner.classList.toggle('has-new',nuovi.length>0);
   if(badge)badge.style.display=nuovi.length?'inline-block':'none';
   title.textContent=nuovi.length?'Nuovi Staff Token dall’ultima visita':'Ultimi accrediti Staff Token';
-  banner.dataset.ultimoMovimento=ultimiTre[0]?.id||'';
-  if(!ultimiTre.length){
+  banner.dataset.ultimoMovimento=ultimiQuattro[0]?.id||'';
+  if(!ultimiQuattro.length){
     text.innerHTML='<span class="update-banner-empty">Non risultano ancora accrediti registrati.</span>';
     return;
   }
-  text.innerHTML=ultimiTre.map(m=>{
+  text.innerHTML=ultimiQuattro.map(m=>{
     const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
     const delta=Math.max(0,deltaEffettivoMovimento(m));
     const nuova=nuoviIds.has(m.id);
@@ -3444,7 +3517,7 @@ document.getElementById('btnCorreggi').addEventListener('click',correggiSaldoSta
 const LEGACY_STAFFER_PG_CONFIG=[
   {nome:'Lulu Sparks',breve:'Lulu Sparks',aliases:'lulu|lulu sparks'},
   {nome:'Gideon G. Greengrass',breve:'Gideon G. Greengrass',aliases:'gideon|gideon g. greengrass|gideon g greengrass'},
-  {nome:'Noah Fisher',breve:'Noah Fisher',aliases:'noah|noah fisher'},
+  {nome:'Elara Travers',breve:'Elara Travers',aliases:'elara|elara travers|noah|noah fisher'},
   {nome:'Odette Montclair',breve:'Odette Montclair',aliases:'odette|odette montclair|odette montclaire'}
 ];
 let STAFFER_PG_CONFIG=LEGACY_STAFFER_PG_CONFIG.slice();
