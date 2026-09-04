@@ -13,6 +13,8 @@
 <!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
 <!-- v40 — X per rimuovere qualsiasi movimento dal Registro (solo vista; saldo invariato), 04/09/2026 -->
 <!-- v39 — import storico: totale dichiarato usato come quota per singola Quest narrativa ripartibile, 04/09/2026 -->
+<!-- v43 — import storico: data/ora riconosciuta dal testo e mantenuta nel Registro, 04/09/2026 -->
+<!-- v44 — Data accredito manuale persistente: la data inserita nel campo viene salvata e riusata nel Registro, 04/09/2026 -->
 <!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
 <!-- v23 — ST storici: disassociare un PG non rimborsa gli ST già spesi e non è bloccato dagli usi precedenti, 04/09/2026 -->
 <!-- v22 — sicurezza Staff Token: sessione Staff protetta, nessuna Password nei documenti pubblici, bonifica legacy + PG associati con ID esatto, 04/09/2026 -->
@@ -21,7 +23,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v41</title>
+<title>Gestore Staff Token — v42</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1008,7 +1010,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
                 <div>
                   <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
                   <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
-                  <div class="hint">Scrivila a mano, per esempio <b>19/02/2026 17:54</b>. Puoi anche indicare solo il giorno. Se la lasci vuota, verranno usate data e ora della registrazione.</div>
+                  <div class="hint">Scrivila a mano, per esempio <b>19/02/2026 17:54</b>. <b>Se questo campo è compilato, questa è sempre la data del movimento nel Registro.</b> La data odierna viene conservata separatamente solo come momento tecnico di inserimento. Se nel testo importato compare una data-link come <b>[12/1/2026, 00:33](link)</b>, il campo viene compilato automaticamente.</div>
                 </div>
                 <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
               </div>
@@ -1298,6 +1300,43 @@ function timestampDaInputData(value){
   const d=new Date(anno,mese-1,giorno,ora,minuto,0,0);
   if(d.getFullYear()!==anno||d.getMonth()!==mese-1||d.getDate()!==giorno)throw new Error('La data indicata non esiste.');
   return firebase.firestore.Timestamp.fromDate(d);
+}
+
+function dataEffettivaMovimento(m){
+  if(m&&m.dataImpostataManualmente&&m.dataManualeTesto){
+    try{return timestampDaInputData(m.dataManualeTesto)}catch(e){}
+  }
+  return m&&m.data?m.data:null;
+}
+
+// Riconosce la data originale del post/accredito quando è già presente nel testo
+// importato, per esempio: [12/1/2026, 00:33](https://...)
+// Supporta anche BBCode [URL=...]12/1/2026, 00:33[/URL] e la classica riga
+// "Modificato da ... - 12/1/2026, 00:33" dei vecchi registri ForumFree.
+function estraiDataStoricaDaTesto(testo){
+  const src=String(testo||'');
+  const patterns=[
+    /\[(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2})\]\(https?:\/\/[^)]+\)/i,
+    /\[URL=[^\]]+\](\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2})\[\/URL\]/i,
+    /Modificato\s+da[^\n<]*?[-–—]\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2})/i,
+    /(?:^|\n|<br\s*\/?\s*>)[^\n<]*?\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,\s*\d{1,2}[:.]\d{2})\b/i
+  ];
+  for(const re of patterns){
+    const m=src.match(re);
+    if(!m)continue;
+    const raw=m[1].replace(/\s*,\s*/, ' ').trim();
+    try{
+      const ts=timestampDaInputData(raw);
+      return {timestamp:ts, valore:dataManualeValue(ts), originale:m[1]};
+    }catch(e){}
+  }
+  return null;
+}
+function rigaSoloDataStorica(riga){
+  const s=String(riga||'').trim();
+  return /^\[\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2}\]\(https?:\/\/[^)]+\)\s*$/i.test(s)
+    || /^\[URL=[^\]]+\]\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2}\[\/URL\]\s*$/i.test(s)
+    || /^Modificato\s+da[^\n<]*?[-–—]\s*\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2}\s*$/i.test(s);
 }
 function normalizzaRiferimento(ref){
   ref=String(ref||'').trim().replace(/^\[URL=/i,'').replace(/\]x?\[\/URL\]$/i,'');
@@ -2042,8 +2081,9 @@ async function registraAccredito(){
   const raw=raccogliRaw();
   if(raw.length===0){msg.innerHTML='<div class="msg-err">Seleziona almeno una mansione.</div>';return}
   const overrideTotale=leggiOverrideTotale();
+  const dataAccreditoRaw=String(document.getElementById('dataAccredito')?.value||'').trim();
   let dataAccredito=null;
-  try{dataAccredito=timestampDaInputData(document.getElementById('dataAccredito')?.value||'')}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
+  try{if(dataAccreditoRaw)dataAccredito=timestampDaInputData(dataAccreditoRaw)}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
   const nomeDigitato=inputNome.value.trim()||staffIdCorrente;
   btn.disabled=true;
   btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Registrazione…';
@@ -2081,7 +2121,9 @@ async function registraAccredito(){
         totaleCalcolato:calc.totaleCalcolato,
         totaleManuale:calc.overrideTotale,
         movimentoPrecedenteId:stato.ultimoMovimentoId||null,
-        data:dataAccredito||firebase.firestore.FieldValue.serverTimestamp(),
+        data:dataAccreditoRaw?firebase.firestore.Timestamp.fromMillis(dataAccredito.toMillis()):firebase.firestore.FieldValue.serverTimestamp(),
+        dataImpostataManualmente:!!dataAccreditoRaw,
+        dataManualeTesto:dataAccreditoRaw?dataManualeValue(dataAccredito):'',
         registratoIl:firebase.firestore.FieldValue.serverTimestamp()
       });
       risultatoTx={calc,prima,dopo,nome:stato.nomeVisualizzato||nomeDigitato};
@@ -2209,6 +2251,10 @@ async function analizzaTesto(){
     }
   }
 
+  const dataEl=document.getElementById('dataAccredito');
+  const dataGiaInserita=String(dataEl?.value||'').trim();
+  const dataStorica=estraiDataStoricaDaTesto(testo);
+
   salvaStatoPerUndo();
 
   const mNome=testo.match(/\[color=[^\]]+\]\s*(?:<b>|\[b\]|\*\*)([^<\[\n*]+?)(?:<\/b>|\[\/b\]|\*\*)\s*\[\/color\]/i)
@@ -2227,13 +2273,17 @@ async function analizzaTesto(){
   // Le voci manuali inserite dall'utente restano; le fallback create automaticamente dall'import vengono rigenerate.
   resetFormAccredito(true,true);
   rimuoviVociAutoImportate();
+  if(dataEl){
+    if(dataStorica) dataEl.value=dataStorica.valore;
+    else if(dataGiaInserita) dataEl.value=dataGiaInserita;
+  }
 
   const tutteRighe=testo.split(/\n|<br\s*\/?\s*>/i).map(r=>r.trim()).filter(Boolean);
   const righe=[]; let inSospeso=false;
   for(const r of tutteRighe){
     if(/^\s*(?:<b>|\[b\])?in sospeso/i.test(r)){inSospeso=true;continue}
     if(inSospeso) continue;
-    if(rigaDiServizioImport(r)) continue;
+    if(rigaDiServizioImport(r) || rigaSoloDataStorica(r)) continue;
     righe.push(r);
   }
 
@@ -2259,6 +2309,7 @@ async function analizzaTesto(){
   }
 
   const trovati=[]; const avvisi=[];
+  if(dataStorica) avvisi.push(`Data storica riconosciuta: ${dataStorica.valore}. Verrà usata come data del movimento nel Registro.`);
   for(const f of fallbackEspliciti){
     const nome=nomeMansioneDaRigaImport(f.riga);
     creaVoceManuale({nome,st:f.st,riferimenti:estraiUrl(f.riga),importAuto:true});
@@ -2422,6 +2473,8 @@ async function caricaPubblico(forza=false){
     });
     archivioMovimenti=[];snapLog.forEach(doc=>{
       const m={id:doc.id,...doc.data()};
+      const dataEff=dataEffettivaMovimento(m);
+      if(dataEff)m.data=dataEff;
       const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
       if(isPrimaryStaffId(sid))archivioMovimenti.push(m);
     });
@@ -2616,6 +2669,8 @@ async function salvaModificheMovimento(id){
     const logRef=db.collection('staff_token_log').doc(id);
     const updateLog={
       data:nuovaData,
+      dataImpostataManualmente:true,
+      dataManualeTesto:dataManualeValue(nuovaData),
       obiettivi:righe,
       delta:nuovoTotale,
       guadagnati:nuovoTotale,
@@ -2814,16 +2869,9 @@ function renderArchivio(){
         const refs=iconeRiferimenti(o);
         return `<div class="line"><div class="line-text">${escapeHtml(testo)}</div>${refs}</div>`;
       }).join('');
-      const staffKey=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
-      const cancellabile=passwordCorrente&&mtipo==='accredito'&&!m.annullato&&ultimi[staffKey]===m.id;
-      const haSuccessivi=!m.annullato&&mtipo==='accredito'&&ultimi[staffKey]!==m.id;
       let actions=m.annullato
         ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-rotate-left"></i> Saldo ripristinato${m.saldoRipristinato!==undefined?` a ${numeroIntero(m.saldoRipristinato)} ST`:''}.</span></div>`
-        :cancellabile
-          ?`<div class="log-actions"><span class="why-disabled">Ultimo movimento dello Staffer.</span><button type="button" class="danger cancel-credit" data-cancel-id="${escapeHtml(m.id)}"><i class="fa-solid fa-trash-can-arrow-up"></i> Cancella accredito</button></div>`
-          :haSuccessivi&&passwordCorrente
-            ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-lock"></i> Non cancellabile: esistono movimenti successivi.</span></div>`
-            :'';
+        :'';
       if(passwordCorrente&&!m.annullato&&mtipo!=='spesa_elfo'){
         const righeEditor=(m.obiettivi||[]).map(o=>htmlRigaEditorMovimento(o)).join('')||htmlRigaEditorMovimento({nome:label,ft:delta});
         actions+=`<div class="log-actions"><button type="button" class="ghost edit-movement" data-edit-movement-id="${escapeHtml(m.id)}"><i class="fa-solid fa-pen-to-square"></i> Modifica</button></div>
@@ -2837,12 +2885,3383 @@ function renderArchivio(){
           <div class="log-edit-actions"><button type="button" class="secondary add-edit-row" data-add-edit-row="${escapeHtml(m.id)}"><i class="fa-solid fa-plus"></i> Aggiungi riga</button><button type="button" class="mini save-movement-edit" data-save-edit-id="${escapeHtml(m.id)}"><i class="fa-solid fa-check"></i> Salva modifiche</button><button type="button" class="ghost close-movement-edit" data-close-edit-id="${escapeHtml(m.id)}">Chiudi</button></div>
         </div>`;
       }
-      const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi dal Registro" aria-label="Rimuovi dal Registro"><i class="fa-solid fa-xmark"></i></button>`:'';
+      const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi" aria-label="Rimuovi"><i class="fa-solid fa-xmark"></i></button>`:'';
       return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
     }).join('');
     return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
   }).join('');
-  box.querySelectorAll('[data-cancel-id]').forEach(btn=>btn.addEventListener('click',()=>cancellaMovimentoAccredito(btn.dataset.cancelId)));
+  box.querySelectorAll('[data-remove-log-id]').forEach(btn=>btn.addEventListener('click',()=>rimuoviMovimentoDalRegistro(btn.dataset.removeLogId)));
+  box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);if(ed)ed.classList.toggle('hidden')}));
+  box.querySelectorAll('[data-close-edit-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.closeEditId)}"]`);if(ed)ed.classList.add('hidden')}));
+  box.querySelectorAll('[data-save-edit-id]').forEach(btn=>btn.addEventListener('click',()=>salvaModificheMovimento(btn.dataset.saveEditId)));
+  box.querySelectorAll('[data-add-edit-row]').forEach(btn=>btn.addEventListener('click',()=>aggiungiRigaEditorMovimento(btn.dataset.addEditRow)));
+  box.querySelectorAll('.remove-edit-row').forEach(btn=>btn.addEventListener('click',()=>btn.closest('.log-edit-row')?.remove()));
+}
+document.getElementById('filtroArchivio').addEventListener('input',renderArchivio);
+document.getElementById('filtroTipo').addEventListener('change',renderArchivio);
+document.getElementById('btnAggiornaPubblico').addEventListener('click',()=>caricaPubblico(true));
+
+
+let saldoMovimentoCorrente=null;
+
+async function caricaSaldoMovimentoManuale(){
+  const nome=document.getElementById('correggiNome').value.trim();
+  const staffId=normalizzaStaffId(nomeCanonicoStaffer(nome));
+  const val=document.getElementById('saldoMovimentoAttuale');
+  const sub=document.getElementById('saldoMovimentoSub');
+  const msg=document.getElementById('correggiMsg');
+  if(msg)msg.textContent='';
+  saldoMovimentoCorrente=null;
+  if(!staffId){
+    val.textContent='— ST'; sub.textContent='Seleziona uno Staffer.'; aggiornaPreviewMovimentoManuale(); return;
+  }
+  val.textContent='…'; sub.textContent='Caricamento saldo in corso…';
+  try{
+    const snap=await db.collection('staff_token').doc(staffId).get();
+    const stato=snap.exists?snap.data():{st_totali:0,nomeVisualizzato:nome};
+    saldoMovimentoCorrente=numeroIntero(stato.st_totali);
+    val.textContent=`${saldoMovimentoCorrente} ST`;
+    sub.textContent=stato.nomeVisualizzato||nome;
+  }catch(e){
+    val.textContent='— ST'; sub.textContent='Impossibile caricare il saldo.';
+    if(msg)msg.innerHTML=`<div class="msg-err">Errore: ${escapeHtml(e.message)}</div>`;
+  }
+  aggiornaPreviewMovimentoManuale();
+}
+
+function aggiornaPreviewMovimentoManuale(){
+  const preview=document.getElementById('movimentoPreview');
+  const btn=document.getElementById('btnCorreggi');
+  const q=numeroIntero(document.getElementById('correggiValore').value,0);
+  const segno=numeroIntero(document.getElementById('movimentoSegno').value,1)>=0?1:-1;
+  const link=document.getElementById('movimentoLink').value.trim();
+  const staffOk=saldoMovimentoCorrente!==null;
+  const pronto=staffOk&&q>0&&!!link;
+  btn.disabled=!pronto;
+  preview.classList.remove('ready','negative');
+  if(!staffOk){preview.innerHTML='<span>Seleziona uno Staffer per vedere il totale attuale.</span>';return}
+  if(q<=0){preview.innerHTML=`<span>Saldo attuale: <b>${saldoMovimentoCorrente} ST</b>. Indica quanti ST vuoi aggiungere o togliere.</span>`;return}
+  const delta=segno*q;
+  const dopo=saldoMovimentoCorrente+delta;
+  preview.classList.add(delta<0?'negative':'ready');
+  preview.innerHTML=`<span><b>${saldoMovimentoCorrente} ST</b> ${delta<0?'−':'+'} ${q} ST → <b>${dopo} ST</b>${!link?' · aggiungi un riferimento per poter registrare.':''}</span>`;
+}
+
+function impostaSegnoMovimento(segno){
+  const s=segno<0?-1:1;
+  document.getElementById('movimentoSegno').value=String(s);
+  document.querySelectorAll('#movimentoSegnoPicker .movement-sign').forEach(b=>b.classList.toggle('active',Number(b.dataset.sign)===s));
+  aggiornaPreviewMovimentoManuale();
+}
+
+document.querySelectorAll('#movimentoSegnoPicker .movement-sign').forEach(btn=>btn.addEventListener('click',()=>impostaSegnoMovimento(Number(btn.dataset.sign))));
+['correggiValore','movimentoLink','correggiMotivo','movimentoData'].forEach(id=>document.getElementById(id)?.addEventListener('input',aggiornaPreviewMovimentoManuale));
+
+async function correggiSaldoStaffer(){
+  const msg=document.getElementById('correggiMsg');msg.textContent='';
+  if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Modalità Staff non attiva.</div>';return}
+  const nome=document.getElementById('correggiNome').value.trim();
+  const staffId=normalizzaStaffId(nomeCanonicoStaffer(nome));
+  const q=numeroIntero(document.getElementById('correggiValore').value,0);
+  const segno=numeroIntero(document.getElementById('movimentoSegno').value,1)>=0?1:-1;
+  const riferimento=document.getElementById('movimentoLink').value.trim();
+  const motivo=document.getElementById('correggiMotivo').value.trim();
+  const dataRaw=document.getElementById('movimentoData').value.trim();
+  if(!staffId||q<=0){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer e indica quanti ST vuoi aggiungere o togliere.</div>';return}
+  if(!riferimento){msg.innerHTML='<div class="msg-err">Aggiungi un link o riferimento: ogni variazione manuale deve essere rintracciabile.</div>';return}
+  let dataMovimento=firebase.firestore.FieldValue.serverTimestamp();
+  try{if(dataRaw)dataMovimento=timestampDaInputData(dataRaw)}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
+  try{
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc();
+    const delta=segno*q;
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(staffRef);
+      const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nome};
+      const prima=numeroIntero(stato.st_totali);
+      const dopo=prima+delta;
+      const nomeVis=stato.nomeVisualizzato||nomeCanonicoStaffer(nome)||nome;
+      tx.set(staffRef,{nomeVisualizzato:nomeVis,st_totali:dopo,ultimoMovimentoId:logRef.id,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.set(logRef,{
+        tipo:'movimento_manuale',
+        staffId,
+        nomeVisualizzato:nomeVis,
+        delta,
+        guadagnati:delta,
+        saldoPrima:prima,
+        saldoDopo:dopo,
+        obiettivi:[{
+          id:delta<0?'spesa_manuale':'accredito_manuale',
+          nome:delta<0?'Spesa Staff Token':'Aggiunta Staff Token',
+          ft:delta,
+          dettaglio:motivo||`${delta<0?'Spesa':'Aggiunta'} manuale di ${q} ST.`,
+          riferimenti:riferimento
+        }],
+        data:dataMovimento,
+        registratoIl:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    msg.innerHTML=`<div class="msg-ok">Movimento registrato: ${formatDelta(delta)}. Saldo aggiornato.</div>`;
+    document.getElementById('correggiValore').value='';
+    document.getElementById('movimentoLink').value='';
+    document.getElementById('correggiMotivo').value='';
+    document.getElementById('movimentoData').value='';
+    await caricaSaldoMovimentoManuale();
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){msg.innerHTML=`<div class="msg-err">Errore: ${escapeHtml(e.message)}</div>`}
+}
+document.getElementById('btnCorreggi').addEventListener('click',correggiSaldoStaffer);
+
+// ===== PG DELLO STAFF: configurazione condivisa con gli Elfi =====
+const LEGACY_STAFFER_PG_CONFIG=[
+  {nome:'Lulu Sparks',breve:'Lulu Sparks',aliases:'lulu|lulu sparks'},
+  {nome:'Gideon G. Greengrass',breve:'Gideon G. Greengrass',aliases:'gideon|gideon g. greengrass|gideon g greengrass'},
+  {nome:'Noah Fisher',breve:'Noah Fisher',aliases:'noah|noah fisher'},
+  {nome:'Odette Montclaire',breve:'Odette Montclaire',aliases:'odette|odette montclaire'}
+];
+let STAFFER_PG_CONFIG=LEGACY_STAFFER_PG_CONFIG.slice();
+let EXTRA_STAFF_DOCS=[];
+function isPrimaryStaffId(id){
+  const k=normalizzaStaffId(id);
+  return LEGACY_STAFFER_PG_CONFIG.some(x=>normalizzaStaffId(x.nome)===k);
+}
+function primaryStaffById(id){
+  const k=normalizzaStaffId(id);
+  return LEGACY_STAFFER_PG_CONFIG.find(x=>normalizzaStaffId(x.nome)===k)||null;
+}
+function primaryStaffName(id,fallback){
+  return primaryStaffById(id)?.nome||fallback||id||'—';
+}
+let pgStaffOwner='';
+let pgStaffKind='';
+let pgStaffCache=[];
+let STAFF_BALANCE_CACHE={};
+
+function normalizzaNomePgStaff(nome){
+  return String(nome||'').trim().toLowerCase().replace(/\s+/g,' ');
+}
+function nomeKindPgStaff(kind){return kind==='adulti'?'Adulto':'Studente'}
+
+function aggiornaStatoStafferUI(){}
+function aggiornaPoolPgStaffInfo(){
+  const box=document.getElementById('pgStaffPoolInfo');
+  if(!box)return;
+  if(!pgStaffOwner){
+    box.className='pg-pool-info empty';
+    box.textContent='Seleziona uno dei quattro Player: il PG verrà collegato al suo saldo ST condiviso.';
+    return;
+  }
+  const id=normalizzaStaffId(pgStaffOwner);
+  const st=STAFFER_PG_CONFIG.find(x=>normalizzaStaffId(x.nome)===id);
+  const saldo=Number(STAFF_BALANCE_CACHE[id]||0);
+  const n=pgStaffCache.filter(pg=>pg.staffId===id).length;
+  box.className='pg-pool-info';
+  box.innerHTML=`<b>${escapeHtml(st?.nome||pgStaffOwner)}:</b> ${saldo} ST disponibili, condivisi da tutti i suoi PG associati (${n}). Il PG che aggiungi qui non riceve un saldo proprio.`;
+}
+
+function renderPgStaff(){
+  const box=document.getElementById('pgStaffLista');
+  if(!box)return;
+  const perStaff={};
+  STAFFER_PG_CONFIG.forEach(x=>perStaff[normalizzaStaffId(x.nome)]=[]);
+  pgStaffCache.forEach(x=>{if(perStaff[x.staffId])perStaff[x.staffId].push(x)});
+  box.innerHTML=STAFFER_PG_CONFIG.map(st=>{
+    const id=normalizzaStaffId(st.nome);
+    const saldo=Number(STAFF_BALANCE_CACHE[id]||0);
+    const lista=(perStaff[id]||[]).sort((a,b)=>{
+      const aMain=normalizzaNomePgStaff(a.nome)===normalizzaNomePgStaff(st.nome);
+      const bMain=normalizzaNomePgStaff(b.nome)===normalizzaNomePgStaff(st.nome);
+      if(aMain!==bMain)return aMain?-1:1;
+      return a.nome.localeCompare(b.nome,'it',{sensitivity:'base'});
+    });
+    const righe=lista.length?lista.map(pg=>{
+      const isMain=normalizzaNomePgStaff(pg.nome)===normalizzaNomePgStaff(st.nome);
+      const passaggioAdulto=pg.tipo==='studenti'
+        ? `<button type="button" class="secondary btn-cambia-tipo-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}" title="Passa questo PG all’Elfo Adulto"><i class="fa-solid fa-arrow-right-arrow-left"></i> Passa ad Adulto</button>`
+        : '';
+      return `<div class="pg-assoc-row">
+        <div class="pg-assoc-main"><span class="pg-kind">${escapeHtml(nomeKindPgStaff(pg.tipo))}</span><b>${escapeHtml(pg.nome)}</b>${isMain?'<span class="pg-main-badge">PG principale</span>':''}</div>
+        <div class="pg-assoc-actions">
+          ${passaggioAdulto}
+          <button type="button" class="danger btn-rimuovi-pg-staff" data-staff="${escapeHtml(id)}" data-pg="${escapeHtml(pg.nome)}" data-kind="${escapeHtml(pg.tipo)}"><i class="fa-solid fa-trash-can"></i> Rimuovi PG</button>
+        </div>
+      </div>`;
+    }).join(''):'<span class="pg-empty">Nessun PG collegato a questo saldo ST.</span>';
+    return `<details class="pg-staff-group">
+      <summary class="pg-staff-group-head">
+        <i class="fa-solid fa-chevron-right pg-group-chevron" aria-hidden="true"></i>
+        <div class="pg-group-title"><b>${escapeHtml(st.nome)}</b><div class="staffer-state-line"><span class="pg-staff-count">${lista.length} PG collegati</span></div></div>
+        <div class="pg-pool-balance">${saldo} ST<small>saldo del Player</small></div>
+      </summary>
+      <div class="pg-staff-group-body">
+        <div class="pg-chip-list">${righe}</div>
+      </div>
+    </details>`;
+  }).join('');
+  box.querySelectorAll('.btn-rimuovi-pg-staff').forEach(btn=>btn.addEventListener('click',()=>rimuoviPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
+  box.querySelectorAll('.btn-cambia-tipo-pg-staff').forEach(btn=>btn.addEventListener('click',()=>cambiaTipoPgStaff(btn.dataset.staff,btn.dataset.pg,btn.dataset.kind)));
+  aggiornaPoolPgStaffInfo();
+}
+
+function renderStafferErrati(){
+  const box=document.getElementById('stafferErratiLista');
+  const extraBox=document.getElementById('stafferExtraBox');
+  if(!box)return;
+  if(!EXTRA_STAFF_DOCS.length){
+    box.innerHTML='';
+    if(extraBox)extraBox.classList.add('hidden');
+    return;
+  }
+  if(extraBox)extraBox.classList.remove('hidden');
+  box.innerHTML=EXTRA_STAFF_DOCS.map(x=>{
+    const nome=String(x.nomeVisualizzato||x.id||'').trim()||x.id;
+    return `<div class="staffer-error-card"><div><b>${escapeHtml(nome)}</b><span>Questo nome non fa parte dei quattro saldi ST principali. Puoi rimuoverlo dal Gestore; se è un PG dello Staff, puoi poi associarlo al Player corretto.</span></div><button type="button" class="danger" data-hide-extra-staff="${escapeHtml(x.id)}"><i class="fa-solid fa-trash-can"></i> Rimuovi</button></div>`;
+  }).join('');
+  box.querySelectorAll('[data-hide-extra-staff]').forEach(btn=>btn.addEventListener('click',()=>rimuoviVoceStafferErrata(btn.dataset.hideExtraStaff,btn)));
+}
+
+async function rimuoviVoceStafferErrata(staffId,btn){
+  const msg=document.getElementById('stafferErratiMsg');if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return;}
+  if(isPrimaryStaffId(staffId)){if(msg)msg.innerHTML='<div class="msg-err">Le quattro Player principali non possono essere rimosse da qui.</div>';return;}
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Rimuovo…';}
+  try{
+    await db.collection('staff_token').doc(staffId).set({
+      stafferNascosto:true,
+      stafferStatoAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()
+    },{merge:true});
+    if(msg)msg.innerHTML='<div class="msg-ok">Voce rimossa dal Gestore.</div>';
+    await caricaPgStaff();
+    await caricaPubblico(true);
+  }catch(e){
+    if(msg)msg.innerHTML=`<div class="msg-err">Voce non rimossa: ${escapeHtml(e.message)}</div>`;
+    if(btn)btn.disabled=false;
+  }
+}
+
+async function caricaPgStaff(){
+  const box=document.getElementById('pgStaffLista');
+  if(box)box.innerHTML='<div class="loading">Caricamento PG dello Staff…</div>';
+  try{
+    const snap=await caricaListaStaffer();
+    const docsById=new Map(snap.docs.map(d=>[d.id,d]));
+    pgStaffCache=[];
+    STAFF_BALANCE_CACHE={};
+    STAFFER_PG_CONFIG.forEach(st=>{
+      const sid=normalizzaStaffId(st.nome),doc=docsById.get(sid),data=doc?doc.data():{};
+      STAFF_BALANCE_CACHE[sid]=Number(data.st_totali||0);
+      const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
+      arr.forEach(pg=>{
+        const nome=String(pg&&pg.nome||'').trim();if(!nome)return;
+        pgStaffCache.push({staffId:sid,staffNome:st.nome,nome,tipo:pg.tipo==='adulti'?'adulti':'studenti'});
+      });
+    });
+    renderPgStaff();
+  }catch(e){if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare gli Staffer e i PG associati: ${escapeHtml(e.message)}</div>`}
+}
+
+function selezionaOwnerPgStaff(nome){
+  pgStaffOwner=String(nome||'');
+  document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(b=>b.classList.toggle('active',b.dataset.value===pgStaffOwner));
+  aggiornaPoolPgStaffInfo();
+}
+function selezionaKindPgStaff(kind){
+  pgStaffKind=(kind==='adulti'||kind==='studenti')?kind:'';
+  document.querySelectorAll('#tipoPgStaffPicker .movement-sign').forEach(b=>{
+    const attivo=!!pgStaffKind&&b.dataset.kind===pgStaffKind;
+    b.classList.toggle('active',attivo);
+    b.setAttribute('aria-pressed',attivo?'true':'false');
+  });
+}
+function collegaPickerPgStaff(){
+  document.querySelectorAll('#pickerPgStaff .staffer-choice').forEach(btn=>{
+    if(btn.dataset.pgStaffBound==='1')return;btn.dataset.pgStaffBound='1';
+    btn.addEventListener('click',()=>selezionaOwnerPgStaff(btn.dataset.value));
+  });
+}
+collegaPickerPgStaff();
+const tipoPgStaffPicker=document.getElementById('tipoPgStaffPicker');
+if(tipoPgStaffPicker && tipoPgStaffPicker.dataset.bound!=='1'){
+  tipoPgStaffPicker.dataset.bound='1';
+  tipoPgStaffPicker.addEventListener('click',ev=>{
+    const btn=ev.target.closest('.movement-sign[data-kind]');
+    if(!btn||!tipoPgStaffPicker.contains(btn))return;
+    ev.preventDefault();
+    selezionaKindPgStaff(btn.dataset.kind);
+  });
+}
+
+async function risolviNomePgStaffRegistrato(nome,kind){
+  const coll=kind==='adulti'?'personaggi_adulti':'personaggi_studenti';
+  const key=normalizzaNomePgStaff(nome);
+  const snap=await db.collection(coll).get();
+  const matches=snap.docs.filter(d=>{
+    const data=d.data()||{};
+    return data._deleted!==true && normalizzaNomePgStaff(d.id)===key;
+  });
+  if(matches.length===1)return matches[0].id;
+  if(matches.length>1)throw new Error('Più PG corrispondono a questo nome: seleziona l’identificativo esatto.');
+  throw new Error('PG non trovato nell’elenco '+(kind==='adulti'?'Adulti':'Studenti')+'. Inserisci Nome e Cognome esatti.');
+}
+
+async function aggiungiPgStaff(){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  if(!pgStaffOwner){if(msg)msg.innerHTML='<div class="msg-err">Seleziona prima a quale Player Staffer appartiene il PG: tutti i suoi PG useranno lo stesso saldo ST.</div>';return}
+  if(pgStaffKind!=='studenti'&&pgStaffKind!=='adulti'){if(msg)msg.innerHTML='<div class="msg-err">Scegli esplicitamente se il PG usa l’Elfo Studente o l’Elfo Adulto.</div>';return}
+  const digitato=document.getElementById('pgStaffNome').value.trim();
+  if(!digitato){if(msg)msg.innerHTML='<div class="msg-err">Scrivi Nome e Cognome del PG.</div>';return}
+  let nome;
+  try{nome=await risolviNomePgStaffRegistrato(digitato,pgStaffKind);}catch(e){if(msg)msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
+  const targetId=normalizzaStaffId(pgStaffOwner);
+  const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
+  try{
+    await db.runTransaction(async tx=>{
+      const snaps=[]; for(const ref of refs)snaps.push(await tx.get(ref));
+      const key=normalizzaNomePgStaff(nome);
+      for(let i=0;i<snaps.length;i++){
+        const arr=Array.isArray(snaps[i].data()?.pgAssociati)?snaps[i].data().pgAssociati:[];
+        const dup=arr.find(pg=>normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===pgStaffKind);
+        if(dup){
+          const owner=STAFFER_PG_CONFIG[i].breve;
+          throw new Error(`${nome} è già associato a ${owner} come PG ${nomeKindPgStaff(pgStaffKind).toLowerCase()}.`);
+        }
+      }
+      const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===targetId);
+      if(idx<0)throw new Error('Staffer non trovato. Ricarica la pagina e riprova.');
+      const snap=snaps[idx]; const stato=snap.exists?snap.data():{};
+      const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
+      arr.push({nome,tipo:pgStaffKind});
+      tx.set(refs[idx],{nomeVisualizzato:pgStaffOwner,pgAssociati:arr,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+    document.getElementById('pgStaffNome').value='';
+    const ownerBreve=STAFFER_PG_CONFIG.find(st=>normalizzaStaffId(st.nome)===targetId)?.nome||pgStaffOwner;
+    selezionaKindPgStaff('');
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} collegato agli ST di ${escapeHtml(ownerBreve)}. Per il prossimo PG scegli di nuovo Studente o Adulto.</div>`;
+    await caricaPgStaff();
+  }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non aggiunto: ${escapeHtml(e.message)}</div>`}
+}
+document.getElementById('btnAggiungiPgStaff')?.addEventListener('click',aggiungiPgStaff);
+document.getElementById('pgStaffNome')?.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();aggiungiPgStaff();}});
+
+async function cambiaTipoPgStaff(staffId,nome,kindAttuale){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const nuovoKind=kindAttuale==='adulti'?'studenti':'adulti';
+  let nomeRegistrato;
+  try{nomeRegistrato=await risolviNomePgStaffRegistrato(nome,nuovoKind);}catch(e){
+    if(msg)msg.innerHTML=`<div class="msg-err">Non posso cambiare ${escapeHtml(nome)} in ${escapeHtml(nomeKindPgStaff(nuovoKind))}: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  const refs=STAFFER_PG_CONFIG.map(st=>db.collection('staff_token').doc(normalizzaStaffId(st.nome)));
+  try{
+    await db.runTransaction(async tx=>{
+      const snaps=[]; for(const ref of refs)snaps.push(await tx.get(ref));
+      const key=normalizzaNomePgStaff(nomeRegistrato);
+      for(let i=0;i<snaps.length;i++){
+        const arr=Array.isArray(snaps[i].data()?.pgAssociati)?snaps[i].data().pgAssociati:[];
+        const dup=arr.find(pg=>normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===nuovoKind);
+        if(dup)throw new Error(`${nomeRegistrato} risulta già collegato come ${nomeKindPgStaff(nuovoKind)}.`);
+      }
+      const idx=STAFFER_PG_CONFIG.findIndex(st=>normalizzaStaffId(st.nome)===staffId);
+      if(idx<0)throw new Error('Staffer non trovato.');
+      const stato=snaps[idx].exists?snaps[idx].data():{};
+      const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
+      const oldKey=normalizzaNomePgStaff(nome);
+      let cambiato=false;
+      const nuovo=arr.map(pg=>{
+        const tipo=(pg&&pg.tipo)==='adulti'?'adulti':'studenti';
+        if(!cambiato&&normalizzaNomePgStaff(pg&&pg.nome)===oldKey&&tipo===(kindAttuale==='adulti'?'adulti':'studenti')){
+          cambiato=true;return {nome:nomeRegistrato,tipo:nuovoKind};
+        }
+        return pg;
+      });
+      if(!cambiato)throw new Error('Associazione PG non trovata.');
+      tx.set(refs[idx],{pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nomeRegistrato)} corretto: ora è collegato come PG ${escapeHtml(nomeKindPgStaff(nuovoKind))}. Il saldo ST del Player non cambia.</div>`;
+    await caricaPgStaff();
+  }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">Tipo del PG non modificato: ${escapeHtml(e.message)}</div>`}
+}
+
+async function rimuoviPgStaff(staffId,nome,kind){
+  const msg=document.getElementById('pgStaffMsg'); if(msg)msg.textContent='';
+  if(!passwordCorrente){if(msg)msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  const ref=db.collection('staff_token').doc(staffId);
+  try{
+    /* La disassociazione controlla soltanto gli usi FUTURI. Gli Staff Token già
+       spesi restano consumati e conservati nello storico: non vengono rimborsati
+       e non devono impedire di togliere il PG dall'elenco degli abilitati. */
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(ref); if(!snap.exists)throw new Error('Staffer non trovato.');
+      const stato=snap.data(); const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati:[];
+      const key=normalizzaNomePgStaff(nome);
+      const nuovo=arr.filter(pg=>!(normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti')));
+      tx.set(ref,{pgAssociati:nuovo,pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    });
+    if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} scollegato dagli ST del Player. Non comparirà più il comando ST nel suo Elfo; saldo e ST già spesi non cambiano.</div>`;
+    await caricaPgStaff();
+  }catch(e){if(msg)msg.innerHTML=`<div class="msg-err">PG non rimosso: ${escapeHtml(e.message)}</div>`}
+}
+
+// Data manuale anche per i movimenti di saldo: nessun calendario, ma un tasto rapido “Adesso”.
+document.getElementById('btnMovimentoDataAdesso')?.addEventListener('click',()=>{
+  document.getElementById('movimentoData').value=dataManualeValue(new Date());
+  aggiornaPreviewMovimentoManuale();
+});
+
+let liveRefreshTimer=null;
+function programmaRefreshLive(){
+  clearTimeout(liveRefreshTimer);
+  liveRefreshTimer=setTimeout(async()=>{
+    try{
+      await caricaPubblico(true);
+      if(document.getElementById('correggiNome')?.value)await caricaSaldoMovimentoManuale();
+      if(staffIdCorrente)await caricaStaffer();
+      await caricaPgStaff();
+    }catch(e){console.warn('Refresh live Staff Token:',e)}
+  },220);
+}
+// Il Gestore resta sincronizzato anche se il saldo viene modificato da un altro tool (es. Elfo/Camera Blindata).
+try{db.collection('staff_token').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
+try{db.collection('staff_token_usi').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
+
+caricaListaStaffer();
+caricaPgStaff();
+caricaPubblico(true);
+sincronizzaTuttiPicker();
+mostraStaffInfo();
+ricalcola();
+aggiornaPreviewMovimentoManuale();
+attivaTab('registra');
+</script>
+
+<script>
+(function(){
+  var ffHeightTimer=null,ffLastHeight=0;
+  function misuraContenutoStaffToken(){
+    var wrap=document.querySelector('.wrap');
+    if(!wrap)return 0;
+    var r=wrap.getBoundingClientRect();
+    var cs=window.getComputedStyle(document.body);
+    var pb=parseFloat(cs.paddingBottom)||0;
+    // Misura il fondo del contenuto vero, NON scrollHeight/html height: così
+    // l'altezza dell'iframe impostata dal Forum non rientra nel calcolo e non crea loop.
+    return Math.ceil(r.bottom + Math.min(pb,32));
+  }
+  function sendStaffTokenHeight(){
+    if(ffHeightTimer)clearTimeout(ffHeightTimer);
+    ffHeightTimer=setTimeout(function(){
+      ffHeightTimer=null;
+      var h=misuraContenutoStaffToken();
+      if(!h||h<400||h>20000||Math.abs(h-ffLastHeight)<3)return;
+      ffLastHeight=h;
+      try{parent.postMessage({tipo:'altezzaStaffToken',altezza:h},'*');}catch(e){}
+    },70);
+  }
+  window.addEventListener('load',sendStaffTokenHeight);
+  window.addEventListener('resize',sendStaffTokenHeight);
+  var wrap=document.querySelector('.wrap');
+  try{if(wrap)new ResizeObserver(sendStaffTokenHeight).observe(wrap);}catch(e){}
+  try{new MutationObserver(sendStaffTokenHeight).observe(document.body,{subtree:true,childList:true,attributes:true,characterData:true});}catch(e){}
+  setTimeout(sendStaffTokenHeight,160);
+  setTimeout(sendStaffTokenHeight,900);
+})();
+</script>
+</body>
+</html><!DOCTYPE html>
+<!-- v41 — saldi del Registro ricalcolati per data storica + rimozione che storna il movimento, 04/09/2026 -->
+<!-- v38 — saldo risultante subito sotto ogni variazione nel registro, 04/09/2026 -->
+<!-- v37 — palette più decisa: fucsia e verde più presenti e leggibili, 04/09/2026 -->
+<!-- v36 — barra di navigazione centrata + rimossa sezione Criteri implementati, 04/09/2026 -->
+<!-- v34 — quattro Player Staffer fissi e sempre attivi: rimosso stato attivo/inattivo, 04/09/2026 -->
+<!-- v33 — gestione PG a tendina + terminologia saldo ST, 04/09/2026 -->
+<!-- v32 — PG Staff: consentito solo il passaggio Studente → Adulto, 04/09/2026 -->
+<!-- v31 — selettore Studente/Adulto: stato attivo visibile e click robusto, 04/09/2026 -->
+<!-- v30 — rimozione neutra delle voci extra: nessuna etichetta "errore", 04/09/2026 -->
+<!-- v29 — quattro saldi ST fisse (Player) + PG associati separati; pulizia voci create per errore, 04/09/2026 -->
+<!-- v28 — saldo ST unico per Player Staffer + tipo PG obbligatorio + correzione/rimozione PG, 04/09/2026 -->
+<!-- v27 — fix altezza iframe stabile + gestione Staffer esplicita e prioritaria, 04/09/2026 -->
+<!-- v40 — X per rimuovere qualsiasi movimento dal Registro (solo vista; saldo invariato), 04/09/2026 -->
+<!-- v39 — import storico: totale dichiarato usato come quota per singola Quest narrativa ripartibile, 04/09/2026 -->
+<!-- v43 — import storico: data/ora riconosciuta dal testo e mantenuta nel Registro, 04/09/2026 -->
+<!-- v44 — Data accredito manuale persistente: la data inserita nel campo viene salvata e riusata nel Registro, 04/09/2026 -->
+<!-- v26 — Staffer dinamici + gestione visibile + altezza iframe automatica, 04/09/2026 -->
+<!-- v23 — ST storici: disassociare un PG non rimborsa gli ST già spesi e non è bloccato dagli usi precedenti, 04/09/2026 -->
+<!-- v22 — sicurezza Staff Token: sessione Staff protetta, nessuna Password nei documenti pubblici, bonifica legacy + PG associati con ID esatto, 04/09/2026 -->
+<!-- v21 — integrazione Elfi: spesa/rimborso live da Camera Blindata + protezione PG con usi attivi, 04/09/2026 -->
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestore Staff Token — v42</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+@font-face{
+  font-family:'magic';
+  src:url('https://dl.dropboxusercontent.com/scl/fi/nbzmrri4qyvc3tzx96911/HarryBeastDisplay-Regular.woff2?rlkey=he290voe32k33gowug23c1osc&st=nj9fgly1') format('woff2');
+  font-weight:normal;
+  font-style:normal;
+}
+:root{
+  --bg:#f3f5ee;
+  --surface:#ffffff;
+  --surface-2:#fff0f5;
+  --surface-3:#f0f9df;
+  --ink:#30242a;
+  --muted:#756b70;
+  --line:#e8cbd6;
+  --accent:#d9004c;
+  --accent-dark:#87002f;
+  --accent-soft:#ff4f88;
+  --gold:#86c900;
+  --gold-soft:#efffd0;
+  --green:#86c900;
+  --green-dark:#4d7600;
+  --green-soft:#efffd0;
+  --red:#c81d4b;
+  --red-soft:#fff0f4;
+  --shadow:0 10px 30px rgba(48,36,42,.08);
+  --radius:16px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  padding:22px 14px 90px;
+  background:
+    radial-gradient(circle at 8% 0%,rgba(217,0,76,.085),transparent 30%),
+    radial-gradient(circle at 92% 4%,rgba(134,201,0,.105),transparent 28%),
+    var(--bg);
+  color:var(--ink);
+  font-family:'EB Garamond',Georgia,serif;
+  font-size:16px;
+}
+button,input,select,textarea{font:inherit}
+button{touch-action:manipulation}
+.wrap{max-width:1040px;margin:0 auto}
+.hidden{display:none!important}
+#loadErr{
+  display:none;
+  background:#3d171f;
+  border:1px solid var(--red);
+  color:#ffe8ed;
+  padding:12px 14px;
+  border-radius:12px;
+  margin-bottom:14px;
+  font-family:Arial,sans-serif;
+  font-size:13px;
+}
+h1,h2,h3,h4{
+  color:var(--accent-dark);
+  font-family:'magic','Cinzel',serif;
+  font-weight:700;
+}
+.masthead{
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+  padding:26px 22px 22px;
+  background:linear-gradient(145deg,var(--surface),#fff 55%,var(--surface-2));
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  margin-bottom:14px;
+}
+.masthead:before,.masthead:after{
+  content:"";
+  position:absolute;
+  width:170px;
+  height:170px;
+  border-radius:50%;
+  border:1px solid rgba(251,0,84,.08);
+}
+.masthead:before{left:-95px;top:-100px}
+.masthead:after{right:-100px;bottom:-115px}
+.crest{
+  width:58px;
+  height:58px;
+  margin:0 auto 8px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:var(--surface-2);
+  border:1px solid var(--accent-soft);
+  color:var(--accent);
+  font-size:23px;
+  box-shadow:inset 0 0 0 5px rgba(255,255,255,.55);
+}
+.eyebrow{
+  letter-spacing:3px;
+  text-transform:uppercase;
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  color:var(--accent);
+}
+.masthead h1{
+  margin:3px 0 7px;
+  font-size:31px;
+  font-family:'magic','Cinzel Decorative','Cinzel',serif;
+}
+.masthead p{margin:0;color:var(--muted);font-size:14px;font-style:italic}
+.nav-shell{
+  position:sticky;
+  top:0;
+  z-index:30;
+  display:flex;
+  justify-content:center;
+  padding:8px 0 10px;
+  background:linear-gradient(var(--bg) 72%,transparent);
+}
+.tabs{
+  display:flex;
+  width:min(100%,780px);
+  gap:7px;
+  padding:6px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.94);
+  backdrop-filter:blur(8px);
+  border-radius:14px;
+  box-shadow:0 4px 18px rgba(48,36,42,.06);
+}
+.tab-btn{
+  flex:1;
+  min-width:0;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  font-family:'Cinzel',serif;
+  font-size:12px;
+  font-weight:700;
+  transition:.16s ease;
+}
+.tab-btn:hover{background:var(--surface-2);color:var(--accent-dark)}
+.tab-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(251,0,84,.18)}
+.tab-btn i{margin-right:6px}
+.view{display:none}
+.view.active{display:block}
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:18px;
+  margin-bottom:14px;
+  box-shadow:0 4px 16px rgba(48,36,42,.045);
+}
+.card.compact{padding:15px 17px}
+.card-title{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+.card-title h2,.card-title h3{margin:0}
+.card-title h2{font-size:21px}
+.card-title h3{font-size:18px}
+.card-title p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.35}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+label{
+  display:block;
+  margin:11px 0 5px;
+  color:var(--muted);
+  font-size:12.5px;
+  font-weight:700;
+}
+input[type=text],input[type=number],input[type=password],select,textarea{
+  width:100%;
+  border:1px solid #d8c7cd;
+  background:#fff;
+  color:var(--ink);
+  border-radius:10px;
+  padding:10px 11px;
+  font-size:15px;
+  outline:none;
+  transition:.15s ease;
+}
+textarea{resize:vertical;min-height:72px;line-height:1.35}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent-soft);
+  box-shadow:0 0 0 3px rgba(251,0,84,.09);
+}
+input:disabled,textarea:disabled{background:#f2eded;color:#8e8187;cursor:not-allowed}
+.hint{display:block;color:var(--muted);font-size:12px;margin-top:5px;line-height:1.35}
+.main,.secondary,.ghost,.danger,.mini{
+  border:0;
+  border-radius:10px;
+  cursor:pointer;
+  transition:.15s ease;
+  font-weight:700;
+}
+.main{
+  background:var(--accent);
+  color:#fff;
+  padding:11px 17px;
+  font-family:'Cinzel',serif;
+  font-size:13px;
+  box-shadow:0 4px 12px rgba(251,0,84,.16);
+}
+.main:hover{background:var(--accent-dark)}
+.main:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.secondary{
+  background:#fff;
+  color:var(--accent-dark);
+  border:1px solid var(--accent-soft);
+  padding:9px 14px;
+  font-family:'Cinzel',serif;
+  font-size:12px;
+}
+.secondary:hover{background:var(--surface-2)}
+.ghost{
+  background:transparent;
+  color:var(--muted);
+  border:1px solid var(--line);
+  padding:8px 12px;
+  font-size:12px;
+}
+.danger{
+  background:var(--red-soft);
+  color:var(--red);
+  border:1px solid #e8b8c2;
+  padding:8px 12px;
+  font-size:12px;
+}
+.mini{
+  background:var(--surface-2);
+  color:var(--accent-dark);
+  border:1px solid var(--line);
+  padding:5px 8px;
+  font-size:11px;
+}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.access-card{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  box-shadow:0 4px 15px rgba(48,36,42,.045);
+  margin-bottom:14px;
+}
+.access-card .access-icon{
+  width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;
+  background:var(--surface-2);color:var(--accent);border:1px solid var(--line)
+}
+.access-card .access-text{flex:1}
+.access-card strong{font-family:'Cinzel',serif;font-size:13px;color:var(--accent-dark)}
+.access-card p{margin:2px 0 0;color:var(--muted);font-size:12.5px}
+.access-form{display:flex;gap:7px;min-width:300px}
+.access-form input{min-width:0}
+.access-ok{background:var(--green-soft);border-color:#d6e9c2}
+.access-ok .access-icon{background:#fff;color:var(--green)}
+.section-label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:20px 2px 9px;
+  color:var(--accent-dark);
+  font-family:'Cinzel',serif;
+  font-size:12px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+}
+.section-label:after{content:"";height:1px;background:var(--line);flex:1}
+.staff-strip{
+  display:grid;
+  grid-template-columns:minmax(220px,1.3fr) repeat(4,minmax(115px,.65fr));
+  gap:9px;
+  align-items:stretch;
+}
+.staff-metric{
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:#fff;
+  padding:10px 12px;
+}
+.staff-metric .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.staff-metric .v{font-family:'Cinzel',serif;color:var(--accent-dark);font-size:17px;font-weight:700;margin-top:2px}
+.staff-metric .v.big{font-size:23px}
+.staff-metric .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.activity{
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  overflow:hidden;
+  margin-bottom:9px;
+  transition:.15s ease;
+}
+.activity.selected{border-color:var(--accent-soft);box-shadow:0 0 0 2px rgba(251,0,84,.05)}
+.activity-head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:12px 13px;
+  cursor:pointer;
+  user-select:none;
+}
+.activity-head:hover{background:#fffdfd}
+.activity-check{width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+.activity-icon{
+  width:33px;height:33px;flex:0 0 33px;border-radius:10px;display:grid;place-items:center;
+  background:var(--surface-2);color:var(--accent)
+}
+.activity-title{flex:1;min-width:0}
+.activity-title strong{display:block;color:var(--ink);font-size:15px}
+.activity-title span{display:block;color:var(--muted);font-size:11.8px;margin-top:1px}
+.rule-badge{
+  flex:0 0 auto;
+  padding:4px 8px;
+  border-radius:999px;
+  background:var(--gold-soft);
+  color:#5f8f27;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.activity-body{
+  display:none;
+  border-top:1px solid var(--line);
+  padding:13px 14px 15px;
+  background:linear-gradient(180deg,#fff,var(--surface));
+}
+.activity.selected .activity-body{display:block}
+.formula-box{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:48px;
+  margin-top:10px;
+  padding:9px 11px;
+  border-radius:11px;
+  background:var(--green-soft);
+  border:1px solid #d6e9c2;
+  color:#4f7825;
+  font-size:12.5px;
+  line-height:1.3;
+}
+.formula-box i{color:var(--green)}
+.formula-box.zero{background:var(--green-soft);border-color:#d6e9c2;color:#4f7825}
+.resto-progress{
+  height:6px;
+  background:#eee4e7;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:6px;
+}
+.resto-progress>span{display:block;height:100%;background:var(--gold);border-radius:inherit;transition:width .2s ease}
+.smart-import summary{
+  cursor:pointer;
+  list-style:none;
+  color:var(--accent-dark);
+  font-family:'Cinzel',serif;
+  font-weight:700;
+  font-size:12.5px;
+}
+.smart-import summary::-webkit-details-marker{display:none}
+.smart-import summary i{margin-right:7px;color:var(--accent)}
+.smart-import[open] summary{margin-bottom:11px}
+.preview-list{margin:0;padding:0;list-style:none}
+.preview-item{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px dashed var(--line);
+}
+.preview-item:last-child{border-bottom:0}
+.preview-item .name{font-weight:700;color:var(--ink)}
+.preview-item .detail{color:var(--muted);font-size:12.5px;margin-top:2px;line-height:1.35}
+.preview-item .score{font-family:'Cinzel',serif;color:var(--green);font-weight:700;white-space:nowrap}
+.total-sticky{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(3,1fr) minmax(210px,1.15fr);
+  gap:8px;
+  align-items:center;
+  margin-top:16px;
+  padding:12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--surface-2);
+  box-shadow:none;
+  transition:.15s ease;
+}
+.total-sticky.is-ready{border-color:#b9e86f;background:#f8ffed}
+.total-sticky.is-empty{opacity:.78}
+.total-sticky .main{width:100%;min-height:46px}
+.register-help{grid-column:1/-1;font-size:12px;color:var(--muted);padding:2px 4px 0;text-align:right;line-height:1.35}
+.total-sticky.is-ready .register-help{color:#4e7800}
+.total-cell{padding:5px 9px;border-right:1px solid var(--line)}
+.total-cell:nth-child(3){border-right:0}
+.total-cell .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.total-cell .v{font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:var(--accent-dark)}
+.total-cell .v.green{color:var(--green)}
+.msg-err,.msg-ok,.msg-warn{font-size:12.5px;margin-top:8px;line-height:1.35}
+.msg-err{color:var(--red)}
+.msg-ok{color:var(--green)}
+.msg-warn{color:#5f8f27}
+.notice{
+  padding:11px 12px;
+  border-radius:11px;
+  background:var(--gold-soft);
+  border:1px solid #d6e9c2;
+  color:#4f7825;
+  font-size:12.5px;
+  line-height:1.4;
+}
+.notice i{margin-right:6px}
+
+.import-date-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;margin:10px 0 4px}
+.import-date-row label{margin-top:0}
+.import-date-row .ghost{white-space:nowrap;margin-bottom:0}
+.log-edit-editor{margin-top:9px;padding:12px;border:1px solid var(--line);background:#faf8f9;border-radius:12px}
+.log-edit-editor label{margin:0 0 4px}
+.log-edit-grid{display:grid;grid-template-columns:minmax(190px,1fr) minmax(130px,.45fr);gap:10px;align-items:end}
+.log-edit-objectives{display:grid;gap:8px;margin-top:10px}
+.log-edit-row{display:grid;grid-template-columns:minmax(170px,1.2fr) 90px minmax(180px,1fr) 38px;gap:7px;align-items:end;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.log-edit-row .wide{grid-column:1/-1}
+.log-edit-row input,.log-edit-row textarea,.log-edit-grid input{font-size:13px;padding:8px 9px}
+.log-edit-row textarea{min-height:54px;resize:vertical}
+.log-edit-help{font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:7px}
+.log-edit-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.log-actions .edit-movement{margin-left:auto}
+@media(max-width:760px){.import-date-row,.log-edit-grid,.log-edit-row{grid-template-columns:1fr}.log-edit-row .wide{grid-column:auto}.log-actions .edit-movement{margin-left:0}}
+.success-box{
+  margin-top:12px;
+  border:1px solid #d6e9c2;
+  background:var(--green-soft);
+  border-radius:13px;
+  padding:13px;
+}
+.success-box h4{margin:0 0 6px;color:#5f8f27;font-size:16px}
+.success-box p{margin:0 0 9px;font-size:13px;color:#4f7825}
+.bbcode-preview{
+  width:100%;min-height:120px;background:#fff;border:1px solid #d6e9c2;border-radius:10px;
+  padding:9px;color:var(--ink);font-family:Consolas,monospace;font-size:11.5px;line-height:1.4
+}
+.public-toolbar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:12px;
+}
+.public-toolbar input,.public-toolbar select{max-width:280px}
+.balance-grid{display:grid;grid-template-columns:1fr;gap:8px}
+.balance-card{
+  border:1px solid var(--line);
+  border-left:4px solid var(--accent);
+  background:#fff;
+  border-radius:12px;
+  padding:11px 13px;
+}
+.balance-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.balance-name{font-family:'Cinzel',serif;font-weight:700;color:var(--accent-dark);font-size:15px}
+.balance-st{font-family:'Cinzel',serif;font-weight:700;color:var(--green-dark);font-size:18px;white-space:nowrap}
+.balance-st.negative{color:var(--red)}
+.balance-resti{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.resto-chip{padding:3px 7px;border-radius:999px;background:var(--green-soft);color:var(--green-dark);font-size:10.8px;border:1px solid #cfe99f;font-weight:700}
+.balance-updated{font-size:10.8px;color:var(--muted);margin-top:4px}
+.log-list{display:flex;flex-direction:column;gap:10px}
+.staff-ledger{border:1px solid var(--line);border-radius:13px;background:#fff;overflow:hidden}
+.staff-ledger[open]{border-color:var(--accent-soft);box-shadow:0 5px 16px rgba(95,0,34,.07)}
+.staff-ledger summary{list-style:none;cursor:pointer;padding:13px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:#fff}
+.staff-ledger summary::-webkit-details-marker{display:none}
+.staff-ledger summary:hover{background:var(--surface-2)}
+.ledger-person{display:flex;align-items:center;gap:9px;min-width:0}
+.ledger-chevron{color:var(--accent);font-size:11px;transition:transform .16s ease}
+.staff-ledger[open] .ledger-chevron{transform:rotate(90deg)}
+.ledger-name{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ledger-latest{display:block;font-family:'EB Garamond',serif;font-weight:400;color:var(--muted);font-size:11px;margin-top:2px}
+.ledger-balance{font-family:'Cinzel',serif;font-weight:700;color:var(--green-dark);font-size:17px;white-space:nowrap}
+.ledger-balance.negative{color:var(--red)}
+.staff-ledger-body{padding:0 14px 12px;border-top:1px solid var(--line);background:#fffdfd}
+.log-item{border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;padding:12px 0}
+.log-item:last-child{border-bottom:0;padding-bottom:2px}
+.log-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start}
+.log-marker{width:30px;height:30px;border-radius:9px;background:var(--green-soft);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
+.log-marker.negative{background:var(--red-soft);color:var(--red)}
+.log-marker.neutral{background:#f1edef;color:var(--muted)}
+.log-title{font-weight:700;color:var(--ink);font-size:13.5px}
+.log-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.log-st{font-family:'Cinzel',serif;font-weight:700;font-size:14px;color:var(--green-dark);white-space:nowrap;text-align:right}
+.log-st.negative{color:var(--red)}
+.log-st.neutral{color:var(--muted)}
+.log-st .log-total-after{display:block;margin-top:3px;padding-top:3px;border-top:1px solid currentColor;font-family:'EB Garamond',Georgia,serif;font-size:12px;font-weight:700;line-height:1;color:inherit;opacity:.88}
+.log-details{margin:7px 0 0 40px;font-size:12.6px;line-height:1.45;color:var(--ink)}
+.log-details .line{display:flex;align-items:flex-start;gap:7px;padding:3px 0}
+.log-details .line-text{min-width:0;flex:1}
+.ref-icons{display:inline-flex;gap:4px;flex:0 0 auto;margin-top:-1px}
+.ref-icon{width:25px;height:25px;border-radius:7px;border:1px solid var(--accent-soft);display:inline-flex;align-items:center;justify-content:center;color:var(--accent-dark);background:#fff;text-decoration:none;font-size:10px;transition:.15s ease}
+.ref-icon:hover{background:var(--accent);border-color:var(--accent);color:#fff;transform:translateY(-1px)}
+.log-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+.log-actions .why-disabled{font-size:11px;color:var(--muted);font-style:italic;margin-right:auto}
+.log-item.cancelled{opacity:.68}
+.log-item.cancelled .log-details{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:#b8a8ae}
+.cancel-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;border-radius:999px;background:var(--red-soft);color:var(--red);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;margin-left:5px}
+.danger.cancel-credit{background:#fff;color:var(--red);border-color:#df9cab}
+.danger.cancel-credit:hover{background:var(--red-soft)}
+.remove-log-entry{
+  width:30px;height:30px;flex:0 0 30px;border-radius:50%;border:1px solid rgba(251,0,84,.35);
+  background:#fff;color:var(--accent);display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:13px;transition:.14s ease;padding:0;margin-left:6px;
+}
+.remove-log-entry:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-1px)}
+.log-head-actions{display:flex;align-items:flex-start;gap:7px;justify-content:flex-end}
+
+.empty,.loading{text-align:center;padding:22px;color:var(--muted);font-style:italic}
+.admin-section{border-left:3px solid var(--accent-soft)}
+.separator{height:1px;background:var(--line);margin:16px 0}
+@media(max-width:800px){
+  body{padding:12px 9px 24px}
+  .masthead{padding:20px 15px 17px;border-radius:17px}
+  .masthead h1{font-size:27px}
+  .tabs{overflow-x:auto;justify-content:flex-start}
+  .tab-btn{flex:0 0 auto;white-space:nowrap}
+  .grid-2,.grid-3,.balance-grid{grid-template-columns:1fr}
+  .staff-strip{grid-template-columns:1fr 1fr}
+  .staff-strip .staff-metric:first-child{grid-column:1/-1}
+  .access-card{align-items:flex-start;flex-wrap:wrap}
+  .access-form{min-width:100%;width:100%}
+  .total-sticky{grid-template-columns:1fr 1fr}
+  .total-cell{border-right:0;border-bottom:1px solid var(--line)}
+  .total-cell:nth-child(3){border-bottom:0}
+  .total-sticky .main{grid-column:1/-1;grid-row:auto}
+  .register-help{text-align:left}
+}
+@media(max-width:480px){
+  .staff-strip{grid-template-columns:1fr}
+  .staff-strip .staff-metric:first-child{grid-column:auto}
+  .total-sticky{grid-template-columns:1fr 1fr}
+  .activity-head{align-items:flex-start}
+  .rule-badge{max-width:115px;white-space:normal;text-align:right}
+}
+
+
+/* v7 — import più leggibile + cronologia Annulla/Ripristina */
+.history-toolbar{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:10px 12px; margin-bottom:12px; border:1px solid #d9efb5;
+  border-radius:12px; background:#fbfff5;
+}
+.history-toolbar .history-copy{font-size:13px; color:var(--testo-muted); line-height:1.35}
+.history-actions{display:flex; gap:7px; flex-wrap:wrap}
+.history-actions button:disabled{opacity:.38; cursor:not-allowed; filter:grayscale(.35)}
+.import-help{
+  margin:10px 0 12px; padding:10px 12px; border-radius:10px;
+  background:#fff4f8; border:1px solid #ffc5d8; color:#5b2b3d; font-size:13px; line-height:1.45;
+}
+.import-help b{color:var(--bordeaux-dark)}
+.import-report{margin-top:12px; border:1px solid #d9efb5; border-radius:12px; overflow:hidden; background:#fff}
+.import-summary{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 13px; background:#f5ffe8; border-bottom:1px solid #d9efb5}
+.import-summary strong{font-family:'magic','Cinzel',serif; color:#4e7800; font-size:15px}
+.import-summary .sum-score{font-family:'magic','Cinzel',serif; font-weight:700; font-size:20px; color:#4e7800; white-space:nowrap}
+.import-lines{padding:4px 12px}
+.import-line{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:start; padding:10px 2px; border-bottom:1px dashed #e4ecd7}
+.import-line:last-child{border-bottom:0}
+.import-line .src{font-size:12px; color:var(--testo-muted); margin-top:3px; overflow-wrap:anywhere}
+.import-line .cat{font-weight:700; color:var(--testo); font-size:13.5px}
+.import-line .why{font-size:12px; color:#58712e; margin-top:3px}
+.import-line .score{font-family:'magic','Cinzel',serif; font-weight:700; color:#4e7800; white-space:nowrap}
+.import-unread{margin-top:9px; padding:9px 11px; border-radius:9px; background:#fff8e8; border:1px solid #ead79f; color:#765b14; font-size:12.5px}
+.clarity-banner{display:flex; gap:10px; align-items:flex-start; padding:11px 12px; margin-bottom:14px; border-radius:11px; background:#f5ffe8; border:1px solid #cbea9a; color:#42620d; font-size:13px; line-height:1.45}
+.clarity-banner i{margin-top:2px; color:#7fbd00}
+.activity.selected .activity-head{box-shadow:inset 4px 0 0 var(--green)}
+.activity-body label{font-weight:700; color:#5a4250}
+.activity-body .hint{line-height:1.45}
+@media(max-width:620px){
+  .history-toolbar{align-items:flex-start; flex-direction:column}
+  .import-line{grid-template-columns:1fr}
+  .import-line .score{justify-self:start}
+}
+
+
+
+/* ===== v10: selezione Staffer a pulsanti ===== */
+.staffer-picker{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-top:8px;
+}
+.staffer-choice{
+  position:relative;
+  min-height:48px;
+  padding:10px 12px;
+  border:1px solid rgba(251,0,84,.28);
+  border-radius:12px;
+  background:rgba(255,255,255,.72);
+  color:var(--text);
+  cursor:pointer;
+  font-family:'magic','Cinzel',serif;
+  font-weight:700;
+  font-size:15px;
+  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+.staffer-choice:hover{
+  transform:translateY(-1px);
+  border-color:var(--accent);
+  box-shadow:0 5px 14px rgba(151,0,51,.10);
+}
+.staffer-choice.active{
+  background:var(--green);
+  border-color:#76b900;
+  color:#182100;
+  box-shadow:0 0 0 3px rgba(158,234,0,.20),0 5px 14px rgba(91,135,0,.14);
+}
+.staffer-choice.active::after{
+  content:'✓';
+  position:absolute;
+  top:5px;
+  right:8px;
+  font-family:Arial,sans-serif;
+  font-size:12px;
+  font-weight:900;
+}
+.staffer-picker-help{
+  margin-top:8px;
+  font-size:12.5px;
+  color:var(--text-muted);
+}
+@media(max-width:600px){
+  .staffer-picker{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+
+
+/* ===== v19: gestione saldo per movimenti ===== */
+.balance-current{
+  margin:14px 0 12px; padding:14px 16px; border:1px solid #ccea9c; border-radius:14px;
+  background:linear-gradient(135deg,#f8ffe9,#ffffff); display:grid; grid-template-columns:1fr auto; gap:3px 14px; align-items:center;
+}
+.balance-current-label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.balance-current-value{grid-row:1/3;grid-column:2;font-family:'magic','Cinzel',serif;font-weight:700;font-size:28px;color:#4f7f00;white-space:nowrap}
+.balance-current-sub{font-size:13px;color:var(--muted)}
+.movement-sign-picker{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:7px 0 12px}
+.movement-sign{border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px 12px;cursor:pointer;font-weight:700;font-family:'magic','Cinzel',serif;color:var(--muted);transition:.14s ease}
+.movement-sign:hover{transform:translateY(-1px)}
+.movement-sign.add.active{background:var(--green);border-color:#76b900;color:#203000;box-shadow:0 0 0 3px rgba(158,234,0,.16)}
+.movement-sign.remove.active{background:var(--accent);border-color:var(--accent-dark);color:#fff;box-shadow:0 0 0 3px rgba(251,0,84,.12)}
+#tipoPgStaffPicker .movement-sign.active{background:var(--green);border-color:#76b900;color:#203000;box-shadow:0 0 0 3px rgba(158,234,0,.16)}
+#tipoPgStaffPicker .movement-sign.active i{color:#203000}
+#tipoPgStaffPicker .movement-sign:focus-visible{outline:3px solid rgba(251,0,84,.22);outline-offset:2px}
+.compact-grid{gap:10px}
+.optional{font-weight:400;color:var(--muted)}
+.movement-preview{margin-top:12px;padding:11px 13px;border:1px dashed var(--line);border-radius:11px;background:#fafafa;color:var(--muted);font-size:13.5px}
+.movement-preview.ready{border-style:solid;border-color:#ccea9c;background:#f8ffe9;color:#3f610d}
+.movement-preview.negative{border-color:#ffc2d4;background:#fff4f8;color:#8f153e}
+.movement-preview b{font-family:'magic','Cinzel',serif;font-size:16px}
+
+  .import-details{margin:16px 0 18px;border:1px solid rgba(251,0,84,.28);border-radius:16px;background:linear-gradient(180deg,#fff,#fff9fb);box-shadow:0 5px 16px rgba(151,0,51,.06);overflow:hidden}
+  .import-details>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;gap:10px;font-family:'magic','Cinzel',serif;font-weight:700;color:var(--bordeaux-dark);user-select:none}
+  .import-details>summary::-webkit-details-marker{display:none}
+  .import-details>summary:before{content:'\f105';font-family:'Font Awesome 6 Free';font-weight:900;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(158,234,0,.22);color:#5f9300;transition:transform .18s ease}
+  .import-details[open]>summary:before{transform:rotate(90deg)}
+  .import-details>summary .summary-note{font-family:'EB Garamond',serif;font-weight:400;color:var(--testo-muted);font-size:13px;margin-left:auto}
+  .import-panel{padding:0 16px 16px;border-top:1px solid rgba(251,0,84,.12)}
+  .import-panel-title{display:flex;align-items:flex-start;gap:10px;margin:14px 0 10px;color:var(--testo)}
+  .import-panel-title>i{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(158,234,0,.18);color:#5f9300;flex:0 0 auto}
+  .import-panel-title b{display:block;font-family:'magic','Cinzel',serif;color:var(--bordeaux-dark);font-size:16px}
+  .import-panel-title span{display:block;color:var(--testo-muted);font-size:13px;margin-top:2px;line-height:1.35}
+  .import-panel textarea{min-height:118px;resize:vertical}
+  .manual-zone{margin-top:16px;padding-top:14px;border-top:1px dashed rgba(151,0,51,.2)}
+  .manual-zone-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .manual-zone-head b{font-family:'magic','Cinzel',serif;color:var(--bordeaux-dark)}
+  .manual-entry{display:grid;grid-template-columns:minmax(180px,1.5fr) 110px minmax(180px,1.5fr) auto;gap:8px;align-items:end;padding:10px;margin-top:8px;border:1px solid rgba(158,234,0,.55);border-radius:12px;background:rgba(158,234,0,.07)}
+  .manual-entry.import-auto{border-style:dashed;background:rgba(158,234,0,.12)}
+  .manual-entry.import-auto .manual-name{font-weight:700}
+  .manual-entry label{margin-top:0}
+  .manual-entry .manual-remove{height:40px;align-self:end}
+  .manual-empty{font-size:13px;color:var(--testo-muted);font-style:italic;padding:6px 0}
+  @media(max-width:720px){.manual-entry{grid-template-columns:1fr 100px}.manual-entry .manual-link{grid-column:1/-1}.manual-entry .manual-remove{grid-column:2;grid-row:1;align-self:end}}
+  .import-minihelp{display:flex;align-items:flex-start;gap:8px;margin-top:8px;padding:9px 11px;border-radius:10px;background:rgba(158,234,0,.12);color:#4b5f2a;font-size:12.5px;line-height:1.4}
+  .import-minihelp i{margin-top:2px;color:#6da600}
+  .manual-total-box{margin-top:12px;padding:12px 13px;border:1px solid rgba(251,0,84,.22);border-radius:12px;background:rgba(251,0,84,.035)}
+  .manual-total-row{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:10px;align-items:end}
+  .manual-total-box label{margin-top:0}
+  .manual-total-box .hint{margin-top:4px}
+  .manual-total-status{margin-top:8px;font-size:12.5px;line-height:1.4;color:var(--testo-muted)}
+  .manual-total-status.override{color:#6b3b4c}
+  @media(max-width:700px){.manual-total-row{grid-template-columns:1fr}.manual-total-row .ghost{width:100%}}
+
+  .review-panel{margin:16px 0 18px;padding:16px;border:1px solid rgba(251,0,84,.28);border-radius:16px;background:linear-gradient(180deg,#fff,#fffafd);}
+  .review-panel .card-title{margin-bottom:12px;}
+  .review-panel .total-sticky{margin-top:12px;}
+
+
+  /* ===== PG DELLO STAFF / collegamento Elfi ===== */
+  .pg-staff-admin{margin-top:0;margin-bottom:16px;}
+  .staffer-admin-title{display:flex;align-items:center;gap:9px;margin:4px 0 10px;color:var(--accent-dark);font-family:'magic','Cinzel',serif;font-size:16px;font-weight:700;}
+  .staffer-admin-title i{color:var(--accent);}
+  .staffer-admin-list{display:grid;gap:9px;margin:10px 0 4px;}
+  .staffer-admin-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 12px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:12px;background:#fff;}
+  .staffer-admin-card .staffer-admin-name{font-family:'Cinzel',serif;font-weight:700;color:var(--ink);font-size:14px;}
+  .staffer-admin-card .staffer-admin-meta{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .staffer-admin-card .staffer-admin-action{margin:0;white-space:nowrap;}
+  .staffer-admin-card .staffer-admin-action.reactivate{background:var(--green);border:1px solid #76b900;color:#203000;}
+  .staffer-admin-separator{height:1px;background:var(--line);margin:16px 0;}
+  .staffer-create-box{margin:12px 0 16px;padding:13px 14px;border:1px solid rgba(158,234,0,.55);border-radius:12px;background:rgba(158,234,0,.07);}
+  .staffer-create-box .pg-add-row{margin-top:8px;}
+  .pg-staff-toolbar{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;align-items:end;}
+  .pg-add-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-top:14px;}
+  .pg-staff-list{margin-top:14px;display:grid;gap:10px;}
+  .pg-staff-group{border:1px solid rgba(251,0,84,.22);border-radius:12px;background:#fff;padding:0;overflow:hidden;}
+  .pg-staff-group-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px;}
+  .pg-staff-group-head b{color:var(--accent-dark);font-family:'magic','Cinzel',serif;font-size:17px;}
+  .pg-staff-group>summary.pg-staff-group-head{margin:0;padding:12px 13px;align-items:center;cursor:pointer;list-style:none;user-select:none;}
+  .pg-staff-group>summary.pg-staff-group-head::-webkit-details-marker{display:none;}
+  .pg-staff-group>summary.pg-staff-group-head:hover{background:rgba(251,0,84,.025);}
+  .pg-group-chevron{flex:0 0 auto;color:var(--accent);font-size:12px;transition:transform .16s ease;}
+  .pg-staff-group[open] .pg-group-chevron{transform:rotate(90deg);}
+  .pg-group-title{flex:1;min-width:0;}
+  .pg-staff-group-body{padding:11px 12px 12px;border-top:1px solid rgba(251,0,84,.12);}
+  .pg-staff-group[open]{box-shadow:0 4px 14px rgba(48,36,42,.055);}
+  .pg-staff-count{font-size:12px;color:var(--muted);}
+  .pg-pool-balance{font-family:'Cinzel',serif;font-weight:800;color:var(--green-dark);font-size:15px;white-space:nowrap;text-align:right;}
+  .pg-pool-balance small{display:block;font-family:'EB Garamond',serif;font-size:11px;font-weight:400;color:var(--muted);margin-top:2px;}
+  .pg-chip-list{display:grid;gap:7px;}
+  .pg-assoc-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid #dfe9c6;background:#fbfff4;border-radius:10px;padding:8px 9px;}
+  .pg-assoc-main{display:flex;align-items:center;gap:8px;min-width:0;}
+  .pg-assoc-main b{font-family:'EB Garamond',Georgia,serif;color:var(--ink);font-size:14px;overflow-wrap:anywhere;}
+  .pg-kind{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;background:#eef7d9;border:1px solid #cfe99f;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#557500;font-weight:800;white-space:nowrap;}
+  .pg-assoc-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .pg-assoc-actions button{margin:0;white-space:nowrap;}
+  .pg-empty{color:var(--muted);font-style:italic;font-size:13px;padding:4px 0;}
+  .pg-pool-info{margin:10px 0 2px;padding:10px 12px;border:1px solid #cfe99f;border-radius:11px;background:#f8ffe9;color:#486b13;font-size:13px;line-height:1.4;}
+  .pg-pool-info.empty{border-color:var(--line);background:#fafafa;color:var(--muted);font-style:normal;text-align:left;padding:10px 12px;}
+  .pg-step-label{display:flex;align-items:center;gap:7px;margin:14px 0 6px;font-family:'Cinzel',serif;font-size:12px;font-weight:800;color:var(--accent-dark);}
+  .pg-step-number{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;background:var(--accent);color:#fff;font-family:Arial,sans-serif;font-size:11px;}
+  .pg-kind-required{margin-top:5px;color:var(--accent-dark);font-size:11.5px;font-weight:700;}
+  .staffer-state-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:3px}
+  .staffer-status-btn{margin-left:auto}
+  .field-with-action{display:flex;gap:7px;align-items:center;}
+  .field-with-action input{flex:1;}
+  @media(max-width:720px){.pg-staff-toolbar{grid-template-columns:1fr}.pg-add-row{grid-template-columns:1fr}.pg-add-row button{width:100%}.pg-assoc-row{grid-template-columns:1fr}.pg-assoc-actions{justify-content:flex-start}.pg-pool-balance{text-align:left}}
+
+
+/* ===== v29: quattro Player fisse + pulizia voci errate ===== */
+.pg-main-badge{display:inline-flex;align-items:center;margin-left:7px;padding:2px 6px;border-radius:999px;background:var(--surface-2);border:1px solid var(--accent-soft);color:var(--accent-dark);font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;}
+#pickerAccredito,#pickerCorreggi,#pickerPgStaff{grid-template-columns:repeat(2,minmax(0,1fr));}
+#pickerAccredito .staffer-choice,#pickerCorreggi .staffer-choice,#pickerPgStaff .staffer-choice{min-height:54px;font-size:14px;}
+.staffer-error-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 11px;border:1px dashed #e0b6c3;border-radius:11px;background:#fff8fb;}
+.staffer-error-card b{display:block;color:var(--accent-dark);}
+.staffer-error-card span{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;}
+@media(max-width:620px){#pickerAccredito,#pickerCorreggi,#pickerPgStaff{grid-template-columns:1fr;}}
+
+
+/* ===== v37: fucsia + verde più presenti ===== */
+.masthead{
+  background:linear-gradient(135deg,#fff 0%,#fff5f8 58%,#f4ffdf 100%);
+  border-color:rgba(217,0,76,.30);
+  box-shadow:0 10px 30px rgba(135,0,47,.10),0 2px 0 rgba(134,201,0,.16);
+}
+.masthead:before{border-color:rgba(217,0,76,.18)}
+.masthead:after{border-color:rgba(134,201,0,.28)}
+.crest{
+  background:linear-gradient(145deg,#fff0f5,#f2ffd8);
+  border:2px solid var(--accent);
+  color:var(--accent-dark);
+  box-shadow:inset 0 0 0 5px rgba(255,255,255,.68),0 0 0 2px rgba(134,201,0,.22);
+}
+.eyebrow{color:var(--accent-dark);font-weight:700}
+.tabs{
+  border-color:rgba(217,0,76,.34);
+  box-shadow:0 5px 18px rgba(135,0,47,.10),0 1px 0 rgba(134,201,0,.16);
+}
+.tab-btn{color:#71505c}
+.tab-btn:hover{background:#fff0f5;color:var(--accent-dark)}
+.tab-btn.active{
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  box-shadow:0 5px 14px rgba(135,0,47,.24);
+}
+.card{
+  border-color:rgba(217,0,76,.20);
+  box-shadow:0 4px 16px rgba(135,0,47,.055);
+}
+.card-title{position:relative;padding-bottom:10px}
+.card-title:after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:0;
+  height:2px;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--accent) 0 40%,var(--green) 40% 58%,rgba(217,0,76,.08) 58% 100%);
+}
+.card-title h2 i,.card-title h3 i{color:var(--accent)}
+.section-label{color:var(--accent-dark)}
+.section-label:after{background:linear-gradient(90deg,rgba(217,0,76,.55),rgba(134,201,0,.72),rgba(217,0,76,.08))}
+.main{
+  background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+  box-shadow:0 5px 14px rgba(135,0,47,.20);
+}
+.main:hover{background:var(--accent-dark)}
+.secondary{background:#fff7fa;border-color:rgba(217,0,76,.48);color:var(--accent-dark)}
+.secondary:hover{background:#ffeaf1;border-color:var(--accent)}
+.access-ok,.success-box,.notice{
+  background:linear-gradient(135deg,#f4ffdd,var(--green-soft));
+  border-color:rgba(134,201,0,.52);
+}
+.staffer-choice{border-color:rgba(217,0,76,.38);background:#fffafd}
+.staffer-choice:hover{border-color:var(--accent);background:#fff1f6}
+.staffer-choice.active,
+.movement-sign.add.active,
+#tipoPgStaffPicker .movement-sign.active{
+  background:linear-gradient(135deg,#95dc00,var(--green));
+  border-color:var(--green-dark);
+  color:#213400;
+  box-shadow:0 0 0 3px rgba(134,201,0,.18),0 5px 14px rgba(77,118,0,.16);
+}
+.rule-badge,.resto-chip,.pg-kind{
+  background:var(--green-soft);
+  border-color:rgba(134,201,0,.46);
+  color:var(--green-dark);
+}
+.formula-box{
+  background:linear-gradient(135deg,#f4ffdf,#fff);
+  border-color:rgba(134,201,0,.52);
+  color:#456a00;
+}
+.formula-box i,.preview-item .score,.total-cell .v.green,.msg-ok{color:var(--green-dark)}
+.resto-progress>span{background:linear-gradient(90deg,var(--green),#a6e62a)}
+.total-sticky{
+  background:linear-gradient(105deg,#fff1f6 0%,#fff 48%,#f1ffd8 100%);
+  border-color:rgba(217,0,76,.28);
+  box-shadow:inset 0 -2px 0 rgba(134,201,0,.20);
+}
+.total-sticky.is-ready{border-color:var(--green);background:linear-gradient(105deg,#fff3f7,#fff 44%,#efffd0)}
+.balance-card{border-color:rgba(217,0,76,.22);border-left:5px solid var(--accent)}
+.balance-st,.ledger-balance,.log-st,.pg-pool-balance{color:var(--green-dark)}
+.staff-ledger[open]{border-color:rgba(217,0,76,.48);box-shadow:0 5px 16px rgba(135,0,47,.09)}
+.log-marker{background:var(--green-soft);color:var(--green-dark);border:1px solid rgba(134,201,0,.34)}
+.ref-icon{border-color:rgba(217,0,76,.42);color:var(--accent-dark);background:#fff7fa}
+.review-panel{
+  border-color:rgba(217,0,76,.38);
+  background:linear-gradient(135deg,#fff5f8 0%,#fff 52%,#f5ffe2 100%);
+}
+.import-details{border-color:rgba(217,0,76,.38)!important;background:linear-gradient(180deg,#fff,#fff5f8)!important}
+.import-details>summary:before,.import-panel-title>i{background:rgba(134,201,0,.24)!important;color:var(--green-dark)!important}
+.manual-entry{border-color:rgba(134,201,0,.62)!important;background:rgba(134,201,0,.08)!important}
+.pg-staff-group{border-color:rgba(217,0,76,.32)}
+.pg-staff-group>summary.pg-staff-group-head:hover{background:#fff2f6}
+.pg-staff-group-body{border-top-color:rgba(217,0,76,.20)}
+.pg-assoc-row{border-color:rgba(134,201,0,.42);background:#f8ffe9}
+.pg-pool-info{border-color:rgba(134,201,0,.56);background:linear-gradient(135deg,#f2ffd8,#fbfff3);color:#3f6100}
+.pg-step-number{background:linear-gradient(135deg,var(--accent),var(--accent-dark))}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,0,76,.12)}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loadErr">⚠️ Firebase non si è caricato correttamente. Controlla hosting, connessione e blocchi del browser.</div>
+
+  <header class="masthead">
+    <div class="crest"><i class="fa-solid fa-pen-nib"></i></div>
+    <div class="eyebrow">Felix Felicis GdR</div>
+    <h1>Gestore Staff Token</h1>
+    <p>Saldi e registro sono pubblici. Gli accrediti si calcolano secondo le soglie e i valori del regolamento.</p>
+  </header>
+
+  <div class="nav-shell">
+    <nav class="tabs" aria-label="Sezioni Gestore Staff Token">
+      <button class="tab-btn active" data-tab="registra"><i class="fa-solid fa-pen-nib"></i>Nuovo accredito</button>
+      <button class="tab-btn" data-tab="gestione"><i class="fa-solid fa-user-gear"></i>Gestione saldi</button>
+      <button class="tab-btn" data-tab="registro"><i class="fa-solid fa-book-open"></i>Registro pubblico</button>
+    </nav>
+  </div>
+
+  <div id="staffAccess" class="access-card hidden">
+    <div class="access-icon"><i class="fa-solid fa-key"></i></div>
+    <div class="access-text">
+      <strong>Modalità Staff bloccata</strong>
+      <p>Inserisci la password una sola volta per questa sessione.</p>
+    </div>
+    <div class="access-form">
+      <input type="password" id="gatePassword" placeholder="Password Staff" autocomplete="current-password">
+      <button class="main" id="btnSblocca">Sblocca</button>
+    </div>
+    <div id="gateErr" class="msg-err" aria-live="polite"></div>
+  </div>
+
+  <div id="staffUnlocked" class="access-card access-ok hidden">
+    <div class="access-icon"><i class="fa-solid fa-unlock-keyhole"></i></div>
+    <div class="access-text">
+      <strong>Modalità Staff attiva</strong>
+      <p>Puoi registrare accrediti e correggere i saldi. La password resta soltanto in memoria.</p>
+    </div>
+    <button class="danger" id="btnBlocca"><i class="fa-solid fa-lock"></i> Blocca</button>
+  </div>
+
+  <main>
+    <section id="view-registro" class="view">
+      <div class="card">
+        <div class="card-title">
+          <div>
+            <h2><i class="fa-solid fa-coins"></i> Saldi Staffer</h2>
+            <p>Il saldo disponibile e i contatori ancora in sospeso per le attività progressive.</p>
+          </div>
+          <button class="secondary" id="btnAggiornaPubblico"><i class="fa-solid fa-rotate"></i> Aggiorna</button>
+        </div>
+        <div id="saldiPubblici" class="balance-grid"><div class="loading">Caricamento saldi…</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <div>
+            <h2><i class="fa-solid fa-clock-rotate-left"></i> Registro movimenti</h2>
+            <p>Uno Staffer per blocco, come nel registro storico. Gli Staffer e i movimenti sono ordinati dal più recente al meno recente.</p>
+          </div>
+        </div>
+        <div class="public-toolbar">
+          <input type="text" id="filtroArchivio" placeholder="Cerca staffer o attività…">
+          <select id="filtroTipo">
+            <option value="">Tutti i movimenti</option>
+            <option value="accredito">Accrediti</option>
+            <option value="correzione">Correzioni</option>
+            <option value="movimento_manuale">Movimenti manuali</option>
+            <option value="spesa_elfo">Spese / restituzioni da Elfo</option>
+            <option value="annullato">Annullati</option>
+          </select>
+        </div>
+        <div id="archivioActionMsg" aria-live="polite"></div>
+        <div id="archivioBox" class="log-list"><div class="loading">Caricamento registro…</div></div>
+      </div>
+    </section>
+
+    <section id="view-registra" class="view active">
+      <div id="contenutoRegistra" class="protected hidden">
+        <div class="history-toolbar">
+          <div class="history-copy"><b>Modifiche dell’accredito</b><br>Puoi annullare un inserimento o ripristinarlo senza toccare il registro già salvato.</div>
+          <div class="history-actions">
+            <button type="button" class="ghost" id="btnUndo" disabled><i class="fa-solid fa-arrow-rotate-left"></i> Annulla</button>
+            <button type="button" class="ghost" id="btnRedo" disabled><i class="fa-solid fa-arrow-rotate-right"></i> Ripristina</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <div>
+              <h2>1. Player Staffer</h2>
+              <p>Seleziona il Player che riceve l’accredito. Tutti i suoi PG associati spenderanno da questo stesso saldo ST.</p>
+            </div>
+          </div>
+          <label>A quale Player accrediti?</label>
+          <div class="staffer-picker" id="pickerAccredito" data-input="staffNomeInput">
+            <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu Sparks</button>
+            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon G. Greengrass</button>
+            <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher">Noah Fisher</button>
+            <button type="button" class="staffer-choice" data-value="Odette Montclaire" data-aliases="odette|odette montclaire">Odette Montclaire</button>
+          </div>
+          <input type="hidden" id="staffNomeInput" value="">
+          <div class="staffer-picker-help">I quattro pulsanti sono i quattro Player Staffer. I PG associati non compaiono qui: servono soltanto al collegamento con gli Elfi.</div>
+          <div id="staffInfo" style="margin-top:10px"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <div>
+              <h2>2. Mansioni svolte</h2>
+              <p>Attiva soltanto le voci che vuoi registrare. Il calcolo compare subito sotto ogni mansione.</p>
+            </div>
+          </div>
+          <div class="clarity-banner"><i class="fa-solid fa-lightbulb"></i><div><b>Qui inserisci quantità, non Staff Token.</b> Per esempio: una Quest con molti esiti = quantità <b>1</b> → il tool calcola automaticamente <b>6 ST</b>. I numeri verdi nel riepilogo sono il risultato finale.</div></div>
+
+          <details class="import-details">
+            <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa o aggiungi manualmente</span><span class="summary-note">facoltativo</span></summary>
+            <div class="import-panel">
+              <div class="import-panel-title"><i class="fa-solid fa-wand-magic-sparkles"></i><div><b>Importa un accredito</b><span>Incolla una singola richiesta di accredito già compilata: lo storico viene ricostruito movimento per movimento, mantenendo la sua data reale.</span></div></div>
+              <div class="import-date-row">
+                <div>
+                  <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
+                  <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
+                  <div class="hint">Scrivila a mano, per esempio <b>19/02/2026 17:54</b>. <b>Se questo campo è compilato, questa è sempre la data del movimento nel Registro.</b> La data odierna viene conservata separatamente solo come momento tecnico di inserimento. Se nel testo importato compare una data-link come <b>[12/1/2026, 00:33](link)</b>, il campo viene compilato automaticamente.</div>
+                </div>
+                <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
+              </div>
+              <label for="testoIncolla">Testo da importare</label>
+              <textarea id="testoIncolla" rows="5" placeholder="Incolla qui nome, mansioni e riferimenti…"></textarea>
+              <div class="import-minihelp"><i class="fa-solid fa-circle-info"></i><span>I resti già salvati non vengono contati due volte. Un valore finale come <b>(6)</b> viene letto come valore della voce, non come 6 lavori.</span></div>
+              <div class="actions" style="margin-top:10px">
+                <button type="button" class="secondary" id="btnAnalizzaTesto"><i class="fa-solid fa-wand-magic-sparkles"></i> Analizza e compila</button>
+                <button type="button" class="ghost" id="btnPulisciImport"><i class="fa-solid fa-eraser"></i> Pulisci</button>
+              </div>
+              <div id="analisiMsg" aria-live="polite"></div>
+
+              <div class="manual-total-box">
+                <div class="manual-total-row">
+                  <div>
+                    <label for="overrideTotaleAccredito">Totale accredito manuale <span class="hint" style="display:inline">(facoltativo)</span></label>
+                    <div class="hint">Se dopo l’importazione il totale corretto è diverso da quello ricostruito dal tool, puoi indicarlo qui. Lascia vuoto per usare il calcolo automatico.</div>
+                  </div>
+                  <input type="number" id="overrideTotaleAccredito" min="0" step="1" placeholder="Es. 7">
+                  <button type="button" class="ghost" id="btnResetTotale"><i class="fa-solid fa-rotate-left"></i> Automatico</button>
+                </div>
+                <div id="manualTotalStatus" class="manual-total-status">Totale automatico attivo.</div>
+              </div>
+
+              <div class="manual-zone">
+                <div class="manual-zone-head">
+                  <div><b>Aggiungi una voce manuale</b><div class="hint">Puoi continuare l’accredito inserendo liberamente nome della mansione, ST e link.</div></div>
+                  <button type="button" class="secondary" id="btnAggiungiManuale"><i class="fa-solid fa-plus"></i> Aggiungi voce</button>
+                </div>
+                <div id="manualEntriesContainer"><div class="manual-empty">Nessuna voce manuale aggiunta.</div></div>
+              </div>
+            </div>
+          </details>
+
+          <div class="review-panel">
+            <div class="card-title">
+              <div>
+                <h2>3. Controlla e registra</h2>
+                <p>Il riepilogo si aggiorna mentre selezioni le mansioni qui sotto. Il pulsante si attiva soltanto quando c’è davvero qualcosa da salvare.</p>
+              </div>
+            </div>
+            <div id="riepilogoAttivita"><div class="empty">Seleziona una mansione qui sotto: comparirà subito in questo riepilogo.</div></div>
+            <div class="total-sticky is-empty" id="totalSummary">
+              <div class="total-cell"><div class="k">Saldo attuale</div><div class="v" id="stAttuali">0 ST</div></div>
+              <div class="total-cell"><div class="k">Questo accredito</div><div class="v green" id="stGuadagnati">+0 ST</div></div>
+              <div class="total-cell"><div class="k">Saldo dopo</div><div class="v" id="stFinale">0 ST</div></div>
+              <button class="main" id="btnRegistra" disabled><i class="fa-solid fa-plus"></i> Aggiungi una mansione</button>
+              <div class="register-help" id="registerHelp">Niente verrà registrato finché non selezioni almeno una mansione.</div>
+            </div>
+            <div id="registraMsg" aria-live="polite"></div>
+            <div id="successBox" class="success-box hidden">
+              <h4><i class="fa-solid fa-circle-check"></i> Accredito registrato</h4>
+              <p id="successText"></p>
+            </div>
+          </div>
+
+          <div id="obiettiviContainer"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-gestione" class="view">
+      <div id="contenutoGestione" class="protected hidden">
+        <div class="card pg-staff-admin">
+          <div class="card-title">
+            <div>
+              <h2><i class="fa-solid fa-users-gear"></i> Staff Token e PG associati</h2>
+              <p>Gli Staff Token appartengono ai quattro Player Staffer. I loro PG servono soltanto al collegamento live con gli Elfi.</p>
+            </div>
+          </div>
+
+          <div class="clarity-banner"><i class="fa-solid fa-bolt"></i><div><b>Quattro Player, quattro saldi.</b> I pulsanti principali sono sempre e soltanto <b>Lulu Sparks, Gideon G. Greengrass, Noah Fisher e Odette Montclaire</b>. Ogni pulsante rappresenta il saldo del relativo <b>Player</b>; sotto puoi collegare tutti i suoi PG, che spenderanno dallo stesso saldo ST.</div></div>
+
+          <div id="stafferExtraBox" class="hidden" style="margin:12px 0 14px">
+            <div id="stafferErratiLista" class="staffer-admin-list"></div>
+            <div id="stafferErratiMsg" aria-live="polite"></div>
+          </div>
+
+          <div class="staffer-admin-title"><i class="fa-solid fa-wand-magic-sparkles"></i> PG collegati agli Staff Token</div>
+          <div class="clarity-banner"><i class="fa-solid fa-wallet"></i><div><b>I PG non sono Staffer separati.</b> Sono soltanto associati a uno dei quattro Player. Per esempio, tutti i PG collegati a <b>Lulu Sparks</b> usano il saldo di quel Player. Aggiungi qui anche il PG principale che dà il nome al pulsante, scegliendo il suo Elfo corretto. Questi nomi servono <b>solo</b> al collegamento con le Camere Blindate.</div></div>
+
+          <div class="pg-step-label"><span class="pg-step-number">1</span> Scegli il Player Staffer</div>
+          <div class="staffer-picker" id="pickerPgStaff">
+            <button type="button" class="staffer-choice" data-value="Lulu Sparks">Lulu Sparks</button>
+            <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass">Gideon G. Greengrass</button>
+            <button type="button" class="staffer-choice" data-value="Noah Fisher">Noah Fisher</button>
+            <button type="button" class="staffer-choice" data-value="Odette Montclaire">Odette Montclaire</button>
+          </div>
+          <div id="pgStaffPoolInfo" class="pg-pool-info empty">Seleziona uno dei quattro Player: il PG verrà collegato al suo saldo ST condiviso.</div>
+
+          <div class="pg-step-label"><span class="pg-step-number">2</span> Indica quale Elfo usa il PG</div>
+          <div class="movement-sign-picker" id="tipoPgStaffPicker">
+            <button type="button" class="movement-sign add" data-kind="studenti" aria-pressed="false"><i class="fa-solid fa-graduation-cap"></i> Studente</button>
+            <button type="button" class="movement-sign" data-kind="adulti" aria-pressed="false"><i class="fa-solid fa-briefcase"></i> Adulto</button>
+          </div>
+          <div class="pg-kind-required"><i class="fa-solid fa-circle-exclamation"></i> Scelta obbligatoria: non viene preselezionato nessun tipo, così non puoi inserire per errore un Adulto tra gli Studenti.</div>
+
+          <div class="pg-step-label"><span class="pg-step-number">3</span> Inserisci uno dei PG di quel Player</div>
+          <div class="pg-add-row">
+            <div>
+              <label>Nome del PG</label>
+              <input type="text" id="pgStaffNome" placeholder="Nome e Cognome esatti del PG" autocomplete="off">
+            </div>
+            <button type="button" class="main" id="btnAggiungiPgStaff"><i class="fa-solid fa-link"></i> Collega PG</button>
+          </div>
+          <div id="pgStaffMsg" aria-live="polite"></div>
+          <div id="pgStaffLista" class="pg-staff-list"><div class="loading">Caricamento PG dello Staff…</div></div>
+        </div>
+
+
+        <div class="card admin-section">
+            <div class="card-title">
+              <div>
+                <h2><i class="fa-solid fa-arrow-right-arrow-left"></i> Aumenta o diminuisci saldo</h2>
+                <p>Parti sempre dal totale reale degli ST del Player e registra soltanto la variazione, con il relativo riferimento.</p>
+              </div>
+            </div>
+            <label>Player Staffer</label>
+            <div class="staffer-picker" id="pickerCorreggi" data-input="correggiNome">
+              <button type="button" class="staffer-choice" data-value="Lulu Sparks" data-aliases="lulu|lulu sparks">Lulu Sparks</button>
+              <button type="button" class="staffer-choice" data-value="Gideon G. Greengrass" data-aliases="gideon|gideon g. greengrass|gideon g greengrass">Gideon G. Greengrass</button>
+              <button type="button" class="staffer-choice" data-value="Noah Fisher" data-aliases="noah|noah fisher">Noah Fisher</button>
+              <button type="button" class="staffer-choice" data-value="Odette Montclaire" data-aliases="odette|odette montclaire">Odette Montclaire</button>
+            </div>
+            <input type="hidden" id="correggiNome" value="">
+
+            <div class="balance-current" id="saldoMovimentoBox">
+              <div class="balance-current-label">Saldo attuale</div>
+              <div class="balance-current-value" id="saldoMovimentoAttuale">— ST</div>
+              <div class="balance-current-sub" id="saldoMovimentoSub">Seleziona uno Staffer.</div>
+            </div>
+
+            <label>Operazione</label>
+            <div class="movement-sign-picker" id="movimentoSegnoPicker">
+              <button type="button" class="movement-sign active add" data-sign="1"><i class="fa-solid fa-plus"></i> Aggiungi</button>
+              <button type="button" class="movement-sign remove" data-sign="-1"><i class="fa-solid fa-minus"></i> Togli</button>
+            </div>
+            <input type="hidden" id="movimentoSegno" value="1">
+
+            <div class="grid-2 compact-grid">
+              <div>
+                <label>Quanti ST</label>
+                <input type="number" id="correggiValore" min="1" step="1" placeholder="Es. 7">
+              </div>
+              <div>
+                <label>Data del movimento / accredito</label>
+                <div class="field-with-action">
+                  <input type="text" id="movimentoData" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
+                  <button type="button" class="ghost" id="btnMovimentoDataAdesso" title="Usa data e ora attuali"><i class="fa-regular fa-clock"></i> Adesso</button>
+                </div>
+              </div>
+            </div>
+            <label>Link / riferimento</label>
+            <input type="text" id="movimentoLink" placeholder="?t=… oppure URL completo">
+            <label>Descrizione <span class="optional">(facoltativa)</span></label>
+            <textarea id="correggiMotivo" rows="2" placeholder="Es. Staff Token usati in Camera Blindata"></textarea>
+
+            <div class="movement-preview" id="movimentoPreview">
+              <span>Seleziona uno Staffer e indica la variazione.</span>
+            </div>
+            <button class="main" style="margin-top:11px" id="btnCorreggi" disabled><i class="fa-solid fa-check"></i> Registra movimento</button>
+            <div id="correggiMsg" aria-live="polite"></div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+if(typeof firebase === 'undefined'){
+  document.getElementById('loadErr').style.display='block';
+  throw new Error('Firebase SDK non caricato.');
+}
+
+const firebaseConfig={
+  apiKey:"AIzaSyCvd56bSEL02s2OY2PSk7uyFX-CYRB4Vz0",
+  authDomain:"conteggi-eee1b.firebaseapp.com",
+  projectId:"conteggi-eee1b",
+  storageBucket:"conteggi-eee1b.firebasestorage.app",
+  messagingSenderId:"481320219586",
+  appId:"1:481320219586:web:87e974d618a302adfadc5b",
+  measurementId:"G-EFHVL4H1XW"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+const auth=firebase.auth();
+
+let authPronta=false;
+let passwordCorrente=null;
+let staffIdCorrente=null;
+let staffAttuale=null;
+let archivioMovimenti=[];
+let staffPubblici=[];
+let ultimoBBCode='';
+
+const OBIETTIVI=[
+  {gruppo:'Progressivi',id:'liste_spesa',nome:'Accredito di Liste della Spesa',tipo:'soglia',restoKey:'listeSpesa',divisore:3,moltiplicatore:2,icona:'fa-basket-shopping',regola:'ogni 3 = 2 ST',hint:'Inserisci soltanto le nuove Liste accreditate adesso. Il resto precedente viene aggiunto automaticamente.'},
+  {gruppo:'Progressivi',id:'camere_blindate',nome:'Accredito di Camere Blindate',tipo:'soglia',restoKey:'camereBlindate',legacyRestoKey:'pool10',divisore:10,moltiplicatore:1,icona:'fa-vault',regola:'ogni 10 = 1 ST',hint:'Il tool conserva le Camere avanzate e le somma al prossimo accredito.'},
+  {gruppo:'Progressivi',id:'burocrazia',nome:'Burocrazia generale',tipo:'soglia',restoKey:'burocrazia',divisore:3,moltiplicatore:1,icona:'fa-file-signature',regola:'ogni 3 = 1 ST',hint:'Operazioni ordinarie: schede, smistamenti, prestavolto, congelamenti, Felix Token, manutenzione e modifiche puntuali.'},
+
+  {gruppo:'Per attività',id:'richiesta_narratore',nome:'Richiesta al Narratore generica',tipo:'fisso',ftUnitario:1,icona:'fa-scroll',regola:'1 ST ciascuna',hint:'Il valore si applica a ogni post/lavoro conteggiato.'},
+  {gruppo:'Per attività',id:'spunto_trama',nome:'Richiesta al Narratore: spunto di trama / mietitura',tipo:'fisso',ftUnitario:2,icona:'fa-seedling',regola:'2 ST ciascuna',hint:'Più post della stessa richiesta valgono ciascuno 2 ST.'},
+  {gruppo:'Per attività',id:'quidditch',nome:'Post di esiti partita di Quidditch',tipo:'fisso',ftUnitario:2,icona:'fa-broom',regola:'2 ST ciascuno',hint:'Inserisci il numero di post di esito svolti.'},
+  {gruppo:'Per attività',id:'quest_narrativa',nome:'Quest principalmente narrativa / ambient / evento',tipo:'fisso',ftUnitario:3,ripartibile:true,icona:'fa-map',regola:'3 ST complessivi',hint:'Di base 3 ST per post/lavoro. Se il lavoro è condiviso, puoi indicare la sola quota spettante allo Staffer selezionato.'},
+  {gruppo:'Per attività',id:'quest_azioni',nome:'Quest con esiti di molte azioni',tipo:'fisso',ftUnitario:6,icona:'fa-dice-d20',regola:'6 ST ciascuno',hint:'Il valore si applica a ogni post/lavoro della categoria.'},
+  {gruppo:'Per attività',id:'richiesta_staff',nome:'Richiesta allo Staff',tipo:'fisso',ftUnitario:1,icona:'fa-envelope-open-text',regola:'1 ST ciascuna',hint:'Una unità per ciascuna richiesta/lavoro accreditato.'},
+  {gruppo:'Per attività',id:'annuncio',nome:'Annuncio dello Staff',tipo:'fisso',ftUnitario:2,icona:'fa-bullhorn',regola:'2 ST ciascuno',hint:'Una unità per ciascun annuncio accreditato.'},
+
+  {gruppo:'Appelli',id:'appello_non_estivo',nome:'Appello non estivo',tipo:'evento',divisore:5,moltiplicatore:1,icona:'fa-list-check',regola:'ogni 5 PG = 1 ST',hint:'Si calcola sui PG attivi dell’Appello. L’eventuale resto non passa a un Appello successivo.'},
+  {gruppo:'Appelli',id:'appello_estivo',nome:'Appello estivo',tipo:'evento',divisore:3,moltiplicatore:2,icona:'fa-sun',regola:'ogni 3 PG = 2 ST',hint:'Se il lavoro è condiviso, indica tra quanti Staffer viene diviso equamente l’accredito.'},
+
+  {gruppo:'Caso per caso',id:'regolamento',nome:'Revisione / aggiunte strutturali al Regolamento',tipo:'libero',icona:'fa-gavel',regola:'valore variabile',hint:'Per revisioni strutturali quantificate caso per caso, distinte dalle piccole operazioni di burocrazia.'},
+  {gruppo:'Caso per caso',id:'contributo',nome:'Contributo inquantificabile / progetto strutturale',tipo:'libero',icona:'fa-wand-sparkles',regola:'valore variabile',hint:'Sistemi di gioco, trama, revisione, grafica o tecnica: inserisci gli ST concordati e il riferimento all’annuncio, se disponibile.'}
+];
+
+const PATTERN_OBIETTIVI={
+  liste_spesa:/liste della spesa/i,
+  camere_blindate:/camere blindate/i,
+  burocrazia:/burocrazia|richieste? felix token|accredit[oi] felix token/i,
+  richiesta_staff:/richiesta allo staff/i,
+  richiesta_narratore:/richiesta\s+(?:al\s+)?narratore(?:\s+generica)?/i,
+  spunto_trama:/spunto di trama|mietitura/i,
+  quidditch:/quidditch/i,
+  quest_narrativa:/quest \(principalmente narrativa\)|quest principalmente narrativa|ambient|evento/i,
+  quest_azioni:/quest.*esiti di molte azioni/i,
+  annuncio:/annuncio dello staff/i,
+  appello_non_estivo:/appello non estivo/i,
+  appello_estivo:/appello estivo/i
+};
+
+function normalizzaStaffId(str){
+  const n=(str||'').trim().toLowerCase().replace(/\s+/g,' ').replace(/[.#$/\[\]]/g,'');
+  // Compatibilità con i documenti storici: il Player è lo stesso anche se ora
+  // mostriamo il nome completo del PG principale sui quattro pulsanti.
+  if(n==='lulu')return 'lulu sparks';
+  if(n==='gideon'||n==='gideon g greengrass')return 'gideon g greengrass';
+  if(n==='noah'||n==='noah fisher')return 'noah';
+  if(n==='odette'||n==='odette montclaire')return 'odette';
+  return n;
+}
+function escapeHtml(str){
+  return String(str??'').replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+}
+function nomeDaDoc(id,data){return(data&&data.nomeVisualizzato)||id}
+function numeroIntero(v,defaultValue=0){const n=parseInt(v,10);return Number.isFinite(n)?n:defaultValue}
+function getResto(stato,o){
+  const resti=(stato&&stato.resti)||{};
+  if(resti[o.restoKey]!==undefined&&resti[o.restoKey]!==null)return numeroIntero(resti[o.restoKey]);
+  if(o.legacyRestoKey&&resti[o.legacyRestoKey]!==undefined&&resti[o.legacyRestoKey]!==null)return numeroIntero(resti[o.legacyRestoKey]);
+  return 0;
+}
+function formatDelta(n){return`${n>=0?'+':''}${n} ST`}
+function dataIt(ts){return ts&&ts.toDate?ts.toDate().toLocaleString('it-IT',{dateStyle:'short',timeStyle:'short'}):'—'}
+function linkifySafe(text){
+  const safe=escapeHtml(text||'');
+  return safe.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-link"></i></a>');
+}
+function timestampMs(ts){
+  if(!ts)return 0;
+  if(typeof ts.toMillis==='function')return ts.toMillis();
+  if(typeof ts.toDate==='function')return ts.toDate().getTime();
+  if(typeof ts.seconds==='number')return ts.seconds*1000;
+  const d=new Date(ts);return Number.isNaN(d.getTime())?0:d.getTime();
+}
+function dataManualeValue(ts){
+  const ms=timestampMs(ts); if(!ms)return '';
+  const d=new Date(ms); const pad=n=>String(n).padStart(2,'0');
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function timestampDaInputData(value){
+  const raw=String(value||'').trim();
+  if(!raw)return null;
+  let giorno,mese,anno,ora=0,minuto=0;
+  let m=raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})(?:[ ,T]+(\d{1,2})(?:[:.](\d{1,2}))?)?$/);
+  if(m){
+    giorno=Number(m[1]); mese=Number(m[2]); anno=Number(m[3]); ora=Number(m[4]||0); minuto=Number(m[5]||0);
+  }else{
+    m=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T]+(\d{1,2})(?::(\d{1,2}))?)?$/);
+    if(m){anno=Number(m[1]);mese=Number(m[2]);giorno=Number(m[3]);ora=Number(m[4]||0);minuto=Number(m[5]||0)}
+    else throw new Error('Data non valida. Usa il formato GG/MM/AAAA HH:MM, per esempio 19/02/2026 17:54.');
+  }
+  if(mese<1||mese>12||giorno<1||giorno>31||ora<0||ora>23||minuto<0||minuto>59)throw new Error('Data o ora non valide.');
+  const d=new Date(anno,mese-1,giorno,ora,minuto,0,0);
+  if(d.getFullYear()!==anno||d.getMonth()!==mese-1||d.getDate()!==giorno)throw new Error('La data indicata non esiste.');
+  return firebase.firestore.Timestamp.fromDate(d);
+}
+
+function dataEffettivaMovimento(m){
+  if(m&&m.dataImpostataManualmente&&m.dataManualeTesto){
+    try{return timestampDaInputData(m.dataManualeTesto)}catch(e){}
+  }
+  return m&&m.data?m.data:null;
+}
+
+// Riconosce la data originale del post/accredito quando è già presente nel testo
+// importato, per esempio: [12/1/2026, 00:33](https://...)
+// Supporta anche BBCode [URL=...]12/1/2026, 00:33[/URL] e la classica riga
+// "Modificato da ... - 12/1/2026, 00:33" dei vecchi registri ForumFree.
+function estraiDataStoricaDaTesto(testo){
+  const src=String(testo||'');
+  const patterns=[
+    /\[(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2})\]\(https?:\/\/[^)]+\)/i,
+    /\[URL=[^\]]+\](\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2})\[\/URL\]/i,
+    /Modificato\s+da[^\n<]*?[-–—]\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2})/i,
+    /(?:^|\n|<br\s*\/?\s*>)[^\n<]*?\b(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,\s*\d{1,2}[:.]\d{2})\b/i
+  ];
+  for(const re of patterns){
+    const m=src.match(re);
+    if(!m)continue;
+    const raw=m[1].replace(/\s*,\s*/, ' ').trim();
+    try{
+      const ts=timestampDaInputData(raw);
+      return {timestamp:ts, valore:dataManualeValue(ts), originale:m[1]};
+    }catch(e){}
+  }
+  return null;
+}
+function rigaSoloDataStorica(riga){
+  const s=String(riga||'').trim();
+  return /^\[\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2}\]\(https?:\/\/[^)]+\)\s*$/i.test(s)
+    || /^\[URL=[^\]]+\]\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2}\[\/URL\]\s*$/i.test(s)
+    || /^Modificato\s+da[^\n<]*?[-–—]\s*\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{4}\s*,?\s*\d{1,2}[:.]\d{2}\s*$/i.test(s);
+}
+function normalizzaRiferimento(ref){
+  ref=String(ref||'').trim().replace(/^\[URL=/i,'').replace(/\]x?\[\/URL\]$/i,'');
+  ref=ref.replace(/[),.;]+$/,'');
+  if(/^\?t=\d+/i.test(ref))return 'https://felixfelicisharrypottergdr.forumfree.it/'+ref;
+  if(/^https?:\/\//i.test(ref))return ref;
+  return '';
+}
+function riferimentiDaObiettivo(o){
+  const sorgenti=[o?.riferimenti||'',o?.dettaglio||''].join('\n');
+  const trovati=[];
+  const regex=/(https?:\/\/[^\s\]<>]+|\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?)/gi;
+  let m;
+  while((m=regex.exec(sorgenti))){
+    const url=normalizzaRiferimento(m[1]);
+    if(url&&!trovati.includes(url))trovati.push(url);
+  }
+  return trovati;
+}
+function iconeRiferimenti(o){
+  const refs=riferimentiDaObiettivo(o);
+  if(!refs.length)return '';
+  return `<span class="ref-icons">${refs.map((url,i)=>`<a class="ref-icon" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" title="Apri riferimento ${i+1}" aria-label="Apri riferimento ${i+1}"><i class="fa-solid fa-link"></i></a>`).join('')}</span>`;
+}
+function testoObiettivoRegistro(o){
+  if(o?.nome&&o?.formula){
+    return `${o.nome}: ${o.formula}${o.descrizione?' — '+o.descrizione:''}`;
+  }
+  let t=String(o?.dettaglio||o?.nome||'Movimento');
+  t=t.split(/\s+Riferimento\s*:/i)[0];
+  t=t.replace(/https?:\/\/[^\s\]<>]+/g,'').replace(/\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?/gi,'');
+  return t.replace(/\s{2,}/g,' ').trim();
+}
+
+function syncProtected(){
+  const protette=document.querySelectorAll('.protected');
+  protette.forEach(el=>el.classList.toggle('hidden',!passwordCorrente));
+  const tabAttivo=document.querySelector('.tab-btn.active')?.dataset.tab;
+  const serveAccesso=tabAttivo==='registra'||tabAttivo==='gestione';
+  document.getElementById('staffAccess').classList.toggle('hidden',!serveAccesso||!!passwordCorrente);
+  document.getElementById('staffUnlocked').classList.toggle('hidden',!serveAccesso||!passwordCorrente);
+  if(document.getElementById('archivioBox')?.dataset.loaded)renderArchivio();
+}
+
+function attivaTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+tab));
+  syncProtected();
+  if(tab==='registro')caricaPubblico(false);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>attivaTab(btn.dataset.tab)));
+
+try{auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});}catch(e){}
+auth.onAuthStateChanged(user=>{
+  if(!user){auth.signInAnonymously().catch(()=>{});return}
+  authPronta=true;
+  // Ogni nuovo caricamento del Gestore riparte bloccato: la Password va reinserita.
+  db.collection('staff_edit_sessions').doc(user.uid).delete().catch(()=>{});
+});
+
+async function aspettaAuth(){
+  if(authPronta)return;
+  await new Promise((resolve,reject)=>{
+    let tentativi=0;
+    const timer=setInterval(()=>{
+      tentativi++;
+      if(authPronta){clearInterval(timer);resolve()}
+      if(tentativi>80){clearInterval(timer);reject(new Error('Autenticazione non disponibile.'))}
+    },100);
+  });
+}
+
+async function bonificaPasswordPubblicheLegacy(){
+  // Le vecchie versioni del Gestore inserivano _pw nei documenti pubblici.
+  // Con la v43 non serve più: lo rimuoviamo in batch appena la sessione Staff è valida.
+  const deleteField=firebase.firestore.FieldValue.delete();
+  const collections=['staff_token','staff_token_log'];
+  let puliti=0;
+  for(const nomeColl of collections){
+    const snap=await db.collection(nomeColl).get();
+    let batch=db.batch(),ops=0;
+    for(const d of snap.docs){
+      const data=d.data()||{};
+      if(!Object.prototype.hasOwnProperty.call(data,'_pw'))continue;
+      batch.update(d.ref,{_pw:deleteField});ops++;puliti++;
+      if(ops>=400){await batch.commit();batch=db.batch();ops=0;}
+    }
+    if(ops>0)await batch.commit();
+  }
+  return puliti;
+}
+
+async function creaSessioneStaff(pw){
+  await aspettaAuth();
+  const user=auth.currentUser;if(!user)throw new Error('Autenticazione non disponibile.');
+  const ref=db.collection('staff_edit_sessions').doc(user.uid);
+  await ref.set({uid:user.uid,proof:pw,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  await ref.update({proof:firebase.firestore.FieldValue.delete()});
+}
+
+async function verificaPassword(){
+  const pw=document.getElementById('gatePassword').value;
+  const err=document.getElementById('gateErr');
+  err.textContent='';
+  if(!pw){err.textContent='Inserisci la password.';return}
+  try{
+    await creaSessioneStaff(pw);
+    // Non conserviamo la Password in memoria: da qui in poi basta la sessione Firestore.
+    passwordCorrente=true;
+    document.getElementById('gatePassword').value='';
+    syncProtected();
+    const puliti=await bonificaPasswordPubblicheLegacy();
+    if(puliti>0){err.textContent='Accesso riuscito · bonificati '+puliti+' record legacy.';}
+    caricaListaStaffer();
+  }catch(e){
+    passwordCorrente=null;
+    try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(_e){}
+    err.textContent='Password errata o sessione Staff non disponibile.';
+  }
+}
+async function bloccaStaff(){
+  passwordCorrente=null;
+  staffIdCorrente=null;
+  staffAttuale=null;
+  try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(e){console.warn('Chiusura sessione Staff:',e)}
+  syncProtected();
+}
+document.getElementById('btnSblocca').addEventListener('click',verificaPassword);
+document.getElementById('gatePassword').addEventListener('keydown',e=>{if(e.key==='Enter')verificaPassword()});
+document.getElementById('btnBlocca').addEventListener('click',bloccaStaff);
+
+const cont=document.getElementById('obiettiviContainer');
+const manualCont=document.getElementById('manualEntriesContainer');
+
+function htmlCampi(o){
+  if(o.tipo==='soglia'){
+    return`<div class="grid-2">
+      <div><label>Nuove unità accreditate</label><input type="number" class="in-quantita" min="0" step="1" value="0"><span class="hint">${escapeHtml(o.hint)}</span></div>
+      <div><label>Riferimento / link</label><textarea class="in-riferimenti" rows="2" placeholder="Link al post di accredito o breve riferimento"></textarea></div>
+    </div>
+    <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">Seleziona uno Staffer e inserisci la quantità.</span></div>`;
+  }
+  if(o.tipo==='fisso'){
+    if(o.ripartibile){
+      return`<div class="grid-3">
+        <div><label>Quantità di post / lavori</label><input type="number" class="in-quantita" min="0" step="1" value="0"><span class="hint">Inserisci quante attività hai svolto, non il loro valore in ST.</span></div>
+        <div><label>Quota a questo Staffer</label><input type="number" class="in-quota" min="1" step="1" placeholder="automatica"><span class="hint">Lascia vuoto per attribuire l'intero valore. Compila solo se il lavoro è condiviso.</span></div>
+        <div><label>Riferimenti</label><textarea class="in-riferimenti" rows="2" placeholder="Uno o più link / riferimenti"></textarea></div>
+      </div><span class="hint">${escapeHtml(o.hint)}</span>
+      <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">0 × ${o.ftUnitario} ST = 0 ST complessivi</span></div>`;
+    }
+    return`<div class="grid-2">
+      <div><label>Quantità di post / lavori</label><input type="number" class="in-quantita" min="0" step="1" value="0"><span class="hint">Inserisci quante attività hai svolto, non gli ST. ${escapeHtml(o.hint)}</span></div>
+      <div><label>Riferimenti</label><textarea class="in-riferimenti" rows="2" placeholder="Uno o più link / riferimenti"></textarea><span class="hint">La quantità non dipende dal numero di link inseriti.</span></div>
+    </div>
+    <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">0 × ${o.ftUnitario} ST = 0 ST</span></div>`;
+  }
+  if(o.tipo==='evento'){
+    return`<div class="grid-3">
+      <div><label>Schede PG attivi</label><input type="number" class="in-pg" min="0" step="1" value="0"></div>
+      <div><label>Dividi equamente tra</label><input type="number" class="in-dividi" min="1" step="1" value="1"><span class="hint">1 = accredito intero allo Staffer selezionato.</span></div>
+      <div><label>Riferimento</label><input type="text" class="in-riferimenti" placeholder="Link o nota"></div>
+    </div><span class="hint">${escapeHtml(o.hint)}</span>
+    <div class="formula-box zero"><i class="fa-solid fa-calculator"></i><span class="formula-text">Inserisci il numero di PG attivi.</span></div>`;
+  }
+  return`<div class="grid-2">
+    <div><label>Descrizione del contributo</label><textarea class="in-descrizione" rows="2" placeholder="Cosa è stato realizzato e come è stato quantificato"></textarea></div>
+    <div><label>ST assegnati</label><input type="number" class="in-st-libero" min="0" step="1" value="0"><label>Riferimento / annuncio</label><input type="text" class="in-riferimenti" placeholder="Link o riferimento"></div>
+  </div><span class="hint">${escapeHtml(o.hint)}</span>
+  <div class="formula-box zero"><i class="fa-solid fa-scale-balanced"></i><span class="formula-text">Valore da indicare caso per caso.</span></div>`;
+}
+
+function creaRigaObiettivo(o){
+  const div=document.createElement('div');
+  div.className='activity';
+  div.dataset.id=o.id;
+  div.innerHTML=`<div class="activity-head">
+    <input type="checkbox" class="activity-check" aria-label="Seleziona ${escapeHtml(o.nome)}">
+    <div class="activity-icon"><i class="fa-solid ${o.icona}"></i></div>
+    <div class="activity-title"><strong>${escapeHtml(o.nome)}</strong><span>${escapeHtml(o.hint)}</span></div>
+    <div class="rule-badge">${escapeHtml(o.regola)}</div>
+  </div><div class="activity-body">${htmlCampi(o)}</div>`;
+  const chk=div.querySelector('.activity-check');
+  div.querySelector('.activity-head').addEventListener('click',e=>{
+    if(e.target===chk)return;
+    chk.checked=!chk.checked;
+    chk.dispatchEvent(new Event('change'));
+  });
+  chk.addEventListener('change',()=>{
+    div.classList.toggle('selected',chk.checked);
+    ricalcola();
+  });
+  div.addEventListener('input',ricalcola);
+  return div;
+}
+
+let gruppoCorrente='';
+OBIETTIVI.forEach(o=>{
+  if(o.gruppo!==gruppoCorrente){
+    gruppoCorrente=o.gruppo;
+    const lab=document.createElement('div');
+    lab.className='section-label';
+    lab.innerHTML=`<span>${escapeHtml(gruppoCorrente)}</span>`;
+    cont.appendChild(lab);
+  }
+  cont.appendChild(creaRigaObiettivo(o));
+});
+
+
+function creaVoceManuale(dati={}){
+  if(manualCont.querySelector('.manual-empty'))manualCont.innerHTML='';
+  const row=document.createElement('div');
+  row.className='manual-entry';
+  if(dati.importAuto){row.dataset.importAuto='1';row.classList.add('import-auto')}
+  row.innerHTML=`
+    <div><label>Nome mansione</label><input type="text" class="manual-name" placeholder="Es. Revisione grafica" value="${escapeHtml(dati.nome||'')}"></div>
+    <div><label>ST</label><input type="number" class="manual-st" min="0" step="1" value="${numeroIntero(dati.st,0)}"></div>
+    <div class="manual-link"><label>Link / riferimento</label><input type="text" class="manual-ref" placeholder="?t=… oppure URL" value="${escapeHtml(dati.riferimenti||'')}"></div>
+    <button type="button" class="ghost manual-remove" title="Rimuovi voce" aria-label="Rimuovi voce"><i class="fa-solid fa-trash-can"></i></button>`;
+  row.querySelector('.manual-remove').addEventListener('click',()=>{
+    salvaStatoPerUndo();
+    row.remove();
+    if(!manualCont.querySelector('.manual-entry'))manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+    ricalcola();
+    aggiornaSnapshotCorrenteDopoAzione();
+  });
+  manualCont.appendChild(row);
+  return row;
+}
+function svuotaVociManuali(){
+  manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+}
+function datiVociManuali(){
+  return [...manualCont.querySelectorAll('.manual-entry')].map(row=>({
+    nome:(row.querySelector('.manual-name')?.value||'').trim(),
+    st:Math.max(0,numeroIntero(row.querySelector('.manual-st')?.value)),
+    riferimenti:(row.querySelector('.manual-ref')?.value||'').trim(),
+    importAuto:row.dataset.importAuto==='1'
+  }));
+}
+document.getElementById('btnAggiungiManuale').addEventListener('click',()=>{
+  salvaStatoPerUndo();
+  const row=creaVoceManuale();
+  row.querySelector('.manual-name')?.focus();
+  ricalcola();
+  aggiornaSnapshotCorrenteDopoAzione();
+});
+manualCont.addEventListener('input',ricalcola);
+
+function raccogliRaw(){
+  const raw=[];
+  cont.querySelectorAll('.activity.selected').forEach(div=>{
+    const o=OBIETTIVI.find(x=>x.id===div.dataset.id);
+    if(!o)return;
+    const item={id:o.id,tipo:o.tipo};
+    if(o.tipo==='soglia'||o.tipo==='fisso'){
+      item.quantita=Math.max(0,numeroIntero(div.querySelector('.in-quantita')?.value));
+      if(o.tipo==='fisso'&&o.ripartibile){
+        const quotaRaw=(div.querySelector('.in-quota')?.value||'').trim();
+        item.quota=quotaRaw===''?null:Math.max(0,numeroIntero(quotaRaw));
+      }
+      item.riferimenti=(div.querySelector('.in-riferimenti')?.value||'').trim();
+    }else if(o.tipo==='evento'){
+      item.pg=Math.max(0,numeroIntero(div.querySelector('.in-pg')?.value));
+      item.dividi=Math.max(1,numeroIntero(div.querySelector('.in-dividi')?.value,1));
+      item.riferimenti=(div.querySelector('.in-riferimenti')?.value||'').trim();
+    }else{
+      item.st=Math.max(0,numeroIntero(div.querySelector('.in-st-libero')?.value));
+      item.descrizione=(div.querySelector('.in-descrizione')?.value||'').trim();
+      item.riferimenti=(div.querySelector('.in-riferimenti')?.value||'').trim();
+    }
+    raw.push(item);
+  });
+  datiVociManuali().forEach((m,i)=>{
+    if(!m.nome&&!m.st&&!m.riferimenti)return;
+    raw.push({id:`manuale_${i}`,tipo:'manuale',nomeManuale:m.nome,st:m.st,riferimenti:m.riferimenti});
+  });
+  return raw;
+}
+
+function calcolaMovimento(raw,stato){
+  const restiOriginali={...((stato&&stato.resti)||{})};
+  const nuoviResti={...restiOriginali};
+  const righe=[];
+  const errori=[];
+  let totale=0;
+
+  raw.forEach(item=>{
+    if(item.tipo==='manuale'){
+      const nome=(item.nomeManuale||'').trim();
+      if(!nome){errori.push('Voce manuale: inserisci il nome della mansione.');return}
+      if(item.st<=0){errori.push(`${nome}: indica almeno 1 ST.`);return}
+      const st=item.st;
+      const formula=`Valore inserito manualmente: ${st} ST.`;
+      totale+=st;
+      righe.push({id:item.id,nome,tipo:'manuale',st,formula,riferimenti:item.riferimenti||'',descrizione:'',restoPrecedente:null,restoNuovo:null});
+      return;
+    }
+    const o=OBIETTIVI.find(x=>x.id===item.id);
+    if(!o)return;
+    let st=0,formula='',restoPrecedente=null,restoNuovo=null;
+
+    if(o.tipo==='soglia'){
+      if(item.quantita<=0){errori.push(`${o.nome}: inserisci almeno 1 nuova unità.`);return}
+      restoPrecedente=getResto(stato,o);
+      const base=restoPrecedente+item.quantita;
+      const gruppi=Math.floor(base/o.divisore);
+      st=gruppi*o.moltiplicatore;
+      restoNuovo=base%o.divisore;
+      nuoviResti[o.restoKey]=restoNuovo;
+      if(o.legacyRestoKey)nuoviResti[o.legacyRestoKey]=restoNuovo;
+      formula=`${restoPrecedente} già in sospeso + ${item.quantita} nuove = ${base}; ${gruppi} grupp${gruppi===1?'o':'i'} × ${o.moltiplicatore} ST = ${st} ST; resta ${restoNuovo}/${o.divisore}.`;
+    }else if(o.tipo==='fisso'){
+      if(item.quantita<=0){errori.push(`${o.nome}: inserisci almeno 1 post/lavoro.`);return}
+      const totaleRegolamentare=item.quantita*o.ftUnitario;
+      if(o.ripartibile&&item.quota!==null){
+        if(item.quota<=0||item.quota>totaleRegolamentare){errori.push(`${o.nome}: la quota personale deve essere compresa tra 1 e ${totaleRegolamentare} ST.`);return}
+        st=item.quota;
+        formula=`${item.quantita} × ${o.ftUnitario} ST = ${totaleRegolamentare} ST complessivi; quota attribuita a questo Staffer = ${st} ST.`;
+      }else{
+        st=totaleRegolamentare;
+        formula=`${item.quantita} × ${o.ftUnitario} ST = ${st} ST.`;
+      }
+    }else if(o.tipo==='evento'){
+      if(item.pg<=0){errori.push(`${o.nome}: inserisci il numero di Schede PG attivi.`);return}
+      const gruppi=Math.floor(item.pg/o.divisore);
+      const pool=gruppi*o.moltiplicatore;
+      if(pool%item.dividi!==0){errori.push(`${o.nome}: ${pool} ST non si dividono in modo intero tra ${item.dividi} Staffer.`);return}
+      st=pool/item.dividi;
+      formula=`${item.pg}/${o.divisore} = ${gruppi} grupp${gruppi===1?'o':'i'} × ${o.moltiplicatore} ST = ${pool} ST${item.dividi>1?`; diviso ${item.dividi} Staffer = ${st} ST`:''}.`;
+    }else{
+      if(item.st<=0){errori.push(`${o.nome}: indica gli ST assegnati.`);return}
+      if(!item.descrizione){errori.push(`${o.nome}: descrivi il contributo.`);return}
+      st=item.st;
+      formula=`Valore concordato: ${st} ST.`;
+    }
+
+    totale+=st;
+    righe.push({id:o.id,nome:o.nome,tipo:o.tipo,st,formula,riferimenti:item.riferimenti||'',descrizione:item.descrizione||'',restoPrecedente,restoNuovo});
+  });
+
+  return{totale,righe,nuoviResti,errori};
+}
+
+function aggiornaFormulaCards(calc){
+  cont.querySelectorAll('.activity').forEach(div=>{
+    const box=div.querySelector('.formula-box');
+    if(!box)return;
+    const riga=calc.righe.find(r=>r.id===div.dataset.id);
+    const errore=calc.errori.find(e=>e.startsWith(OBIETTIVI.find(o=>o.id===div.dataset.id)?.nome+':'));
+    if(riga){
+      box.classList.remove('zero');
+      box.querySelector('.formula-text').textContent=riga.formula;
+    }else{
+      box.classList.add('zero');
+      if(errore)box.querySelector('.formula-text').textContent=errore;
+    }
+  });
+}
+
+function mostraStaffInfo(){
+  const info=document.getElementById('staffInfo');
+  if(!staffIdCorrente||!staffAttuale){info.innerHTML='<span class="hint">Seleziona uno Staffer per vedere saldo e resti.</span>';return}
+  const rListe=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='liste_spesa'));
+  const rCamere=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='camere_blindate'));
+  const rBuro=getResto(staffAttuale,OBIETTIVI.find(o=>o.id==='burocrazia'));
+  const nome=escapeHtml(primaryStaffName(staffIdCorrente,staffAttuale.nomeVisualizzato||document.getElementById('staffNomeInput').value||staffIdCorrente));
+  info.innerHTML=`<div class="staff-strip">
+    <div class="staff-metric"><div class="k">Player</div><div class="v">${nome}</div><div class="sub">Saldo condiviso da tutti i PG associati</div></div>
+    <div class="staff-metric"><div class="k">Saldo</div><div class="v big">${numeroIntero(staffAttuale.st_totali)} ST</div></div>
+    <div class="staff-metric"><div class="k">Liste</div><div class="v">${rListe}/3</div><div class="resto-progress"><span style="width:${rListe/3*100}%"></span></div></div>
+    <div class="staff-metric"><div class="k">Camere</div><div class="v">${rCamere}/10</div><div class="resto-progress"><span style="width:${rCamere/10*100}%"></span></div></div>
+    <div class="staff-metric"><div class="k">Burocrazia</div><div class="v">${rBuro}/3</div><div class="resto-progress"><span style="width:${rBuro/3*100}%"></span></div></div>
+  </div>`;
+}
+
+function leggiOverrideTotale(){
+  const el=document.getElementById('overrideTotaleAccredito');
+  if(!el)return null;
+  const v=String(el.value??'').trim();
+  if(v==='')return null;
+  const n=Number(v);
+  return Number.isFinite(n)?Math.max(0,Math.trunc(n)):null;
+}
+function applicaOverrideTotale(calc,override){
+  const base=numeroIntero(calc.totale);
+  const copia={...calc,righe:[...calc.righe],totaleCalcolato:base,overrideTotale:null};
+  if(override===null)return copia;
+  copia.overrideTotale=override;
+  copia.totale=override;
+  const delta=override-base;
+  if(delta!==0){
+    copia.righe.push({
+      id:'correzione_totale',
+      nome:'Correzione manuale del totale',
+      tipo:'correzione_totale',
+      st:delta,
+      formula:`Totale calcolato ${base} ST → totale impostato manualmente ${override} ST (${formatDelta(delta)}).`,
+      riferimenti:'',descrizione:'',restoPrecedente:null,restoNuovo:null
+    });
+  }
+  return copia;
+}
+function ricalcola(){
+  const raw=raccogliRaw();
+  const stato=staffAttuale||{st_totali:0,resti:{}};
+  const calc=applicaOverrideTotale(calcolaMovimento(raw,stato),leggiOverrideTotale());
+  aggiornaFormulaCards(calc);
+  const box=document.getElementById('riepilogoAttivita');
+  if(raw.length===0){box.innerHTML='<div class="empty">Aggiungi una mansione nel punto 2: qui comparirà il riepilogo prima del salvataggio.</div>'}
+  else{
+    const righe=calc.righe.map(r=>`<li class="preview-item"><div><div class="name">${escapeHtml(r.nome)}</div><div class="detail">${escapeHtml(r.formula)}${r.descrizione?'<br>'+escapeHtml(r.descrizione):''}${r.riferimenti?'<br>'+linkifySafe(r.riferimenti):''}</div></div><div class="score">${formatDelta(r.st)}</div></li>`).join('');
+    const errs=calc.errori.map(e=>`<div class="msg-err">• ${escapeHtml(e)}</div>`).join('');
+    box.innerHTML=`${righe?'<ul class="preview-list">'+righe+'</ul>':''}${errs}`;
+  }
+  const attuali=numeroIntero(stato.st_totali);
+  document.getElementById('stAttuali').textContent=`${attuali} ST`;
+  document.getElementById('stGuadagnati').textContent=`+${calc.totale} ST`;
+  document.getElementById('stFinale').textContent=`${attuali+calc.totale} ST`;
+  const mts=document.getElementById('manualTotalStatus');
+  if(mts){
+    if(calc.overrideTotale===null){
+      mts.className='manual-total-status';
+      mts.textContent=`Totale automatico attivo: ${calc.totaleCalcolato} ST.`;
+    }else if(calc.overrideTotale===calc.totaleCalcolato){
+      mts.className='manual-total-status';
+      mts.textContent=`Totale manuale impostato a ${calc.overrideTotale} ST: coincide con il calcolo automatico.`;
+    }else{
+      mts.className='manual-total-status override';
+      mts.innerHTML=`<b>Correzione manuale attiva:</b> ${calc.totaleCalcolato} ST calcolati → <b>${calc.overrideTotale} ST</b> registrati (${formatDelta(calc.overrideTotale-calc.totaleCalcolato)}).`;
+    }
+  }
+
+  const btnRegistra=document.getElementById('btnRegistra');
+  const registerHelp=document.getElementById('registerHelp');
+  const totalSummary=document.getElementById('totalSummary');
+  const pronto=!!staffIdCorrente&&raw.length>0&&calc.errori.length===0;
+  btnRegistra.disabled=!pronto;
+  totalSummary.classList.toggle('is-ready',pronto);
+  totalSummary.classList.toggle('is-empty',raw.length===0);
+
+  if(raw.length===0){
+    btnRegistra.innerHTML='<i class="fa-solid fa-plus"></i> Aggiungi una mansione';
+    registerHelp.textContent='Niente verrà registrato finché non selezioni almeno una mansione.';
+  }else if(!staffIdCorrente){
+    btnRegistra.innerHTML='<i class="fa-solid fa-user"></i> Seleziona uno Staffer';
+    registerHelp.textContent='Le mansioni sono pronte: seleziona prima chi deve ricevere gli Staff Token.';
+  }else if(calc.errori.length>0){
+    btnRegistra.innerHTML='<i class="fa-solid fa-triangle-exclamation"></i> Correggi i dati';
+    registerHelp.textContent='Controlla gli errori evidenziati nel riepilogo prima di registrare.';
+  }else{
+    btnRegistra.innerHTML='<i class="fa-solid fa-check"></i> Registra accredito';
+    registerHelp.textContent='Tutto pronto: controlla il riepilogo e registra solo quando i dati sono corretti.';
+  }
+  return calc;
+}
+
+const inputNome=document.getElementById('staffNomeInput');
+
+function normalizzaEtichettaStaffer(v){
+  return (v||'').toLowerCase().replace(/\./g,'').replace(/\s+/g,' ').trim();
+}
+function nomeCanonicoStaffer(raw){
+  const cercato=normalizzaEtichettaStaffer(raw);
+  if(!cercato)return '';
+  const btn=[...document.querySelectorAll('#pickerAccredito .staffer-choice')].find(b=>
+    (b.dataset.aliases||b.dataset.value||'').split('|').map(normalizzaEtichettaStaffer).includes(cercato)
+  );
+  return btn ? (btn.dataset.value||btn.textContent.trim()) : raw;
+}
+
+function sincronizzaPicker(picker){
+  if(!picker)return;
+  const input=document.getElementById(picker.dataset.input);
+  const corrente=normalizzaEtichettaStaffer(input?input.value:'');
+  picker.querySelectorAll('.staffer-choice').forEach(btn=>{
+    const alias=(btn.dataset.aliases||btn.dataset.value||'').split('|').map(normalizzaEtichettaStaffer);
+    btn.classList.toggle('active',!!corrente&&alias.includes(corrente));
+    btn.setAttribute('aria-pressed',btn.classList.contains('active')?'true':'false');
+  });
+}
+function sincronizzaTuttiPicker(){
+  document.querySelectorAll('.staffer-picker').forEach(sincronizzaPicker);
+}
+function collegaPickerStaffer(){
+  document.querySelectorAll('.staffer-picker').forEach(picker=>{
+    picker.querySelectorAll('.staffer-choice').forEach(btn=>{
+      if(btn.dataset.staffPickerBound==='1')return;btn.dataset.staffPickerBound='1';
+      btn.addEventListener('click',async()=>{
+        const input=document.getElementById(picker.dataset.input);
+        if(!input)return;
+        input.value=btn.dataset.value||btn.textContent.trim();
+        sincronizzaPicker(picker);
+        if(input.id==='staffNomeInput') await caricaStaffer();
+        if(input.id==='correggiNome') await caricaSaldoMovimentoManuale();
+      });
+    });
+  });
+}
+collegaPickerStaffer();
+
+function stafferBreve(nome){
+  const legacy=primaryStaffById(nome);
+  return legacy?legacy.breve:String(nome||'').trim();
+}
+function stafferAliases(nome){
+  const fixed=primaryStaffById(nome);
+  if(fixed&&fixed.aliases)return fixed.aliases;
+  const full=String(nome||'').trim();
+  const first=full.split(/\s+/)[0]||full;
+  return [full,first].filter(Boolean).join('|');
+}
+function aggiornaPickerStafferDinamici(){
+  // I quattro pulsanti rappresentano i quattro Player/saldi ST, mai i singoli PG.
+  const defs=LEGACY_STAFFER_PG_CONFIG.slice();
+  STAFFER_PG_CONFIG=defs.slice();
+  const specs=[
+    ['pickerAccredito','staffNomeInput'],
+    ['pickerCorreggi','correggiNome']
+  ];
+  specs.forEach(([id,inputId])=>{
+    const picker=document.getElementById(id);if(!picker)return;
+    picker.dataset.input=inputId;
+    picker.innerHTML=defs.map(st=>`<button type="button" class="staffer-choice" data-value="${escapeHtml(st.nome)}" data-aliases="${escapeHtml(st.aliases||stafferAliases(st.nome))}">${escapeHtml(st.nome)}</button>`).join('');
+  });
+  const pgPicker=document.getElementById('pickerPgStaff');
+  if(pgPicker){
+    pgPicker.innerHTML=defs.map(st=>`<button type="button" class="staffer-choice${normalizzaStaffId(st.nome)===normalizzaStaffId(pgStaffOwner)?' active':''}" data-value="${escapeHtml(st.nome)}">${escapeHtml(st.nome)}</button>`).join('');
+  }
+  collegaPickerStaffer();
+  collegaPickerPgStaff();
+  sincronizzaTuttiPicker();
+  aggiornaStatoStafferUI();
+}
+async function caricaListaStaffer(){
+  const snap=await db.collection('staff_token').get();
+  STAFFER_PG_CONFIG=LEGACY_STAFFER_PG_CONFIG.slice();
+  EXTRA_STAFF_DOCS=snap.docs.map(d=>({id:d.id,...(d.data()||{}) }))
+    .filter(x=>!isPrimaryStaffId(x.id)&&x.stafferNascosto!==true);
+  if(pgStaffOwner&&!STAFFER_PG_CONFIG.some(x=>normalizzaStaffId(x.nome)===normalizzaStaffId(pgStaffOwner)))pgStaffOwner='';
+  aggiornaPickerStafferDinamici();
+  renderStafferErrati();
+  return snap;
+}
+
+async function caricaStaffer(){
+  const canonico=nomeCanonicoStaffer(inputNome.value.trim());
+  if(canonico) inputNome.value=canonico;
+  sincronizzaPicker(document.getElementById('pickerAccredito'));
+  const raw=inputNome.value.trim();
+  const id=normalizzaStaffId(raw);
+  staffIdCorrente=id||null;
+  staffAttuale=null;
+  if(!id){mostraStaffInfo();ricalcola();return}
+  try{
+    const doc=await db.collection('staff_token').doc(id).get();
+    if(doc.exists)staffAttuale=doc.data();
+    else staffAttuale={st_totali:0,resti:{},nomeVisualizzato:raw};
+  }catch(e){
+    document.getElementById('staffInfo').innerHTML=`<div class="msg-err">Errore nel caricamento: ${escapeHtml(e.message)}</div>`;
+    return;
+  }
+  mostraStaffInfo();
+  ricalcola();
+}
+
+function resetFormAccredito(mantieniStaffer=true,mantieniManuali=false){
+  cont.querySelectorAll('.activity').forEach(div=>{
+    div.classList.remove('selected');
+    const chk=div.querySelector('.activity-check');if(chk)chk.checked=false;
+    div.querySelectorAll('input[type=number]').forEach(i=>{
+      if(i.classList.contains('in-dividi')) i.value='1';
+      else if(i.classList.contains('in-quota')) i.value='';
+      else i.value='0';
+    });
+    div.querySelectorAll('input[type=text],textarea').forEach(i=>i.value='');
+  });
+  if(!mantieniManuali){svuotaVociManuali();const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';}
+  const dataAcc=document.getElementById('dataAccredito'); if(dataAcc)dataAcc.value='';
+  document.getElementById('successBox').classList.add('hidden');
+  document.getElementById('registraMsg').textContent='';
+  if(!mantieniStaffer){inputNome.value='';staffIdCorrente=null;staffAttuale=null;sincronizzaPicker(document.getElementById('pickerAccredito'));mostraStaffInfo()}
+  ricalcola();
+}
+
+function creaDettaglioLog(r){
+  let t=`${r.nome}: ${r.formula}`;
+  if(r.descrizione)t+=` — ${r.descrizione}`;
+  return t;
+}
+
+function creaBBCode(nome,prima,dopo,calc){
+  const lines=[];
+  lines.push(`[b]${nome.toUpperCase()}[/b]`);
+  lines.push(`[b]Staff Token posseduti:[/b] ${prima} ST`);
+  lines.push(`[b]Richiesta di accredito per completamento obiettivo:[/b]`);
+  calc.righe.forEach(r=>{
+    let s=`- ${r.nome}: ${r.formula.replace(/×/g,'x')}`;
+    if(r.riferimenti)s+=` [${r.riferimenti}]`;
+    if(r.descrizione)s+=` — ${r.descrizione}`;
+    lines.push(s);
+  });
+  lines.push(`[b]Staff Token guadagnati:[/b] ${calc.totale} ST`);
+  lines.push(`[b]Staff Token totali:[/b] ${dopo} ST`);
+  const resti=[];
+  const map=[['liste_spesa','Accredito di Liste della Spesa'],['camere_blindate','Accredito di Camere Blindate'],['burocrazia','Burocrazia generale']];
+  map.forEach(([id,label])=>{
+    const o=OBIETTIVI.find(x=>x.id===id);
+    const resto=getResto({resti:calc.nuoviResti},o);
+    if(resto>0)resti.push(`- ${label}: ${resto}/${o.divisore}`);
+  });
+  if(resti.length){lines.push('');lines.push('[b]In sospeso[/b]');lines.push(...resti)}
+  return lines.join('\n');
+}
+
+
+/* ================= CRONOLOGIA FORM ACCREDITO ================= */
+let undoAccredito=[];
+let redoAccredito=[];
+let snapshotCorrente=null;
+let applicandoSnapshot=false;
+let historyDebounce=null;
+
+function catturaSnapshotAccredito(){
+  const attivita={};
+  cont.querySelectorAll('.activity').forEach(div=>{
+    const id=div.dataset.id;
+    const campi={selected:div.classList.contains('selected')};
+    div.querySelectorAll('input,textarea').forEach((el,i)=>{
+      if(el.classList.contains('activity-check'))return;
+      const key=[...el.classList].find(c=>c.startsWith('in-'))||`campo-${i}`;
+      campi[key]=el.value;
+    });
+    attivita[id]=campi;
+  });
+  return{
+    staffNome:inputNome.value,
+    testoIncolla:document.getElementById('testoIncolla').value,
+    dataAccredito:document.getElementById('dataAccredito')?.value||'',
+    analisiHtml:document.getElementById('analisiMsg').innerHTML,
+    overrideTotale:document.getElementById('overrideTotaleAccredito')?.value||'',
+    manuali:datiVociManuali(),
+    attivita
+  };
+}
+function snapshotKey(x){return JSON.stringify(x)}
+function aggiornaBottoniHistory(){
+  const u=document.getElementById('btnUndo'),r=document.getElementById('btnRedo');
+  if(u)u.disabled=undoAccredito.length===0;
+  if(r)r.disabled=redoAccredito.length===0;
+}
+function inizializzaHistory(){snapshotCorrente=catturaSnapshotAccredito();aggiornaBottoniHistory()}
+function salvaStatoPerUndo(){
+  if(applicandoSnapshot)return;
+  const current=catturaSnapshotAccredito();
+  if(snapshotCorrente===null)snapshotCorrente=current;
+  if(snapshotKey(current)!==snapshotKey(snapshotCorrente)) snapshotCorrente=current;
+  if(!undoAccredito.length||snapshotKey(undoAccredito[undoAccredito.length-1])!==snapshotKey(current))undoAccredito.push(current);
+  if(undoAccredito.length>40)undoAccredito.shift();
+  redoAccredito=[];
+  aggiornaBottoniHistory();
+}
+function aggiornaSnapshotCorrenteDopoAzione(){snapshotCorrente=catturaSnapshotAccredito();aggiornaBottoniHistory()}
+function azzeraHistoryAccredito(){
+  undoAccredito=[]; redoAccredito=[]; snapshotCorrente=catturaSnapshotAccredito(); aggiornaBottoniHistory();
+}
+async function applicaSnapshotAccredito(snap){
+  if(!snap)return;
+  applicandoSnapshot=true;
+  inputNome.value=snap.staffNome||'';
+  sincronizzaPicker(document.getElementById('pickerAccredito'));
+  await caricaStaffer();
+  cont.querySelectorAll('.activity').forEach(div=>{
+    const data=snap.attivita?.[div.dataset.id]||{};
+    const chk=div.querySelector('.activity-check');
+    chk.checked=!!data.selected; div.classList.toggle('selected',!!data.selected);
+    div.querySelectorAll('input,textarea').forEach((el,i)=>{
+      if(el.classList.contains('activity-check'))return;
+      const key=[...el.classList].find(c=>c.startsWith('in-'))||`campo-${i}`;
+      if(data[key]!==undefined)el.value=data[key];
+    });
+  });
+  document.getElementById('testoIncolla').value=snap.testoIncolla||'';
+  const dataEl=document.getElementById('dataAccredito'); if(dataEl)dataEl.value=snap.dataAccredito||'';
+  document.getElementById('analisiMsg').innerHTML=snap.analisiHtml||'';
+  const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value=snap.overrideTotale||'';
+  svuotaVociManuali();
+  (snap.manuali||[]).forEach(creaVoceManuale);
+  ricalcola();
+  snapshotCorrente=catturaSnapshotAccredito();
+  applicandoSnapshot=false;
+  aggiornaBottoniHistory();
+}
+async function annullaAccredito(){
+  if(!undoAccredito.length)return;
+  const current=catturaSnapshotAccredito();
+  redoAccredito.push(current);
+  const prev=undoAccredito.pop();
+  await applicaSnapshotAccredito(prev);
+}
+async function ripristinaAccredito(){
+  if(!redoAccredito.length)return;
+  const current=catturaSnapshotAccredito();
+  undoAccredito.push(current);
+  const next=redoAccredito.pop();
+  await applicaSnapshotAccredito(next);
+}
+function registraModificaManuale(){
+  if(applicandoSnapshot)return;
+  clearTimeout(historyDebounce);
+  historyDebounce=setTimeout(()=>{
+    const now=catturaSnapshotAccredito();
+    if(snapshotCorrente&&snapshotKey(now)!==snapshotKey(snapshotCorrente)){
+      undoAccredito.push(snapshotCorrente);
+      if(undoAccredito.length>40)undoAccredito.shift();
+      redoAccredito=[];
+      snapshotCorrente=now;
+      aggiornaBottoniHistory();
+    }
+  },250);
+}
+document.getElementById('btnUndo').addEventListener('click',annullaAccredito);
+document.getElementById('btnRedo').addEventListener('click',ripristinaAccredito);
+document.getElementById('contenutoRegistra').addEventListener('input',e=>{
+  if(e.target.id==='testoIncolla')return; // il testo sorgente non altera il calcolo finché non si analizza
+  registraModificaManuale();
+});
+document.getElementById('contenutoRegistra').addEventListener('change',e=>{
+  if(e.target.id==='testoIncolla')return;
+  registraModificaManuale();
+});
+setTimeout(inizializzaHistory,0);
+
+async function registraAccredito(){
+  const msg=document.getElementById('registraMsg');
+  const btn=document.getElementById('btnRegistra');
+  msg.textContent='';
+  document.getElementById('successBox').classList.add('hidden');
+  if(!passwordCorrente){msg.innerHTML='<div class="msg-err">Sblocca prima la modalità Staff.</div>';return}
+  if(!staffIdCorrente){msg.innerHTML='<div class="msg-err">Seleziona uno Staffer.</div>';return}
+  const raw=raccogliRaw();
+  if(raw.length===0){msg.innerHTML='<div class="msg-err">Seleziona almeno una mansione.</div>';return}
+  const overrideTotale=leggiOverrideTotale();
+  const dataAccreditoRaw=String(document.getElementById('dataAccredito')?.value||'').trim();
+  let dataAccredito=null;
+  try{if(dataAccreditoRaw)dataAccredito=timestampDaInputData(dataAccreditoRaw)}catch(e){msg.innerHTML=`<div class="msg-err">${escapeHtml(e.message)}</div>`;return}
+  const nomeDigitato=inputNome.value.trim()||staffIdCorrente;
+  btn.disabled=true;
+  btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Registrazione…';
+  try{
+    const staffRef=db.collection('staff_token').doc(staffIdCorrente);
+    const logRef=db.collection('staff_token_log').doc();
+    let risultatoTx=null;
+    await db.runTransaction(async tx=>{
+      const snap=await tx.get(staffRef);
+      const stato=snap.exists?snap.data():{st_totali:0,resti:{},nomeVisualizzato:nomeDigitato};
+      const calc=applicaOverrideTotale(calcolaMovimento(raw,stato),overrideTotale);
+      if(calc.errori.length)throw new Error(calc.errori.join(' '));
+      const prima=numeroIntero(stato.st_totali);
+      const dopo=prima+calc.totale;
+      const dettagli=calc.righe.map(r=>({id:r.id,nome:r.nome,ft:r.st,dettaglio:creaDettaglioLog(r),formula:r.formula,riferimenti:r.riferimenti||'',descrizione:r.descrizione||''}));
+      const restiPrima={...((stato&&stato.resti)||{})};
+      tx.set(staffRef,{
+        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
+        st_totali:dopo,
+        resti:calc.nuoviResti,
+        ultimoMovimentoId:logRef.id,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      tx.set(logRef,{
+        tipo:'accredito',
+        staffId:staffIdCorrente,
+        nomeVisualizzato:stato.nomeVisualizzato||nomeDigitato,
+        obiettivi:dettagli,
+        guadagnati:calc.totale,
+        delta:calc.totale,
+        saldoPrima:prima,
+        saldoDopo:dopo,
+        restiPrima,
+        restiDopo:calc.nuoviResti,
+        totaleCalcolato:calc.totaleCalcolato,
+        totaleManuale:calc.overrideTotale,
+        movimentoPrecedenteId:stato.ultimoMovimentoId||null,
+        data:dataAccreditoRaw?firebase.firestore.Timestamp.fromMillis(dataAccredito.toMillis()):firebase.firestore.FieldValue.serverTimestamp(),
+        dataImpostataManualmente:!!dataAccreditoRaw,
+        dataManualeTesto:dataAccreditoRaw?dataManualeValue(dataAccredito):'',
+        registratoIl:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      risultatoTx={calc,prima,dopo,nome:stato.nomeVisualizzato||nomeDigitato};
+    });
+    document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
+    resetFormAccredito(true);
+    azzeraHistoryAccredito();
+    document.getElementById('successBox').classList.remove('hidden');
+    document.getElementById('successText').textContent=`${risultatoTx.nome}: +${risultatoTx.calc.totale} ST. Nuovo saldo: ${risultatoTx.dopo} ST.`;
+    await caricaStaffer();
+    await caricaPubblico(true);
+  }catch(e){
+    msg.innerHTML=`<div class="msg-err">Accredito non registrato: ${escapeHtml(e.message)}</div>`;
+  }finally{
+    btn.innerHTML='<i class="fa-solid fa-check"></i> Registra accredito';
+    ricalcola();
+  }
+}
+document.getElementById('btnRegistra').addEventListener('click',registraAccredito);
+
+async function copiaTesto(text,msgEl){
+  try{
+    if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(text);
+    else{
+      const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();
+    }
+    msgEl.innerHTML='<div class="msg-ok">Copiato.</div>';
+  }catch(e){msgEl.innerHTML='<div class="msg-err">Non sono riuscito a copiare automaticamente: seleziona il testo sopra.</div>'}
+}
+
+function impostaAttivita(id,valori={}){
+  const div=cont.querySelector(`.activity[data-id="${id}"]`);if(!div)return;
+  const chk=div.querySelector('.activity-check');chk.checked=true;div.classList.add('selected');
+  if(valori.quantita!==undefined&&div.querySelector('.in-quantita'))div.querySelector('.in-quantita').value=valori.quantita;
+  if(valori.pg!==undefined&&div.querySelector('.in-pg'))div.querySelector('.in-pg').value=valori.pg;
+  if(valori.dividi!==undefined&&div.querySelector('.in-dividi'))div.querySelector('.in-dividi').value=valori.dividi;
+  if(valori.riferimenti&&div.querySelector('.in-riferimenti'))div.querySelector('.in-riferimenti').value=valori.riferimenti;
+}
+
+function estraiRiferimenti(riga){
+  const refs=[];
+  // BBCode ForumFree: [URL=?t=...]x[/URL] oppure URL assoluti.
+  const bb=/\[URL=([^\]]+)\][\s\S]*?\[\/URL\]/ig; let m;
+  while((m=bb.exec(riga))!==null) refs.push(m[1].trim());
+  // Markdown eventualmente ottenuto da copia/esportazione.
+  const md=/\[[^\]]*\]\((https?:\/\/[^)]+)\)/ig;
+  while((m=md.exec(riga))!==null) refs.push(m[1].trim());
+  // URL assoluti non già catturati.
+  const http=/(https?:\/\/[^\s\]\)<>]+)/g;
+  while((m=http.exec(riga))!==null) refs.push(m[1].replace(/[),.;]+$/,''));
+  return [...new Set(refs)];
+}
+function estraiUrl(riga){return estraiRiferimenti(riga).join('\n')}
+function numeroPrimaDiDivisore(riga,divisore){
+  const re=new RegExp('(\\d+)\\s*\\/\\s*'+divisore,'i');
+  const m=riga.match(re);return m?numeroIntero(m[1],null):null;
+}
+function stEsplicitiRiga(riga){
+  const vals=[];
+  for(const m of riga.matchAll(/\((\d+)\s*(?:ST)?\)/ig)) vals.push(numeroIntero(m[1]));
+  for(const m of riga.matchAll(/(?:^|[=:])\s*(\d+)\s*ST\b/ig)) vals.push(numeroIntero(m[1]));
+  return vals.length?vals[vals.length-1]:null;
+}
+function nomeMansioneDaRigaImport(riga){
+  let s=String(riga||'').trim();
+  s=s.replace(/^\s*[•\-]\s*/,'');
+  s=s.replace(/\[URL=[^\]]+\][\s\S]*?\[\/URL\]/ig,' ');
+  s=s.replace(/\[[^\]]*\]\(https?:\/\/[^)]+\)/ig,' ');
+  s=s.replace(/https?:\/\/[^\s\]<>]+/ig,' ');
+  s=s.replace(/\?t=\d+(?:&st=\d+)?(?:#(?:entry\d+|lastpost))?/ig,' ');
+  s=s.replace(/\(\s*\d+\s*(?:ST)?\s*\)\s*$/i,'');
+  s=s.replace(/<[^>]+>/g,' ').replace(/\[(?:\/)?(?:b|i|u|color(?:=[^\]]+)?)\]/ig,' ');
+  s=s.replace(/\s+/g,' ').replace(/\s*[:;,-]\s*$/,'').trim();
+  return s||'Voce importata';
+}
+function rimuoviVociAutoImportate(){
+  manualCont.querySelectorAll('.manual-entry[data-import-auto="1"]').forEach(row=>row.remove());
+  if(!manualCont.querySelector('.manual-entry'))manualCont.innerHTML='<div class="manual-empty">Nessuna voce manuale aggiunta.</div>';
+}
+function quantitaFissaDaRiga(riga){
+  const refs=estraiRiferimenti(riga);
+  if(refs.length) return refs.length;
+  // Quantità esplicite vere: "3 post", "2 richieste", ecc. I numeri fra parentesi sono ST, non quantità.
+  const m=riga.match(/\b(\d+)\s+(?:post|lavori?|richieste?|annunci?|quest|ambient|eventi?|partite?)\b/i);
+  return m?Math.max(1,numeroIntero(m[1],1)):1;
+}
+function classificaRigaImport(riga){
+  if(/liste della spesa/i.test(riga)) return 'liste_spesa';
+  if(/camere blindate/i.test(riga)) return 'camere_blindate';
+  if(/appello non estivo/i.test(riga)) return 'appello_non_estivo';
+  if(/appello estivo/i.test(riga)) return 'appello_estivo';
+  if(/quest.*esiti di molte azioni/i.test(riga)) return 'quest_azioni';
+  if(/quest\s*\(principalmente narrativa\)|quest principalmente narrativa|\bambient\b|\bevento\b/i.test(riga)) return 'quest_narrativa';
+  if(/spunto di trama|mietitura/i.test(riga)) return 'spunto_trama';
+  if(/richiesta\s+(?:al\s+)?narratore(?:\s+generica)?/i.test(riga)) return 'richiesta_narratore';
+  if(/richiesta allo staff/i.test(riga)) return 'richiesta_staff';
+  if(/annuncio dello staff/i.test(riga)) return 'annuncio';
+  if(/quidditch/i.test(riga)) return 'quidditch';
+  if(/burocrazia|richieste? felix token|accredit[oi] felix token/i.test(riga)) return 'burocrazia';
+  return null;
+}
+function rigaDiServizioImport(riga){
+  return /staff token posseduti|felix token posseduti|richiesta di accredito|staff token guadagnati|felix token guadagnati|staff token totali|felix token totali/i.test(riga)
+    || /^\s*\[color=[^\]]+\]\s*(?:<b>|\[b\]|\*\*)/i.test(riga);
+}
+async function analizzaTesto(){
+  const testo=document.getElementById('testoIncolla').value;
+  const msg=document.getElementById('analisiMsg');
+  msg.textContent='';
+  if(!testo.trim()){msg.innerHTML='<div class="msg-err">Incolla prima il testo.</div>';return}
+
+  let totaleDichiarato=null;
+  let totaleDichiaratoFonte='dichiarato';
+  const rigaTotale=(testo.split(/\n|<br\s*\/?\s*>/i).find(r=>/staff token guadagnati|felix token guadagnati/i.test(r))||'');
+  const numeriTotale=[...rigaTotale.matchAll(/(\d+)/g)].map(m=>numeroIntero(m[1]));
+  if(numeriTotale.length)totaleDichiarato=numeriTotale[numeriTotale.length-1];
+  if(totaleDichiarato===null){
+    const possM=testo.match(/(?:staff|felix) token posseduti:[^\d-]*(-?\d+)/i);
+    const finalM=testo.match(/(?:staff|felix) token totali:[^\d-]*(-?\d+)/i);
+    if(possM&&finalM){
+      const prima=numeroIntero(possM[1]);
+      const dopo=numeroIntero(finalM[1]);
+      totaleDichiarato=dopo-prima;
+      totaleDichiaratoFonte=`ricavato da ${dopo} − ${prima}`;
+    }
+  }
+
+  const dataEl=document.getElementById('dataAccredito');
+  const dataGiaInserita=String(dataEl?.value||'').trim();
+  const dataStorica=estraiDataStoricaDaTesto(testo);
+
+  salvaStatoPerUndo();
+
+  const mNome=testo.match(/\[color=[^\]]+\]\s*(?:<b>|\[b\]|\*\*)([^<\[\n*]+?)(?:<\/b>|\[\/b\]|\*\*)\s*\[\/color\]/i)
+    || testo.match(/(?:<b>|\[b\]|\*\*)([^<\[\n*]+?)(?:<\/b>|\[\/b\]|\*\*)/i);
+  if(mNome){
+    const candidato=mNome[1].replace(/staff token posseduti.*$/i,'').trim();
+    if(candidato&&!/staff token|felix token|richiesta/i.test(candidato)){
+      inputNome.value=candidato;
+      sincronizzaPicker(document.getElementById('pickerAccredito'));
+      await caricaStaffer();
+    }
+  }
+  if(!staffAttuale&&inputNome.value.trim())await caricaStaffer();
+
+  // Ogni analisi riparte da zero: premere due volte non può sommare i risultati precedenti.
+  // Le voci manuali inserite dall'utente restano; le fallback create automaticamente dall'import vengono rigenerate.
+  resetFormAccredito(true,true);
+  rimuoviVociAutoImportate();
+  if(dataEl){
+    if(dataStorica) dataEl.value=dataStorica.valore;
+    else if(dataGiaInserita) dataEl.value=dataGiaInserita;
+  }
+
+  const tutteRighe=testo.split(/\n|<br\s*\/?\s*>/i).map(r=>r.trim()).filter(Boolean);
+  const righe=[]; let inSospeso=false;
+  for(const r of tutteRighe){
+    if(/^\s*(?:<b>|\[b\])?in sospeso/i.test(r)){inSospeso=true;continue}
+    if(inSospeso) continue;
+    if(rigaDiServizioImport(r) || rigaSoloDataStorica(r)) continue;
+    righe.push(r);
+  }
+
+  const gruppi=new Map();
+  const report=[];
+  const nonLetti=[];
+  const fallbackEspliciti=[];
+  for(const riga of righe){
+    const id=classificaRigaImport(riga);
+    if(!id){
+      const stEsplicito=stEsplicitiRiga(riga);
+      if(stEsplicito!==null&&stEsplicito>0){
+        fallbackEspliciti.push({riga,st:stEsplicito});
+        continue;
+      }
+      // Ignora intestazioni puramente decorative/nome, ma segnala righe sostanziali sconosciute.
+      const pulita=riga.replace(/\[[^\]]+\]/g,'').replace(/<[^>]+>/g,'').trim();
+      if(pulita.length>8&&!/^[-•=]+$/.test(pulita)) nonLetti.push(riga);
+      continue;
+    }
+    if(!gruppi.has(id))gruppi.set(id,[]);
+    gruppi.get(id).push(riga);
+  }
+
+  const trovati=[]; const avvisi=[];
+  if(dataStorica) avvisi.push(`Data storica riconosciuta: ${dataStorica.valore}. Verrà usata come data del movimento nel Registro.`);
+  for(const f of fallbackEspliciti){
+    const nome=nomeMansioneDaRigaImport(f.riga);
+    creaVoceManuale({nome,st:f.st,riferimenti:estraiUrl(f.riga),importAuto:true});
+    report.push({categoria:nome,src:f.riga,score:f.st,why:`Valore esplicito nell’accredito: ${f.st} ST`});
+    trovati.push(`${nome}: ${f.st} ST`);
+  }
+  for(const o of OBIETTIVI){
+    const matches=gruppi.get(o.id)||[];
+    if(!matches.length)continue;
+
+    if(o.tipo==='soglia'){
+      const riga=matches[0];
+      const totaleFormula=numeroPrimaDiDivisore(riga,o.divisore);
+      let nuove=0;
+      if(totaleFormula!==null){
+        const resto=getResto(staffAttuale||{resti:{}},o);
+        nuove=Math.max(0,totaleFormula-resto);
+        if(resto>0)avvisi.push(`${o.nome}: letto ${totaleFormula}/${o.divisore}; sottratto il resto già salvato (${resto}), quindi inserite ${nuove} nuove unità.`);
+      }else{
+        const nomeRe=o.id==='liste_spesa'?/(\d+)\s+(?:liste?\s+della\s+spesa)/i:/(\d+)\s+(?:camere?\s+blindate)/i;
+        const named=riga.match(nomeRe);
+        const bracket=[...riga.matchAll(/\[(\d+)\]/g)].map(m=>numeroIntero(m[1]));
+        nuove=named?numeroIntero(named[1]):(bracket.length?Math.max(...bracket):0);
+      }
+      if(nuove>0){
+        impostaAttivita(o.id,{quantita:nuove,riferimenti:estraiUrl(riga)});
+        const resto=getResto(staffAttuale||{resti:{}},o),base=resto+nuove,st=Math.floor(base/o.divisore)*o.moltiplicatore;
+        report.push({categoria:o.nome,src:riga,score:st,why:`${resto} in sospeso + ${nuove} nuove → ${st} ST`});
+        trovati.push(`${o.nome}: ${nuove} nuove`);
+      }else{
+        // Nei registri storici può essere noto soltanto il valore finale, es.
+        // “Accredito Quest (= di Camere Blindate, ogni 10) ... (1)”.
+        // In quel caso non inventiamo il numero di unità né tocchiamo i resti: importiamo il valore esplicito.
+        const stEsplicito=stEsplicitiRiga(riga);
+        if(stEsplicito!==null&&stEsplicito>0){
+          const nome=nomeMansioneDaRigaImport(riga);
+          creaVoceManuale({nome,st:stEsplicito,riferimenti:estraiUrl(riga),importAuto:true});
+          report.push({categoria:nome,src:riga,score:stEsplicito,why:`Valore esplicito nell’accredito: ${stEsplicito} ST`});
+          trovati.push(`${nome}: ${stEsplicito} ST`);
+          avvisi.push(`${nome}: non era ricostruibile il numero di unità della progressione; ho mantenuto il valore storico esplicito di ${stEsplicito} ST senza modificare i resti.`);
+        }else{
+          nonLetti.push(riga);
+        }
+      }
+      continue;
+    }
+
+    if(o.tipo==='fisso'){
+      let quantita=0; const refs=[]; let scoreImport=0;
+      const reportStart=report.length;
+      for(const riga of matches){
+        const q=quantitaFissaDaRiga(riga);
+        const rr=estraiRiferimenti(riga); refs.push(...rr);
+        quantita+=q;
+        const atteso=q*o.ftUnitario;
+        const esplicito=stEsplicitiRiga(riga);
+        if(esplicito!==null&&esplicito!==atteso){
+          avvisi.push(`${o.nome}: nella riga è indicato ${esplicito} ST, mentre il valore pieno della regola attuale è ${atteso} ST.`);
+        }
+        scoreImport+=atteso;
+        report.push({categoria:o.nome,src:riga,score:atteso,why:`${q} ${q===1?'voce':'voci'} × ${o.ftUnitario} ST`});
+      }
+      impostaAttivita(o.id,{quantita,riferimenti:[...new Set(refs)].join('\n')});
+      if(o.ripartibile){
+        const div=cont.querySelector(`.activity[data-id="${o.id}"]`);
+        const totaleRegolamentare=quantita*o.ftUnitario;
+        const espliciti=matches.map(stEsplicitiRiga).filter(v=>v!==null);
+        let quotaStorica=null;
+        if(espliciti.length){
+          const quota=espliciti.reduce((a,b)=>a+b,0);
+          if(quota>0&&quota<=totaleRegolamentare&&quota!==totaleRegolamentare) quotaStorica=quota;
+        }else if(
+          matches.length===1 &&
+          gruppi.size===1 &&
+          fallbackEspliciti.length===0 &&
+          totaleDichiarato!==null &&
+          totaleDichiarato>0 &&
+          totaleDichiarato<totaleRegolamentare
+        ){
+          // Registro storico: se l'unica attività è ripartibile e il testo dichiara
+          // un totale inferiore al valore pieno, quel totale è la quota realmente
+          // attribuita allo Staffer (es. Quest narrativa da 3 ST condivisa: quota 1 ST).
+          quotaStorica=totaleDichiarato;
+        }
+        if(quotaStorica!==null){
+          div.querySelector('.in-quota').value=quotaStorica;
+          scoreImport=quotaStorica;
+          if(matches.length===1 && report[reportStart]){
+            report[reportStart].score=quotaStorica;
+            report[reportStart].why=`Quota storica attribuita allo Staffer: ${quotaStorica} ST (valore pieno ${totaleRegolamentare} ST)`;
+          }
+          avvisi.push(`${o.nome}: ho usato la quota storica di ${quotaStorica} ST indicata dall’accredito, invece del valore pieno di ${totaleRegolamentare} ST.`);
+        }
+      }
+      trovati.push(`${o.nome}: ${quantita} ${quantita===1?'voce':'voci'} = ${scoreImport} ST`);
+      continue;
+    }
+
+    if(o.tipo==='evento'){
+      const riga=matches[0];
+      const pgM=riga.match(/(\d+)\s*(?:Schede\s*)?PG\s*attivi/i);
+      const pg=pgM?numeroIntero(pgM[1]):0;
+      let dividi=1;
+      const divM=riga.match(/ST\s*\/\s*(\d+)/i);if(divM)dividi=Math.max(1,numeroIntero(divM[1],1));
+      if(pg){
+        impostaAttivita(o.id,{pg,dividi,riferimenti:estraiUrl(riga)});
+        const pool=Math.floor(pg/o.divisore)*o.moltiplicatore;
+        const score=pool/dividi;
+        report.push({categoria:o.nome,src:riga,score,why:`${pg}/${o.divisore} × ${o.moltiplicatore} ST${dividi>1?' ÷ '+dividi:''}`});
+        trovati.push(`${o.nome}: ${pg} PG${dividi>1?', diviso '+dividi:''}`);
+      }
+    }
+  }
+
+  if(/accredito descrizioni|descrizioni\s*\(\s*=\s*di camere blindate/i.test(testo)){
+    avvisi.push('Il testo contiene l’accredito Descrizioni = Camere Blindate. Non l’ho importato automaticamente perché non compare nella tabella regolamentare attuale fornita.');
+  }
+
+  const calc=ricalcola();
+  if(totaleDichiarato!==null){
+    const fonte=totaleDichiaratoFonte==='dichiarato'
+      ?`l’accredito indica ${totaleDichiarato} ST`
+      :`${totaleDichiaratoFonte} = ${totaleDichiarato} ST`;
+    if(totaleDichiarato===calc.totale)avvisi.unshift(`Controllo totale: ${fonte} e il nuovo calcolo coincide.`);
+    else avvisi.unshift(`ATTENZIONE: ${fonte}, mentre le righe importate danno ${calc.totale} ST.`);
+  }
+  aggiornaSnapshotCorrenteDopoAzione();
+  if(report.length){
+    const righeHtml=report.map(x=>`<div class="import-line"><div><div class="cat">${escapeHtml(x.categoria)}</div><div class="why">${escapeHtml(x.why)}</div><div class="src">${escapeHtml(x.src)}</div></div><div class="score">+${x.score} ST</div></div>`).join('');
+    const avvisiHtml=avvisi.map(a=>a.startsWith('Controllo totale:')
+      ?`<div class="msg-ok"><i class="fa-solid fa-circle-check"></i> ${escapeHtml(a)}</div>`
+      :`<div class="msg-warn">⚠ ${escapeHtml(a)}</div>`).join('');
+    const nonLettiHtml=nonLetti.length?`<div class="import-unread"><b>${nonLetti.length} riga${nonLetti.length===1?' non riconosciuta':'he non riconosciute'}:</b><br>${nonLetti.map(escapeHtml).join('<br>')}</div>`:'';
+    msg.innerHTML=`<div class="import-report"><div class="import-summary"><strong>${report.length} righe riconosciute</strong><div class="sum-score">+${calc.totale} ST</div></div><div class="import-lines">${righeHtml}</div></div>${avvisiHtml}${nonLettiHtml}`;
+  }else msg.innerHTML='<div class="msg-err">Non ho riconosciuto voci sicure da compilare automaticamente. Nessun campo è stato aggiunto.</div>';
+}
+document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTesto);
+document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
+document.getElementById('btnResetTotale').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('overrideTotaleAccredito').value='';ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
+document.getElementById('overrideTotaleAccredito').addEventListener('input',ricalcola);
+document.getElementById('btnDataAdesso').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
+
+async function caricaPubblico(forza=false){
+  if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){
+    await riparaRimozioniV40();
+  }
+  const saldi=document.getElementById('saldiPubblici');
+  const archivio=document.getElementById('archivioBox');
+  if(forza||!saldi.dataset.loaded){saldi.innerHTML='<div class="loading">Caricamento saldi…</div>'}
+  if(forza||!archivio.dataset.loaded){archivio.innerHTML='<div class="loading">Caricamento registro…</div>'}
+  try{
+    const [snapStaff,snapLog]=await Promise.all([
+      db.collection('staff_token').get(),
+      db.collection('staff_token_log').orderBy('data','desc').limit(300).get()
+    ]);
+    const staffDocs=new Map();snapStaff.forEach(doc=>staffDocs.set(normalizzaStaffId(doc.id),{id:doc.id,...doc.data()}));
+    const staff=LEGACY_STAFFER_PG_CONFIG.map(cfg=>{
+      const id=normalizzaStaffId(cfg.nome);
+      const data=staffDocs.get(id)||{id,st_totali:0,resti:{}};
+      return {...data,id,nomeVisualizzato:cfg.nome};
+    });
+    archivioMovimenti=[];snapLog.forEach(doc=>{
+      const m={id:doc.id,...doc.data()};
+      const dataEff=dataEffettivaMovimento(m);
+      if(dataEff)m.data=dataEff;
+      const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
+      if(isPrimaryStaffId(sid))archivioMovimenti.push(m);
+    });
+    archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+    const ultimaDataPerStaff={};
+    archivioMovimenti.forEach(m=>{const k=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');if(k&&!ultimaDataPerStaff[k])ultimaDataPerStaff[k]=m.data});
+    staff.sort((a,b)=>timestampMs(ultimaDataPerStaff[b.id]||b.ultimoAggiornamento)-timestampMs(ultimaDataPerStaff[a.id]||a.ultimoAggiornamento)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+    staffPubblici=staff;
+    if(!staff.length)saldi.innerHTML='<div class="empty">Nessuno Staffer registrato.</div>';
+    else saldi.innerHTML=staff.map(s=>{
+      const rl=getResto(s,OBIETTIVI.find(o=>o.id==='liste_spesa'));
+      const rc=getResto(s,OBIETTIVI.find(o=>o.id==='camere_blindate'));
+      const rb=getResto(s,OBIETTIVI.find(o=>o.id==='burocrazia'));
+      const st=numeroIntero(s.st_totali);
+      const chips=[];
+      if(rl)chips.push(`<span class="resto-chip">Liste ${rl}/3</span>`);
+      if(rc)chips.push(`<span class="resto-chip">Camere ${rc}/10</span>`);
+      if(rb)chips.push(`<span class="resto-chip">Burocrazia ${rb}/3</span>`);
+      const ultima=ultimaDataPerStaff[s.id]||s.ultimoAggiornamento;
+      return`<div class="balance-card"><div class="balance-top"><div><div class="balance-name">${escapeHtml(primaryStaffName(s.id,nomeDaDoc(s.id,s)))}</div>${ultima?`<div class="balance-updated">Ultimo movimento ${escapeHtml(dataIt(ultima))}</div>`:''}</div><div class="balance-st ${st<0?'negative':''}">${st} ST</div></div>${chips.length?`<div class="balance-resti">${chips.join('')}</div>`:''}</div>`;
+    }).join('');
+    saldi.dataset.loaded='1';
+    archivio.dataset.loaded='1';
+    renderArchivio();
+  }catch(e){
+    saldi.innerHTML=`<div class="msg-err">Errore saldi: ${escapeHtml(e.message)}</div>`;
+    archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function tipoMovimento(m){
+  if(m.annullato)return'annullato';
+  return m.tipo||(m.obiettivi?.some(o=>o.id==='correzione')?'correzione':'accredito');
+}
+
+function ultimiMovimentiAttiviPerStaff(){
+  const map={};
+  staffPubblici.forEach(s=>{if(s.ultimoMovimentoId)map[s.id]=s.ultimoMovimentoId});
+  return map;
+}
+
+function movimentoPrecedenteAttivo(staffId,movimentoId){
+  const corrente=archivioMovimenti.find(m=>m.id===movimentoId);
+  if(corrente&&corrente.movimentoPrecedenteId!==undefined)return corrente.movimentoPrecedenteId||null;
+  const attivi=archivioMovimenti.filter(m=>(m.staffId||'')===staffId&&!m.annullato&&m.id!==movimentoId);
+  attivi.sort((a,b)=>timestampMs(b.registratoIl||b.data)-timestampMs(a.registratoIl||a.data));
+  return attivi[0]?.id||null;
+}
+
+function restiPrimaDaMovimento(m,statoCorrente){
+  if(m.restiPrima&&typeof m.restiPrima==='object')return{...m.restiPrima};
+  const prima={...((statoCorrente&&statoCorrente.resti)||{})};
+  const progressivi={
+    liste_spesa:{key:'listeSpesa'},
+    camere_blindate:{key:'camereBlindate',legacy:'pool10'},
+    burocrazia:{key:'burocrazia'}
+  };
+  for(const o of (m.obiettivi||[])){
+    const cfg=progressivi[o.id];
+    if(!cfg)continue;
+    const testo=String(o.formula||o.dettaglio||'');
+    const match=testo.match(/(?:^|:\s*)(\d+)\s+già\s+in\s+sospeso/i);
+    if(!match)throw new Error(`Non riesco a ricostruire il resto precedente di “${o.nome||o.id}”. Per sicurezza questo accredito storico non viene annullato automaticamente.`);
+    const valore=numeroIntero(match[1]);
+    prima[cfg.key]=valore;
+    if(cfg.legacy)prima[cfg.legacy]=valore;
+  }
+  return prima;
+}
+
+function messaggioArchivio(html){
+  const box=document.getElementById('archivioActionMsg');
+  if(!box)return;
+  box.innerHTML=html;
+  if(html)setTimeout(()=>{if(box.innerHTML===html)box.innerHTML=''},7000);
+}
+
+async function cancellaMovimentoAccredito(id){
+  const m=archivioMovimenti.find(x=>x.id===id);
+  if(!m||m.annullato||tipoMovimento(m)!=='accredito')return;
+  if(!passwordCorrente){messaggioArchivio('<div class="msg-err">Sblocca la modalità Staff da “Nuovo accredito” o “Gestione saldi” prima di annullare un accredito.</div>');return}
+  const staffId=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+  const ultimi=ultimiMovimentiAttiviPerStaff();
+  if(ultimi[staffId]!==id){
+    messaggioArchivio('<div class="msg-err">Questo accredito non è l’ultimo movimento dello Staffer. Per non rendere incoerenti saldi e resti, puoi annullare direttamente solo il movimento più recente.</div>');
+    return;
+  }
+  const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+  const saldoPrima=Number.isFinite(Number(m.saldoPrima))?numeroIntero(m.saldoPrima):null;
+  const nome=m.nomeVisualizzato||m.staffId||'Staffer';
+  const ok=window.confirm(`Annullare questo accredito di ${nome}?\n\nVerranno stornati ${delta} ST e ripristinati saldo e resti precedenti.`);
+  if(!ok)return;
+  messaggioArchivio('<div class="loading">Annullamento accredito…</div>');
+  try{
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc(id);
+    const precedenteId=movimentoPrecedenteAttivo(staffId,id);
+    await db.runTransaction(async tx=>{
+      const [staffSnap,logSnap]=await Promise.all([tx.get(staffRef),tx.get(logRef)]);
+      if(!logSnap.exists)throw new Error('Il movimento non esiste più.');
+      const log=logSnap.data();
+      if(log.annullato)throw new Error('Questo accredito è già stato annullato.');
+      const stato=staffSnap.exists?staffSnap.data():{st_totali:0,resti:{}};
+      if(stato.ultimoMovimentoId&&stato.ultimoMovimentoId!==id)throw new Error('Nel frattempo è stato registrato un movimento successivo. Aggiorna il registro e riprova.');
+      if(!stato.ultimoMovimentoId&&Number.isFinite(Number(log.saldoDopo))&&numeroIntero(stato.st_totali)!==numeroIntero(log.saldoDopo)){
+        throw new Error('Il saldo attuale non coincide con il saldo prodotto da questo accredito: esiste probabilmente un movimento successivo.');
+      }
+      const nuovoSaldo=saldoPrima!==null?saldoPrima:numeroIntero(stato.st_totali)-delta;
+      const restiPrima=restiPrimaDaMovimento(log,stato);
+      tx.set(staffRef,{
+        st_totali:nuovoSaldo,
+        resti:restiPrima,
+        ultimoMovimentoId:precedenteId||null,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      tx.set(logRef,{
+        annullato:true,
+        annullatoIl:firebase.firestore.FieldValue.serverTimestamp(),
+        saldoRipristinato:nuovoSaldo,
+        restiRipristinati:restiPrima
+      },{merge:true});
+    });
+    messaggioArchivio(`<div class="msg-ok">Accredito annullato. Il saldo di ${escapeHtml(nome)} è stato ripristinato automaticamente.</div>`);
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){
+    messaggioArchivio(`<div class="msg-err">Accredito non annullato: ${escapeHtml(e.message)}</div>`);
+  }
+}
+
+function htmlRigaEditorMovimento(o={}){
+  const nome=String(o.nome||'');
+  const st=Number.isFinite(Number(o.ft))?Number(o.ft):0;
+  const refs=String(o.riferimenti||riferimentiDaObiettivo(o).join(' | '));
+  let nota=String(o.descrizione||o.dettaglio||'');
+  return `<div class="log-edit-row">
+    <div><label>Mansione</label><input type="text" class="edit-line-name" value="${escapeHtml(nome)}" placeholder="Nome della mansione"></div>
+    <div><label>ST</label><input type="number" class="edit-line-st" step="1" value="${escapeHtml(st)}"></div>
+    <div><label>Link / riferimento</label><input type="text" class="edit-line-ref" value="${escapeHtml(refs)}" placeholder="?t=... oppure https://..."></div>
+    <button type="button" class="ghost remove-edit-row" title="Rimuovi questa riga" aria-label="Rimuovi questa riga"><i class="fa-solid fa-xmark"></i></button>
+    <div class="wide"><label>Nota / dettaglio</label><textarea class="edit-line-note" placeholder="Dettaglio facoltativo">${escapeHtml(nota)}</textarea></div>
+  </div>`;
+}
+
+function aggiungiRigaEditorMovimento(id){
+  const cont=document.querySelector(`[data-edit-objectives="${CSS.escape(id)}"]`);
+  if(!cont)return;
+  cont.insertAdjacentHTML('beforeend',htmlRigaEditorMovimento({nome:'',ft:0,riferimenti:'',dettaglio:''}));
+  const row=cont.lastElementChild;
+  row?.querySelector('.remove-edit-row')?.addEventListener('click',()=>row.remove());
+}
+
+async function salvaModificheMovimento(id){
+  if(!passwordCorrente){messaggioArchivio('<div class="msg-err">Sblocca prima la modalità Staff.</div>');return}
+  const m=archivioMovimenti.find(x=>x.id===id);
+  if(!m||m.annullato){messaggioArchivio('<div class="msg-err">Questo movimento non è modificabile.</div>');return}
+  const editor=document.querySelector(`[data-edit-editor="${CSS.escape(id)}"]`);
+  if(!editor)return;
+  const dataRaw=editor.querySelector('.edit-movement-date')?.value||'';
+  let nuovaData; try{nuovaData=timestampDaInputData(dataRaw)}catch(e){messaggioArchivio(`<div class="msg-err">${escapeHtml(e.message)}</div>`);return}
+  if(!nuovaData){messaggioArchivio('<div class="msg-err">Inserisci la data del movimento.</div>');return}
+  const totaleInput=editor.querySelector('.edit-movement-total');
+  const nuovoTotale=parseInt(totaleInput?.value,10);
+  if(!Number.isFinite(nuovoTotale)){messaggioArchivio('<div class="msg-err">Indica il totale ST del movimento.</div>');return}
+  if(tipoMovimento(m)==='accredito'&&nuovoTotale<0){messaggioArchivio('<div class="msg-err">Un accredito non può avere un totale negativo.</div>');return}
+  const righe=[...editor.querySelectorAll('.log-edit-row')].map(row=>{
+    const nome=row.querySelector('.edit-line-name')?.value.trim()||'';
+    const ft=parseInt(row.querySelector('.edit-line-st')?.value,10)||0;
+    const riferimenti=row.querySelector('.edit-line-ref')?.value.trim()||'';
+    const nota=row.querySelector('.edit-line-note')?.value.trim()||'';
+    return {id:'modifica_manual',nome,ft,riferimenti,descrizione:nota,dettaglio:nota?`${nome}: ${nota} → ${ft} ST`:`${nome}: ${ft} ST`};
+  }).filter(r=>r.nome||r.ft||r.riferimenti||r.descrizione);
+  if(!righe.length){messaggioArchivio('<div class="msg-err">Lascia almeno una riga di dettaglio nel movimento.</div>');return}
+
+  const vecchioTotale=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+  const differenza=nuovoTotale-vecchioTotale;
+  const staffId=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+  try{
+    const [staffSnap,logsSnap]=await Promise.all([
+      db.collection('staff_token').doc(staffId).get(),
+      db.collection('staff_token_log').where('staffId','==',staffId).get()
+    ]);
+    if(!staffSnap.exists)throw new Error('Staffer non trovato.');
+    const tutti=[];logsSnap.forEach(d=>tutti.push({id:d.id,...d.data()}));
+    tutti.sort((a,b)=>timestampMs(a.registratoIl||a.data)-timestampMs(b.registratoIl||b.data));
+    const idx=tutti.findIndex(x=>x.id===id);
+    if(differenza!==0&&idx>=0){
+      const resetSuccessivo=tutti.slice(idx+1).find(x=>!x.annullato&&(tipoMovimento(x)==='correzione'||tipoMovimento(x)==='inizializzazione'));
+      if(resetSuccessivo)throw new Error('Esiste una correzione o un allineamento saldo successivo: per sicurezza puoi modificare data e dettagli di questo movimento, ma non il suo totale ST.');
+    }
+    const batch=db.batch();
+    const logRef=db.collection('staff_token_log').doc(id);
+    const updateLog={
+      data:nuovaData,
+      dataImpostataManualmente:true,
+      dataManualeTesto:dataManualeValue(nuovaData),
+      obiettivi:righe,
+      delta:nuovoTotale,
+      guadagnati:nuovoTotale,
+      totaleManuale:nuovoTotale,
+      modificatoIl:firebase.firestore.FieldValue.serverTimestamp()
+    };
+    if(m.saldoDopo!==undefined)updateLog.saldoDopo=numeroIntero(m.saldoDopo)+differenza;
+    batch.set(logRef,updateLog,{merge:true});
+
+    if(differenza!==0){
+      // Il saldo corrente cambia della stessa differenza. I resti progressivi restano invariati.
+      const saldoCorrente=numeroIntero(staffSnap.data().st_totali);
+      batch.set(db.collection('staff_token').doc(staffId),{
+        st_totali:saldoCorrente+differenza,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      if(idx>=0){
+        for(let i=idx+1;i<tutti.length;i++){
+          const x=tutti[i];
+          if(x.annullato)continue;
+          const patch={};
+          if(x.saldoPrima!==undefined)patch.saldoPrima=numeroIntero(x.saldoPrima)+differenza;
+          if(x.saldoDopo!==undefined)patch.saldoDopo=numeroIntero(x.saldoDopo)+differenza;
+          if(Object.keys(patch).length)batch.set(db.collection('staff_token_log').doc(x.id),patch,{merge:true});
+        }
+      }
+    }else{
+      batch.set(db.collection('staff_token').doc(staffId),{ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    }
+    await batch.commit();
+    messaggioArchivio(`<div class="msg-ok">Movimento aggiornato${differenza?` e saldo corretto di ${formatDelta(differenza)}`:''}.</div>`);
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){messaggioArchivio(`<div class="msg-err">Modifica non salvata: ${escapeHtml(e.message)}</div>`)}
+}
+
+function deltaEffettivoMovimento(m){
+  if(!m||m.annullato)return 0;
+  return Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+}
+
+function saldiCronologiciRegistro(){
+  const result=new Map();
+  const saldoFinaleByStaff={};
+  staffPubblici.forEach(s=>saldoFinaleByStaff[s.id]=numeroIntero(s.st_totali));
+
+  LEGACY_STAFFER_PG_CONFIG.forEach(cfg=>{
+    const staffId=normalizzaStaffId(cfg.nome);
+    const movs=archivioMovimenti
+      .filter(m=>{
+        const sid=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+        return sid===staffId&&!m.annullato&&!m.rimossoDalRegistro;
+      })
+      .sort((a,b)=>{
+        const d=timestampMs(a.data)-timestampMs(b.data);
+        if(d)return d;
+        return timestampMs(a.registratoIl||a.data)-timestampMs(b.registratoIl||b.data);
+      });
+    if(!movs.length)return;
+    const somma=movs.reduce((acc,m)=>acc+deltaEffettivoMovimento(m),0);
+    let corrente=(saldoFinaleByStaff[staffId]??0)-somma;
+    movs.forEach(m=>{
+      const prima=corrente;
+      corrente+=deltaEffettivoMovimento(m);
+      result.set(m.id,{prima,dopo:corrente});
+    });
+  });
+  return result;
+}
+
+async function riparaRimozioniV40(){
+  if(!passwordCorrente||window.__staffTokenRimozioniV40Riparate)return;
+  window.__staffTokenRimozioniV40Riparate=true;
+  try{
+    const snap=await db.collection('staff_token_log').where('rimossoDalRegistro','==',true).get();
+    const daRiparare=[];
+    snap.forEach(d=>{
+      const x={id:d.id,...d.data()};
+      if(x.rimozioneCompensata===true)return;
+      const sid=x.staffId||normalizzaStaffId(x.nomeVisualizzato||'');
+      if(!isPrimaryStaffId(sid))return;
+      daRiparare.push({...x,staffId:sid});
+    });
+    if(!daRiparare.length)return;
+
+    const perStaff=new Map();
+    daRiparare.forEach(m=>{
+      if(!perStaff.has(m.staffId))perStaff.set(m.staffId,[]);
+      perStaff.get(m.staffId).push(m);
+    });
+
+    for(const [staffId,movs] of perStaff){
+      const staffRef=db.collection('staff_token').doc(staffId);
+      const staffSnap=await staffRef.get();
+      if(!staffSnap.exists)continue;
+      const deltaDaStornare=movs.reduce((acc,m)=>acc+deltaEffettivoMovimento(m),0);
+      const nuovoSaldo=numeroIntero(staffSnap.data().st_totali)-deltaDaStornare;
+      const batch=db.batch();
+      batch.set(staffRef,{st_totali:nuovoSaldo,ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      movs.forEach(m=>batch.set(db.collection('staff_token_log').doc(m.id),{
+        rimozioneCompensata:true,
+        rimozioneCompensataIl:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true}));
+      await batch.commit();
+    }
+  }catch(e){
+    window.__staffTokenRimozioniV40Riparate=false;
+    console.warn('Riparazione rimozioni v40 non completata:',e);
+  }
+}
+
+async function rimuoviMovimentoDalRegistro(id){
+  if(!passwordCorrente){
+    messaggioArchivio('<div class="msg-err">Sblocca prima la modalità Staff.</div>');
+    return;
+  }
+  const m=archivioMovimenti.find(x=>x.id===id);
+  if(!m||m.rimossoDalRegistro)return;
+  const staffId=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+  if(!staffId)return;
+  const delta=deltaEffettivoMovimento(m);
+  try{
+    const staffRef=db.collection('staff_token').doc(staffId);
+    const logRef=db.collection('staff_token_log').doc(id);
+    await db.runTransaction(async tx=>{
+      const [staffSnap,logSnap]=await Promise.all([tx.get(staffRef),tx.get(logRef)]);
+      if(!logSnap.exists)throw new Error('Il movimento non esiste più.');
+      const log=logSnap.data();
+      if(log.rimossoDalRegistro)return;
+      const stato=staffSnap.exists?staffSnap.data():{st_totali:0};
+      const nuovoSaldo=numeroIntero(stato.st_totali)-delta;
+      tx.set(staffRef,{
+        st_totali:nuovoSaldo,
+        ultimoAggiornamento:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+      tx.set(logRef,{
+        rimossoDalRegistro:true,
+        rimossoIl:firebase.firestore.FieldValue.serverTimestamp(),
+        rimozioneCompensata:true,
+        rimozioneCompensataIl:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+    });
+    messaggioArchivio(`<div class="msg-ok">Movimento rimosso. Il saldo è stato stornato di ${escapeHtml(formatDelta(-delta))}: è come se quel movimento non fosse mai esistito.</div>`);
+    await caricaPubblico(true);
+    if(staffIdCorrente===staffId)await caricaStaffer();
+  }catch(e){
+    messaggioArchivio(`<div class="msg-err">Movimento non rimosso: ${escapeHtml(e.message)}</div>`);
+  }
+}
+
+function renderArchivio(){
+  const box=document.getElementById('archivioBox');
+  const q=document.getElementById('filtroArchivio').value.trim().toLowerCase();
+  const tipo=document.getElementById('filtroTipo').value;
+  const ultimi=ultimiMovimentiAttiviPerStaff();
+  const saldoCronologico=saldiCronologiciRegistro();
+  const saldoMap={};
+  staffPubblici.forEach(s=>saldoMap[s.id]={saldo:numeroIntero(s.st_totali),nome:nomeDaDoc(s.id,s)});
+
+  const gruppi=new Map();
+  archivioMovimenti.forEach(m=>{
+    if(m.rimossoDalRegistro)return;
+    const staffKeyRaw=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+    if(!isPrimaryStaffId(staffKeyRaw))return;
+    const mtipo=tipoMovimento(m);
+    if(tipo&&mtipo!==tipo)return;
+    const key=m.staffId||normalizzaStaffId(m.nomeVisualizzato||'');
+    const nome=primaryStaffName(key,m.nomeVisualizzato||saldoMap[key]?.nome||m.staffId||'—');
+    const testoMov=[mtipo,...(m.obiettivi||[]).flatMap(o=>[o.nome,o.dettaglio,o.formula,o.descrizione])].join(' ').toLowerCase();
+    const nomeMatch=!q||nome.toLowerCase().includes(q);
+    if(q&&!nomeMatch&&!testoMov.includes(q))return;
+    if(!gruppi.has(key))gruppi.set(key,{key,nome,movimenti:[]});
+    gruppi.get(key).movimenti.push(m);
+  });
+
+  const lista=[...gruppi.values()].map(g=>{
+    g.movimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+    g.ultimo=timestampMs(g.movimenti[0]?.data);
+    return g;
+  }).sort((a,b)=>b.ultimo-a.ultimo||a.nome.localeCompare(b.nome,'it'));
+
+  if(!lista.length){box.innerHTML='<div class="empty">Nessun movimento corrisponde ai filtri.</div>';return}
+
+  box.innerHTML=lista.map((g,idx)=>{
+    const saldoDoc=saldoMap[g.key];
+    const primo=g.movimenti[0];
+    const saldo=saldoDoc?saldoDoc.saldo:(primo?.annullato&&primo?.saldoRipristinato!==undefined?numeroIntero(primo.saldoRipristinato):numeroIntero(primo?.saldoDopo));
+    const movHtml=g.movimenti.map(m=>{
+      const mtipo=tipoMovimento(m);
+      const delta=Number.isFinite(Number(m.delta))?Number(m.delta):numeroIntero(m.guadagnati);
+      const cls=m.annullato?'neutral':delta<0?'negative':delta===0?'neutral':'';
+      const label=m.annullato?'Accredito annullato':mtipo==='correzione'?'Correzione saldo':mtipo==='inizializzazione'?'Allineamento saldo':mtipo==='movimento_manuale'?(delta<0?'Spesa manuale':'Aggiunta manuale'):mtipo==='spesa_elfo'?(m.azione==='rimborso'||delta>0?'Restituzione da Camera Blindata':'Spesa da Camera Blindata'):'Accredito';
+      const icon=mtipo==='correzione'?'fa-pen-to-square':mtipo==='inizializzazione'?'fa-scale-balanced':mtipo==='spesa_elfo'?(m.azione==='rimborso'||delta>0?'fa-rotate-left':'fa-vault'):mtipo==='movimento_manuale'?(delta<0?'fa-minus':'fa-plus'):m.annullato?'fa-ban':delta<0?'fa-minus':'fa-plus';
+      const details=(m.obiettivi||[]).map(o=>{
+        const testo=testoObiettivoRegistro(o);
+        const refs=iconeRiferimenti(o);
+        return `<div class="line"><div class="line-text">${escapeHtml(testo)}</div>${refs}</div>`;
+      }).join('');
+      let actions=m.annullato
+        ?`<div class="log-actions"><span class="why-disabled"><i class="fa-solid fa-rotate-left"></i> Saldo ripristinato${m.saldoRipristinato!==undefined?` a ${numeroIntero(m.saldoRipristinato)} ST`:''}.</span></div>`
+        :'';
+      if(passwordCorrente&&!m.annullato&&mtipo!=='spesa_elfo'){
+        const righeEditor=(m.obiettivi||[]).map(o=>htmlRigaEditorMovimento(o)).join('')||htmlRigaEditorMovimento({nome:label,ft:delta});
+        actions+=`<div class="log-actions"><button type="button" class="ghost edit-movement" data-edit-movement-id="${escapeHtml(m.id)}"><i class="fa-solid fa-pen-to-square"></i> Modifica</button></div>
+        <div class="log-edit-editor hidden" data-edit-editor="${escapeHtml(m.id)}">
+          <div class="log-edit-grid">
+            <div><label>Data e ora</label><input type="text" class="edit-movement-date" value="${escapeHtml(dataManualeValue(m.data))}" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric"></div>
+            <div><label>Totale ST del movimento</label><input type="number" class="edit-movement-total" step="1" value="${escapeHtml(delta)}"></div>
+          </div>
+          <div class="log-edit-help"><i class="fa-solid fa-circle-info"></i> Puoi correggere data, totale, mansioni, ST delle singole righe e riferimenti. Se cambi il totale, il saldo dello Staffer viene aggiornato automaticamente. I resti progressivi non vengono ricalcolati da questa modifica.</div>
+          <div class="log-edit-objectives" data-edit-objectives="${escapeHtml(m.id)}">${righeEditor}</div>
+          <div class="log-edit-actions"><button type="button" class="secondary add-edit-row" data-add-edit-row="${escapeHtml(m.id)}"><i class="fa-solid fa-plus"></i> Aggiungi riga</button><button type="button" class="mini save-movement-edit" data-save-edit-id="${escapeHtml(m.id)}"><i class="fa-solid fa-check"></i> Salva modifiche</button><button type="button" class="ghost close-movement-edit" data-close-edit-id="${escapeHtml(m.id)}">Chiudi</button></div>
+        </div>`;
+      }
+      const xRimuovi=passwordCorrente?`<button type="button" class="remove-log-entry" data-remove-log-id="${escapeHtml(m.id)}" title="Rimuovi" aria-label="Rimuovi"><i class="fa-solid fa-xmark"></i></button>`:'';
+      return `<article class="log-item ${m.annullato?'cancelled':''}"><div class="log-head"><div class="log-marker ${cls}"><i class="fa-solid ${icon}"></i></div><div><div class="log-title">${label}${m.annullato?'<span class="cancel-badge"><i class="fa-solid fa-ban"></i> annullato</span>':''}</div><div class="log-meta">${escapeHtml(dataIt(m.data))}${m.annullato&&m.annullatoIl?` · annullato: ${escapeHtml(dataIt(m.annullatoIl))}`:''}</div></div><div class="log-head-actions"><div class="log-st ${cls}">${m.annullato?'0 ST':formatDelta(delta)}${!m.annullato&&delta!==0&&saldoCronologico.has(m.id)?`<span class="log-total-after">= ${numeroIntero(saldoCronologico.get(m.id).dopo)} ST</span>`:''}</div>${xRimuovi}</div></div>${details?`<div class="log-details">${details}</div>`:''}${actions}</article>`;
+    }).join('');
+    return `<details class="staff-ledger" ${idx===0?'open':''}><summary><div class="ledger-person"><i class="fa-solid fa-chevron-right ledger-chevron"></i><div><div class="ledger-name">${escapeHtml(g.nome)}</div><span class="ledger-latest">Ultimo aggiornamento: ${escapeHtml(dataIt(g.movimenti[0]?.data))}</span></div></div><div class="ledger-balance ${saldo<0?'negative':''}">${saldo} ST</div></summary><div class="staff-ledger-body">${movHtml}</div></details>`;
+  }).join('');
   box.querySelectorAll('[data-remove-log-id]').forEach(btn=>btn.addEventListener('click',()=>rimuoviMovimentoDalRegistro(btn.dataset.removeLogId)));
   box.querySelectorAll('[data-edit-movement-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.editMovementId)}"]`);if(ed)ed.classList.toggle('hidden')}));
   box.querySelectorAll('[data-close-edit-id]').forEach(btn=>btn.addEventListener('click',()=>{const ed=box.querySelector(`[data-edit-editor="${CSS.escape(btn.dataset.closeEditId)}"]`);if(ed)ed.classList.add('hidden')}));
