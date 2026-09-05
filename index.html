@@ -1197,15 +1197,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             </div>
           </div>
           <div class="clarity-banner"><i class="fa-solid fa-lightbulb"></i><div><b>Qui inserisci quantità, non Staff Token.</b> Per esempio: una Quest con molti esiti = quantità <b>1</b> → il tool calcola automaticamente <b>6 ST</b>. I numeri verdi nel riepilogo sono il risultato finale.</div></div>
-
-          <div class="import-date-row">
-            <div>
-              <label for="dataAccredito">Data dell’accredito <span class="hint" style="display:inline">(facoltativa)</span></label>
-              <input type="text" id="dataAccredito" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
-              <div class="hint">Vale per le mansioni selezionate e per le voci aggiunte manualmente. Se la compili, questa sarà la data del movimento nel Registro; se la lasci vuota viene usato il momento della registrazione.</div>
-            </div>
-            <button type="button" class="ghost" id="btnDataAdesso"><i class="fa-regular fa-clock"></i> Adesso</button>
-          </div>
+          <input type="hidden" id="dataAccredito" value="">
 
           <details class="import-details" hidden aria-hidden="true">
             <summary><span><i class="fa-solid fa-wand-magic-sparkles"></i> Importa un accredito</span><span class="summary-note">facoltativo</span></summary>
@@ -1280,7 +1272,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
             <div class="card-title">
               <div>
                 <h2><i class="fa-solid fa-arrow-right-arrow-left"></i> Gestione saldo</h2>
-                <p>Parti sempre dal totale reale degli ST del Player e registra soltanto la variazione, con il relativo riferimento.</p>
+                <p>Usa questa sezione per rettifiche manuali del saldo: puoi aggiungere o togliere ST senza creare un normale accredito di mansioni.</p>
               </div>
             </div>
             <label>Player Staffer</label>
@@ -1300,8 +1292,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 
             <label>Operazione</label>
             <div class="movement-sign-picker" id="movimentoSegnoPicker">
-              <button type="button" class="movement-sign active add" data-sign="1"><i class="fa-solid fa-plus"></i> Aggiungi</button>
-              <button type="button" class="movement-sign remove" data-sign="-1"><i class="fa-solid fa-minus"></i> Togli</button>
+              <button type="button" class="movement-sign active add" data-sign="1"><i class="fa-solid fa-plus"></i> Aggiungi ST</button>
+              <button type="button" class="movement-sign remove" data-sign="-1"><i class="fa-solid fa-minus"></i> Togli ST</button>
             </div>
             <input type="hidden" id="movimentoSegno" value="1">
 
@@ -1311,7 +1303,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
                 <input type="number" id="correggiValore" min="1" step="1" placeholder="Es. 7">
               </div>
               <div>
-                <label>Data del movimento / accredito</label>
+                <label>Data del movimento <span class="optional">(facoltativa)</span></label>
                 <div class="field-with-action">
                   <input type="text" id="movimentoData" placeholder="GG/MM/AAAA HH:MM" inputmode="numeric" autocomplete="off">
                   <button type="button" class="ghost" id="btnMovimentoDataAdesso" title="Usa data e ora attuali"><i class="fa-regular fa-clock"></i> Adesso</button>
@@ -2783,7 +2775,7 @@ document.getElementById('btnAnalizzaTesto').addEventListener('click',analizzaTes
 document.getElementById('btnPulisciImport').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('testoIncolla').value='';document.getElementById('analisiMsg').textContent='';document.getElementById('dataAccredito').value='';const ov=document.getElementById('overrideTotaleAccredito');if(ov)ov.value='';pulisciActivityMetodo('import');rimuoviVociAutoImportate();ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
 document.getElementById('btnResetTotale').addEventListener('click',()=>{salvaStatoPerUndo();const el=document.getElementById('overrideTotaleAccredito');el.value='';delete el.dataset.importAuthoritative;ricalcola();aggiornaSnapshotCorrenteDopoAzione()});
 document.getElementById('overrideTotaleAccredito').addEventListener('input',e=>{delete e.currentTarget.dataset.importAuthoritative;ricalcola();});
-document.getElementById('btnDataAdesso').addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
+document.getElementById('btnDataAdesso')?.addEventListener('click',()=>{salvaStatoPerUndo();document.getElementById('dataAccredito').value=dataManualeValue(new Date());aggiornaSnapshotCorrenteDopoAzione()});
 
 
 async function migraAccreditiDaPgAlPlayerSeNecessario(snapStaff,snapLog){
