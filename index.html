@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v61 — ottimizzazione Firestore: registro lazy, refresh realtime incrementale, riuso snapshot staff_token. -->
 
 
 
@@ -30,7 +31,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v60</title>
+<title>Gestore Staff Token — v61</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -2154,8 +2155,8 @@ function aggiornaPickerStafferDinamici(){
   sincronizzaTuttiPicker();
   aggiornaStatoStafferUI();
 }
-async function caricaListaStaffer(){
-  const snap=await db.collection('staff_token').get();
+async function caricaListaStaffer(preloadedSnap=null){
+  const snap=preloadedSnap||await db.collection('staff_token').get();
   saldiPlayer={};
   snap.docs.forEach(d=>{
     const id=normalizzaStaffId(d.id);
@@ -2885,54 +2886,42 @@ function aggiornaAvvisoNovitaStaffToken(){
   }).join('');
 }
 
+function applicaNovitaRecentiSnapshot(snap,rerenderRegistro=false){
+  const byId=new Map((archivioMovimenti||[]).map(m=>[m.id,m]));
+  snap.forEach(doc=>{const m={id:doc.id,...doc.data()};const de=dataEffettivaMovimento(m);if(de)m.data=de;const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');if(isPrimaryStaffId(sid))byId.set(m.id,m);});
+  archivioMovimenti=[...byId.values()].sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+  aggiornaAvvisoNovitaStaffToken();
+  if(rerenderRegistro&&document.getElementById('archivioBox')?.dataset.loaded)renderArchivio();
+}
+async function caricaNovitaRecenti(rerenderRegistro=false){
+  try{const snap=await db.collection('staff_token_log').orderBy('registratoIl','desc').limit(20).get();applicaNovitaRecentiSnapshot(snap,rerenderRegistro);}catch(e){console.warn('Aggiornamento recente Staff Token:',e);}
+}
+
+let STAFF_PUBLIC_LOAD_PROMISE=null;
 async function caricaPubblico(forza=false){
-  if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){
-    await riparaRimozioniV40();
-  }
+  if(passwordCorrente&&!window.__staffTokenRimozioniV40Riparate){await riparaRimozioniV40();}
   const archivio=document.getElementById('archivioBox');
-  if(forza||!archivio.dataset.loaded){archivio.innerHTML='<div class="loading">Caricamento registro…</div>'}
-  try{
-    let [snapStaff,snapLog]=await Promise.all([
-      db.collection('staff_token').get(),
-      db.collection('staff_token_log').limit(500).get()
-    ]);
-    if(await migraAccreditiDaPgAlPlayerSeNecessario(snapStaff,snapLog)){
-      [snapStaff,snapLog]=await Promise.all([
-        db.collection('staff_token').get(),
-        db.collection('staff_token_log').limit(500).get()
-      ]);
-    }
-    const staffDocs=new Map();snapStaff.forEach(doc=>staffDocs.set(normalizzaStaffId(doc.id),{id:doc.id,...doc.data()}));
-    const staff=LEGACY_STAFFER_PG_CONFIG.map(cfg=>{
-      const id=normalizzaStaffId(cfg.nome);
-      const data=staffDocs.get(id)||{id,st_totali:0,resti:{}};
-      return {...data,id,nomeVisualizzato:cfg.nome};
-    });
-    archivioMovimenti=[];snapLog.forEach(doc=>{
-      const m={id:doc.id,...doc.data()};
-      const dataEff=dataEffettivaMovimento(m);
-      if(dataEff)m.data=dataEff;
-      const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
-      if(isPrimaryStaffId(sid))archivioMovimenti.push(m);
-    });
-    archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
-    const ultimoMovimentoCronologicoPerStaff={};
-    archivioMovimenti.forEach(m=>{
-      const k=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
-      const t=timestampMs(m.data);
-      if(k&&t>(ultimoMovimentoCronologicoPerStaff[k]||0))ultimoMovimentoCronologicoPerStaff[k]=t;
-    });
-    staff.sort((a,b)=>(ultimoMovimentoCronologicoPerStaff[b.id]||0)-(ultimoMovimentoCronologicoPerStaff[a.id]||0)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
-    staffPubblici=staff;
-    saldiPlayer={};
-    staff.forEach(s=>{saldiPlayer[normalizzaStaffId(s.id)]=numeroIntero(s.st_totali);});
-    aggiornaSaldiPickerAccredito();
-    archivio.dataset.loaded='1';
-    renderArchivio();
-    aggiornaAvvisoNovitaStaffToken();
-  }catch(e){
-    archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;
-  }
+  if(!forza&&archivio?.dataset.loaded==='1'){renderArchivio();return archivioMovimenti;}
+  if(!forza&&STAFF_PUBLIC_LOAD_PROMISE)return STAFF_PUBLIC_LOAD_PROMISE;
+  const job=(async()=>{
+    if(archivio)archivio.innerHTML='<div class="loading">Caricamento registro…</div>';
+    try{
+      let [snapStaff,snapLog]=await Promise.all([db.collection('staff_token').get(),db.collection('staff_token_log').limit(500).get()]);
+      if(await migraAccreditiDaPgAlPlayerSeNecessario(snapStaff,snapLog)){
+        [snapStaff,snapLog]=await Promise.all([db.collection('staff_token').get(),db.collection('staff_token_log').limit(500).get()]);
+      }
+      const staffDocs=new Map();snapStaff.forEach(doc=>staffDocs.set(normalizzaStaffId(doc.id),{id:doc.id,...doc.data()}));
+      const staff=LEGACY_STAFFER_PG_CONFIG.map(cfg=>{const id=normalizzaStaffId(cfg.nome);const data=staffDocs.get(id)||{id,st_totali:0,resti:{}};return {...data,id,nomeVisualizzato:cfg.nome};});
+      archivioMovimenti=[];snapLog.forEach(doc=>{const m={id:doc.id,...doc.data()};const dataEff=dataEffettivaMovimento(m);if(dataEff)m.data=dataEff;const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');if(isPrimaryStaffId(sid))archivioMovimenti.push(m);});
+      archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+      const ultimoMovimentoCronologicoPerStaff={};archivioMovimenti.forEach(m=>{const k=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');const tt=timestampMs(m.data);if(k&&tt>(ultimoMovimentoCronologicoPerStaff[k]||0))ultimoMovimentoCronologicoPerStaff[k]=tt;});
+      staff.sort((a,b)=>(ultimoMovimentoCronologicoPerStaff[b.id]||0)-(ultimoMovimentoCronologicoPerStaff[a.id]||0)||nomeDaDoc(a.id,a).localeCompare(nomeDaDoc(b.id,b),'it'));
+      staffPubblici=staff;saldiPlayer={};staff.forEach(s=>{saldiPlayer[normalizzaStaffId(s.id)]=numeroIntero(s.st_totali);});aggiornaSaldiPickerAccredito();
+      if(archivio)archivio.dataset.loaded='1';renderArchivio();aggiornaAvvisoNovitaStaffToken();return archivioMovimenti;
+    }catch(e){if(archivio)archivio.innerHTML=`<div class="msg-err">Errore registro: ${escapeHtml(e.message)}</div>`;return[];}
+  })();
+  if(!forza)STAFF_PUBLIC_LOAD_PROMISE=job;
+  try{return await job;}finally{if(STAFF_PUBLIC_LOAD_PROMISE===job)STAFF_PUBLIC_LOAD_PROMISE=null;}
 }
 
 
@@ -3666,11 +3655,11 @@ async function rimuoviVoceStafferErrata(staffId,btn){
   }
 }
 
-async function caricaPgStaff(){
+async function caricaPgStaff(preloadedSnap=null){
   const box=document.getElementById('pgStaffLista');
   if(box)box.innerHTML='<div class="loading">Caricamento PG dello Staff…</div>';
   try{
-    const snap=await caricaListaStaffer();
+    const snap=await caricaListaStaffer(preloadedSnap);
     const docsById=new Map(snap.docs.map(d=>[d.id,d]));
     pgStaffCache=[];
     STAFF_BALANCE_CACHE={};
@@ -3929,25 +3918,15 @@ document.getElementById('btnMovimentoDataAdesso')?.addEventListener('click',()=>
   aggiornaPreviewMovimentoManuale();
 });
 
-let liveRefreshTimer=null;
-function programmaRefreshLive(){
-  clearTimeout(liveRefreshTimer);
-  liveRefreshTimer=setTimeout(async()=>{
-    try{
-      await caricaPubblico(true);
-      if(document.getElementById('correggiNome')?.value)await caricaSaldoMovimentoManuale();
-      if(staffIdCorrente)await caricaStaffer();
-      await caricaPgStaff();
-    }catch(e){console.warn('Refresh live Staff Token:',e)}
-  },220);
+let liveRefreshTimer=null,liveStaffSnapshot=null;
+function programmaRefreshLive(staffSnap){
+  if(staffSnap)liveStaffSnapshot=staffSnap;clearTimeout(liveRefreshTimer);
+  liveRefreshTimer=setTimeout(async()=>{try{const snap=liveStaffSnapshot;liveStaffSnapshot=null;if(snap)await caricaPgStaff(snap);if(document.getElementById('correggiNome')?.value)await caricaSaldoMovimentoManuale();if(staffIdCorrente)await caricaStaffer();}catch(e){console.warn('Refresh live Staff Token:',e)}},220);
 }
-// Il Gestore resta sincronizzato anche se il saldo viene modificato da un altro tool (es. Elfo/Camera Blindata).
-try{db.collection('staff_token').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
-try{db.collection('staff_token_usi').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
+// Realtime preservato senza scansioni globali: il saldo/associazioni arrivano dal listener staff_token e il registro recente da un listener limitato a 20 movimenti.
+try{db.collection('staff_token').onSnapshot(s=>programmaRefreshLive(s),()=>{});}catch(e){}
+try{db.collection('staff_token_log').orderBy('registratoIl','desc').limit(20).onSnapshot(s=>applicaNovitaRecentiSnapshot(s,!!document.getElementById('archivioBox')?.dataset.loaded),()=>{});}catch(e){}
 
-caricaListaStaffer();
-caricaPgStaff();
-caricaPubblico(true);
 sincronizzaTuttiPicker();
 mostraStaffInfo();
 ricalcola();
