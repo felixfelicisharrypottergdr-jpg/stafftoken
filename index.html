@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- v71 — macro-audit ST: associazione diretta, migrazione saldi/legacy e coerenza rename, 07/09/2026 -->
+<!-- v70 — migrazione completa pgAssociatiKeys su tutti i record Staff Token, 07/09/2026 -->
 <!-- v69 — fix migrazione Staff Token: pgAssociatiKeys normalizzate subito all'accesso Staff, 07/09/2026 -->
 <!-- v68 — Staff Token: chiavi normalizzate per associazioni PG + migrazione automatica legacy, 07/09/2026 -->
 
@@ -32,7 +34,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v68</title>
+<title>Gestore Staff Token — v71</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1662,6 +1664,7 @@ async function verificaPassword(){
     await creaSessioneStaff(pw);
     // Non conserviamo la Password in memoria: da qui in poi basta la sessione Firestore.
     passwordCorrente=true;
+    STAFF_ASSOC_MIGRATION_DONE=false;
     document.getElementById('gatePassword').value='';
     syncProtected();
     const puliti=await bonificaPasswordPubblicheLegacy();
@@ -1684,6 +1687,7 @@ async function verificaPassword(){
 }
 async function bloccaStaff(){
   passwordCorrente=null;
+  STAFF_ASSOC_MIGRATION_DONE=false;
   staffIdCorrente=null;
   staffAttuale=null;
   try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(e){console.warn('Chiusura sessione Staff:',e)}
@@ -3534,6 +3538,7 @@ let pgStaffOwner='';
 let pgStaffKind='';
 let pgStaffCache=[];
 let STAFF_BALANCE_CACHE={};
+let STAFF_ASSOC_MIGRATION_DONE=false;
 
 function normalizzaNomePgStaff(nome){
   return String(nome||'').trim().toLowerCase().replace(/\s+/g,' ');
@@ -3553,6 +3558,41 @@ function chiaviAssociazioniPgStaff(arr){
     if(key)set.add(key);
   });
   return Array.from(set).sort();
+}
+function staffTokenAssocDocId(nome,kind){
+  const n=String(nome||'').trim();
+  if(!n)return '';
+  return (kind==='adulti'?'adulti':'studenti')+'|'+n;
+}
+function staffTokenAssocData(staffId,staffName,nome,kind){
+  return {
+    schemaVersion:1,
+    pgId:String(nome||'').trim(),
+    pgKind:kind==='adulti'?'adulti':'studenti',
+    staffId:String(staffId||'').trim(),
+    staffName:String(staffName||staffId||'').trim(),
+    active:true,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+}
+function staffTokenAssocSame(data,wanted){
+  data=data||{};
+  return Number(data.schemaVersion||0)===1
+    && String(data.pgId||'')===wanted.pgId
+    && String(data.pgKind||'')===wanted.pgKind
+    && String(data.staffId||'')===wanted.staffId
+    && data.active!==false;
+}
+async function commitStaffTokenOps(ops){
+  ops=Array.isArray(ops)?ops:[];
+  for(let i=0;i<ops.length;i+=400){
+    const batch=db.batch();
+    ops.slice(i,i+400).forEach(op=>{
+      if(op.type==='delete')batch.delete(op.ref);
+      else batch.set(op.ref,op.data,{merge:op.merge!==false});
+    });
+    await batch.commit();
+  }
 }
 function stesseChiaviPgStaff(a,b){
   const aa=(Array.isArray(a)?a:[]).map(String).sort();
@@ -3686,26 +3726,66 @@ async function caricaPgStaff(){
     const docsById=new Map(snap.docs.map(d=>[d.id,d]));
     pgStaffCache=[];
     STAFF_BALANCE_CACHE={};
-    const chiaviDaRiparare=[];
+
+    const desiredAssoc=new Map();
+    snap.docs.forEach(docSnap=>{
+      const data=docSnap.data()||{};
+      const sid=docSnap.id;
+      const staffName=String(data.nomeVisualizzato||primaryStaffName(sid,sid)||sid);
+      const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
+      arr.forEach(pg=>{
+        const nome=String(pg&&pg.nome||'').trim();if(!nome)return;
+        const kind=pg&&pg.tipo==='adulti'?'adulti':'studenti';
+        const assocId=staffTokenAssocDocId(nome,kind);
+        if(assocId)desiredAssoc.set(assocId,staffTokenAssocData(sid,staffName,nome,kind));
+      });
+    });
+
     STAFFER_PG_CONFIG.forEach(st=>{
       const sid=normalizzaStaffId(st.nome),doc=docsById.get(sid),data=doc?doc.data():{};
       STAFF_BALANCE_CACHE[sid]=Number(data.st_totali||0);
       const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
-      const keys=chiaviAssociazioniPgStaff(arr);
-      if(passwordCorrente&&!stesseChiaviPgStaff(data.pgAssociatiKeys,keys)){
-        chiaviDaRiparare.push({ref:db.collection('staff_token').doc(sid),keys});
-      }
       arr.forEach(pg=>{
         const nome=String(pg&&pg.nome||'').trim();if(!nome)return;
         pgStaffCache.push({staffId:sid,staffNome:st.nome,nome,tipo:pg.tipo==='adulti'?'adulti':'studenti'});
       });
     });
-    /* Migrazione una tantum dei record legacy: scrive solo se le chiavi mancano o
-       sono diverse. I caricamenti successivi non generano altre write. */
-    if(chiaviDaRiparare.length){
-      const batch=db.batch();
-      chiaviDaRiparare.forEach(x=>batch.set(x.ref,{pgAssociatiKeys:x.keys,pgAssociatiKeysAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}));
-      await batch.commit();
+
+    /* v71 — migrazione una tantum per sessione Staff:
+       - pgAssociatiKeys legacy coerenti;
+       - saldo ST sempre Number, così le Rules non confrontano stringhe con numeri;
+       - documento diretto staff_token_assoc per ogni PG;
+       - rimozione di eventuali associazioni dirette ormai stale. */
+    if(passwordCorrente&&!STAFF_ASSOC_MIGRATION_DONE){
+      const ops=[];
+      snap.docs.forEach(docSnap=>{
+        const data=docSnap.data()||{},arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
+        const patch={};let changed=false;
+        const keys=chiaviAssociazioniPgStaff(arr);
+        if(!stesseChiaviPgStaff(data.pgAssociatiKeys,keys)){patch.pgAssociatiKeys=keys;changed=true;}
+        const saldo=Number(data.st_totali||0);
+        if(typeof data.st_totali!=='number'||!Number.isFinite(data.st_totali)||data.st_totali!==saldo){
+          patch.st_totali=Number.isFinite(saldo)?saldo:0;changed=true;
+        }
+        if(changed){
+          patch.pgAssociatiKeysAggiornatoIl=firebase.firestore.FieldValue.serverTimestamp();
+          ops.push({type:'set',ref:docSnap.ref,data:patch,merge:true});
+        }
+      });
+
+      const assocSnap=await db.collection('staff_token_assoc').get();
+      const existing=new Map(assocSnap.docs.map(d=>[d.id,d]));
+      desiredAssoc.forEach((wanted,id)=>{
+        const cur=existing.get(id);
+        if(!cur||!staffTokenAssocSame(cur.data(),wanted)){
+          ops.push({type:'set',ref:db.collection('staff_token_assoc').doc(id),data:wanted,merge:true});
+        }
+      });
+      existing.forEach((docSnap,id)=>{
+        if(!desiredAssoc.has(id))ops.push({type:'delete',ref:docSnap.ref});
+      });
+      if(ops.length)await commitStaffTokenOps(ops);
+      STAFF_ASSOC_MIGRATION_DONE=true;
     }
     renderPgStaff();
   }catch(e){if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare gli Staffer e i PG associati: ${escapeHtml(e.message)}</div>`}
@@ -3784,6 +3864,8 @@ async function aggiungiPgStaff(){
       const arr=Array.isArray(stato.pgAssociati)?stato.pgAssociati.slice():[];
       arr.push({nome,tipo:pgStaffKind});
       tx.set(refs[idx],{nomeVisualizzato:pgStaffOwner,pgAssociati:arr,pgAssociatiKeys:chiaviAssociazioniPgStaff(arr),pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      const assocId=staffTokenAssocDocId(nome,pgStaffKind);
+      tx.set(db.collection('staff_token_assoc').doc(assocId),staffTokenAssocData(targetId,pgStaffOwner,nome,pgStaffKind),{merge:true});
     });
     document.getElementById('pgStaffNome').value='';
     const ownerBreve=STAFFER_PG_CONFIG.find(st=>normalizzaStaffId(st.nome)===targetId)?.nome||pgStaffOwner;
@@ -3800,10 +3882,11 @@ function staffTokenHashPerRinomina(v){
   for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}
   return (h>>>0).toString(16).padStart(8,'0');
 }
-function staffTokenUsageIdRinominato(data,nuovoNome){
+function staffTokenUsageIdRinominato(data,nuovoNome,oldId){
   const kind=data&&data.pgKind==='adulti'?'adulti':'studenti';
   const raw=[kind,String(nuovoNome||'').trim(),String(data?.monthId==null?'':data.monthId),String(data?.postId==null?'':data.postId),String(data?.globalNo==null?'':data.globalNo)].join('|');
-  return 'st_'+staffTokenHashPerRinomina(raw);
+  const prefix=(Number(data&&data.schemaVersion||0)>=2||String(oldId||'').indexOf('st2_')===0)?'st2_':'st_';
+  return prefix+staffTokenHashPerRinomina(raw);
 }
 function sostituisciNomeStorico(testo,vecchio,nuovo){
   if(typeof testo!=='string'||!vecchio)return testo;
@@ -3855,18 +3938,22 @@ async function rinominaPgStaff(staffId,nomeVecchio,kind,nuovoDigitato,row){
 
     const usi=[];usiSnap.forEach(d=>{const x=d.data()||{};if(normalizzaNomePgStaff(x.pgId)===oldKey&&(x.pgKind==='adulti'?'adulti':'studenti')===tipo)usi.push({id:d.id,data:x})});
     const usageMap=new Map();
-    for(const u of usi)usageMap.set(u.id,staffTokenUsageIdRinominato(u.data,nuovo));
+    for(const u of usi)usageMap.set(u.id,staffTokenUsageIdRinominato(u.data,nuovo,u.id));
     const collisioni=await Promise.all([...new Set(usageMap.values())].map(id=>db.collection('staff_token_usi').doc(id).get()));
     const collisione=collisioni.find(snap=>snap.exists&&!usi.some(u=>u.id===snap.id));
     if(collisione)throw new Error('Esiste già un uso ST con il nuovo nome sullo stesso post. Controlla il PG prima di rinominarlo.');
 
     const logs=[];logSnap.forEach(d=>{const x=d.data()||{};if(normalizzaNomePgStaff(x.pgId)===oldKey)logs.push({id:d.id,data:x})});
-    const writes=1+usi.length*2+logs.length;
+    const writes=3+usi.length*2+logs.length;
     if(writes>450)throw new Error('Ci sono troppi record storici da migrare in una sola operazione.');
     const batch=db.batch();
     const aliases=Array.isArray(stato.pgAliasStorici)?stato.pgAliasStorici.slice():[];
     aliases.push({da:vecchio,a:nuovo,tipo,rinominatoIl:new Date().toISOString()});
     batch.set(staffRef,{pgAssociati:nuovoArr,pgAssociatiKeys:chiaviAssociazioniPgStaff(nuovoArr),pgAliasStorici:aliases.slice(-80),pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+    const oldAssocRef=db.collection('staff_token_assoc').doc(staffTokenAssocDocId(vecchio,tipo));
+    const newAssocRef=db.collection('staff_token_assoc').doc(staffTokenAssocDocId(nuovo,tipo));
+    batch.delete(oldAssocRef);
+    batch.set(newAssocRef,staffTokenAssocData(staffId,stato.nomeVisualizzato||primaryStaffName(staffId,staffId),nuovo,tipo),{merge:true});
 
     for(const u of usi){
       const newId=usageMap.get(u.id),newRef=db.collection('staff_token_usi').doc(newId),oldRef=db.collection('staff_token_usi').doc(u.id);
@@ -3921,6 +4008,9 @@ async function cambiaTipoPgStaff(staffId,nome,kindAttuale){
       });
       if(!cambiato)throw new Error('Associazione PG non trovata.');
       tx.set(refs[idx],{pgAssociati:nuovo,pgAssociatiKeys:chiaviAssociazioniPgStaff(nuovo),pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.delete(db.collection('staff_token_assoc').doc(staffTokenAssocDocId(nome,kindAttuale)));
+      tx.set(db.collection('staff_token_assoc').doc(staffTokenAssocDocId(nomeRegistrato,nuovoKind)),
+        staffTokenAssocData(staffId,stato.nomeVisualizzato||primaryStaffName(staffId,staffId),nomeRegistrato,nuovoKind),{merge:true});
     });
     if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nomeRegistrato)} corretto: ora è collegato come PG ${escapeHtml(nomeKindPgStaff(nuovoKind))}. Il saldo ST del Player non cambia.</div>`;
     await caricaPgStaff();
@@ -3941,6 +4031,7 @@ async function rimuoviPgStaff(staffId,nome,kind){
       const key=normalizzaNomePgStaff(nome);
       const nuovo=arr.filter(pg=>!(normalizzaNomePgStaff(pg&&pg.nome)===key && (pg.tipo==='adulti'?'adulti':'studenti')===(kind==='adulti'?'adulti':'studenti')));
       tx.set(ref,{pgAssociati:nuovo,pgAssociatiKeys:chiaviAssociazioniPgStaff(nuovo),pgAssociatiAggiornatoIl:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      tx.delete(db.collection('staff_token_assoc').doc(staffTokenAssocDocId(nome,kind)));
     });
     if(msg)msg.innerHTML=`<div class="msg-ok">${escapeHtml(nome)} scollegato dagli ST del Player. Non comparirà più il comando ST nel suo Elfo; saldo e ST già spesi non cambiano.</div>`;
     await caricaPgStaff();
