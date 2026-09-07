@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v69 — fix migrazione Staff Token: pgAssociatiKeys normalizzate subito all'accesso Staff, 07/09/2026 -->
 <!-- v68 — Staff Token: chiavi normalizzate per associazioni PG + migrazione automatica legacy, 07/09/2026 -->
 
 
@@ -1665,7 +1666,11 @@ async function verificaPassword(){
     syncProtected();
     const puliti=await bonificaPasswordPubblicheLegacy();
     if(puliti>0){err.textContent='Accesso riuscito · bonificati '+puliti+' record legacy.';}
-    caricaListaStaffer();
+    /* v69 — appena la sessione Staff è attiva, carica subito i PG associati.
+       caricaPgStaff() esegue anche la migrazione una tantum di pgAssociatiKeys:
+       nella v68 questa migrazione poteva non partire semplicemente entrando
+       in modalità Staff, perché veniva eseguita solo in caricamenti successivi. */
+    await caricaPgStaff();
   }catch(e){
     passwordCorrente=null;
     try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(_e){}
