@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- v74 — accesso Staff: conferma migrazione ST visibile e UI coerente anche in caso di errore; 07/09/2026 -->
 <!-- v73 — audit finale: associazioni ST solo sui 4 Player principali + live senza scansioni massive; 07/09/2026 -->
 <!-- v72 — macro-audit ST: login senza race, migrazione non silenziosa e conferma esplicita; 07/09/2026 -->
 <!-- v71 — macro-audit ST: associazione diretta, migrazione saldi/legacy e coerenza rename, 07/09/2026 -->
@@ -36,7 +37,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v73</title>
+<title>Gestore Staff Token — v74</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1129,7 +1130,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
     <div class="access-icon"><i class="fa-solid fa-unlock-keyhole"></i></div>
     <div class="access-text">
       <strong>Modalità Staff attiva</strong>
-      <p>Puoi registrare accrediti e correggere i saldi. La password resta soltanto in memoria.</p>
+      <p id="staffUnlockStatus">Puoi registrare accrediti e correggere i saldi. La password resta soltanto in memoria.</p>
     </div>
     <button class="danger" id="btnBlocca"><i class="fa-solid fa-lock"></i> Blocca</button>
   </div>
@@ -1668,32 +1669,47 @@ async function creaSessioneStaff(pw){
 async function verificaPassword(){
   const pw=document.getElementById('gatePassword').value;
   const err=document.getElementById('gateErr');
+  const ok=document.getElementById('staffUnlockStatus');
   err.textContent='';
+  if(ok)ok.textContent='Verifica associazioni ST in corso…';
   if(!pw){err.textContent='Inserisci la password.';return}
   try{
     await creaSessioneStaff(pw);
-    // Non conserviamo la Password in memoria: da qui in poi basta la sessione Firestore.
+
+    /* La sessione Firestore esiste già, ma NON mostriamo ancora graficamente
+       la modalità Staff come attiva: prima deve riuscire anche la verifica/migrazione. */
     passwordCorrente=true;
     STAFF_ASSOC_MIGRATION_DONE=false;
     document.getElementById('gatePassword').value='';
-    syncProtected();
+
     const puliti=await bonificaPasswordPubblicheLegacy();
-    /* v72 — il caricamento usato al login è STRICT: se la migrazione delle
-       associazioni fallisce, l'accesso NON viene più mostrato come riuscito. */
     const migrazione=await caricaPgStaff({strict:true});
-    const parti=['Accesso riuscito','associazioni ST verificate: '+Number(migrazione&&migrazione.associations||0)];
+
+    const parti=[
+      'Accesso riuscito',
+      'associazioni ST verificate: '+Number(migrazione&&migrazione.associations||0)
+    ];
     if(migrazione&&migrazione.operations>0)parti.push('aggiornamenti eseguiti: '+migrazione.operations);
     if(puliti>0)parti.push('record legacy bonificati: '+puliti);
-    err.textContent=parti.join(' · ');
+
+    if(ok)ok.textContent=parti.join(' · ');
+    syncProtected();
   }catch(e){
     passwordCorrente=null;
+    STAFF_ASSOC_MIGRATION_DONE=false;
     try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(_e){}
     console.error('Accesso Staff non riuscito:',e);
+
     if(e&&e.code==='permission-denied'){
       err.textContent='Accesso Staff non autorizzato dalle Firestore Rules. Pubblica le Rules Staff Token compatibili con la sessione Staff.';
     }else{
       err.textContent='Accesso Staff non riuscito durante il controllo/migrazione ST: '+String((e&&e.message)||'errore sconosciuto')+'.';
     }
+
+    /* Se la migrazione fallisce, il Gestore deve tornare davvero allo stato
+       bloccato e mostrare l'errore nel riquadro che resta visibile. */
+    if(ok)ok.textContent='Puoi registrare accrediti e correggere i saldi. La password resta soltanto in memoria.';
+    syncProtected();
   }
 }
 async function bloccaStaff(){
