@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<!-- v73 — audit finale: associazioni ST solo sui 4 Player principali + live senza scansioni massive; 07/09/2026 -->
+<!-- v72 — macro-audit ST: login senza race, migrazione non silenziosa e conferma esplicita; 07/09/2026 -->
 <!-- v71 — macro-audit ST: associazione diretta, migrazione saldi/legacy e coerenza rename, 07/09/2026 -->
 <!-- v70 — migrazione completa pgAssociatiKeys su tutti i record Staff Token, 07/09/2026 -->
 <!-- v69 — fix migrazione Staff Token: pgAssociatiKeys normalizzate subito all'accesso Staff, 07/09/2026 -->
@@ -34,7 +36,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestore Staff Token — v71</title>
+<title>Gestore Staff Token — v73</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -1608,11 +1610,15 @@ if(stNovitaBanner){
 }
 
 try{auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(()=>{});}catch(e){}
+let STAFF_SESSION_RESET_PROMISE=Promise.resolve();
 auth.onAuthStateChanged(user=>{
   if(!user){auth.signInAnonymously().catch(()=>{});return}
   authPronta=true;
-  // Ogni nuovo caricamento del Gestore riparte bloccato: la Password va reinserita.
-  db.collection('staff_edit_sessions').doc(user.uid).delete().catch(()=>{});
+  /* v72 — reset iniziale serializzato. Nella v71 il delete partiva senza await:
+     cliccando rapidamente «Accedi» poteva terminare DOPO la creazione della nuova
+     sessione Staff e cancellarla, lasciando il Gestore apparentemente sbloccato ma
+     senza permessi per la migrazione. */
+  STAFF_SESSION_RESET_PROMISE=db.collection('staff_edit_sessions').doc(user.uid).delete().catch(()=>{});
 });
 
 async function aspettaAuth(){
@@ -1628,8 +1634,10 @@ async function aspettaAuth(){
 }
 
 async function bonificaPasswordPubblicheLegacy(){
-  // Le vecchie versioni del Gestore inserivano _pw nei documenti pubblici.
-  // Con la v43 non serve più: lo rimuoviamo in batch appena la sessione Staff è valida.
+  // Migrazione legacy una tantum per browser: dopo che _pw è stata rimossa non
+  // ha senso rileggere tutto staff_token_log ad ogni accesso Staff.
+  const marker='ff_staff_pw_cleanup_v73';
+  try{if(localStorage.getItem(marker)==='1')return 0;}catch(e){}
   const deleteField=firebase.firestore.FieldValue.delete();
   const collections=['staff_token','staff_token_log'];
   let puliti=0;
@@ -1644,11 +1652,13 @@ async function bonificaPasswordPubblicheLegacy(){
     }
     if(ops>0)await batch.commit();
   }
+  try{localStorage.setItem(marker,'1');}catch(e){}
   return puliti;
 }
 
 async function creaSessioneStaff(pw){
   await aspettaAuth();
+  await STAFF_SESSION_RESET_PROMISE;
   const user=auth.currentUser;if(!user)throw new Error('Autenticazione non disponibile.');
   const ref=db.collection('staff_edit_sessions').doc(user.uid);
   await ref.set({uid:user.uid,proof:pw,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
@@ -1668,12 +1678,13 @@ async function verificaPassword(){
     document.getElementById('gatePassword').value='';
     syncProtected();
     const puliti=await bonificaPasswordPubblicheLegacy();
-    if(puliti>0){err.textContent='Accesso riuscito · bonificati '+puliti+' record legacy.';}
-    /* v69 — appena la sessione Staff è attiva, carica subito i PG associati.
-       caricaPgStaff() esegue anche la migrazione una tantum di pgAssociatiKeys:
-       nella v68 questa migrazione poteva non partire semplicemente entrando
-       in modalità Staff, perché veniva eseguita solo in caricamenti successivi. */
-    await caricaPgStaff();
+    /* v72 — il caricamento usato al login è STRICT: se la migrazione delle
+       associazioni fallisce, l'accesso NON viene più mostrato come riuscito. */
+    const migrazione=await caricaPgStaff({strict:true});
+    const parti=['Accesso riuscito','associazioni ST verificate: '+Number(migrazione&&migrazione.associations||0)];
+    if(migrazione&&migrazione.operations>0)parti.push('aggiornamenti eseguiti: '+migrazione.operations);
+    if(puliti>0)parti.push('record legacy bonificati: '+puliti);
+    err.textContent=parti.join(' · ');
   }catch(e){
     passwordCorrente=null;
     try{const u=auth.currentUser;if(u)await db.collection('staff_edit_sessions').doc(u.uid).delete();}catch(_e){}
@@ -1681,7 +1692,7 @@ async function verificaPassword(){
     if(e&&e.code==='permission-denied'){
       err.textContent='Accesso Staff non autorizzato dalle Firestore Rules. Pubblica le Rules Staff Token compatibili con la sessione Staff.';
     }else{
-      err.textContent='Accesso Staff non riuscito. Riprova; se la password è corretta, controlla la connessione Firebase.';
+      err.textContent='Accesso Staff non riuscito durante il controllo/migrazione ST: '+String((e&&e.message)||'errore sconosciuto')+'.';
     }
   }
 }
@@ -3718,7 +3729,9 @@ async function rimuoviVoceStafferErrata(staffId,btn){
   }
 }
 
-async function caricaPgStaff(){
+async function caricaPgStaff(options){
+  options=options||{};
+  const strict=options.strict===true;
   const box=document.getElementById('pgStaffLista');
   if(box)box.innerHTML='<div class="loading">Caricamento PG dello Staff…</div>';
   try{
@@ -3731,6 +3744,11 @@ async function caricaPgStaff(){
     snap.docs.forEach(docSnap=>{
       const data=docSnap.data()||{};
       const sid=docSnap.id;
+      /* v73 — i documenti Staffer extra/legacy sono mostrati come anomalie nel
+         Gestore e NON devono mai diventare proprietari di una associazione diretta.
+         In passato un vecchio documento extra con pgAssociati poteva sovrascrivere
+         l'owner corretto in staff_token_assoc in base all'ordine della query. */
+      if(!isPrimaryStaffId(sid))return;
       const staffName=String(data.nomeVisualizzato||primaryStaffName(sid,sid)||sid);
       const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
       arr.forEach(pg=>{
@@ -3751,7 +3769,8 @@ async function caricaPgStaff(){
       });
     });
 
-    /* v71 — migrazione una tantum per sessione Staff:
+    let migrationOperations=0;
+    /* v72 — migrazione una tantum per sessione Staff:
        - pgAssociatiKeys legacy coerenti;
        - saldo ST sempre Number, così le Rules non confrontano stringhe con numeri;
        - documento diretto staff_token_assoc per ogni PG;
@@ -3784,11 +3803,17 @@ async function caricaPgStaff(){
       existing.forEach((docSnap,id)=>{
         if(!desiredAssoc.has(id))ops.push({type:'delete',ref:docSnap.ref});
       });
+      migrationOperations=ops.length;
       if(ops.length)await commitStaffTokenOps(ops);
       STAFF_ASSOC_MIGRATION_DONE=true;
     }
     renderPgStaff();
-  }catch(e){if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare gli Staffer e i PG associati: ${escapeHtml(e.message)}</div>`}
+    return {ok:true,associations:desiredAssoc.size,operations:migrationOperations};
+  }catch(e){
+    if(box)box.innerHTML=`<div class="msg-err">Non riesco a caricare gli Staffer e i PG associati: ${escapeHtml(e.message)}</div>`;
+    if(strict)throw e;
+    return {ok:false,error:e};
+  }
 }
 
 function selezionaOwnerPgStaff(nome){
@@ -4044,21 +4069,74 @@ document.getElementById('btnMovimentoDataAdesso')?.addEventListener('click',()=>
   aggiornaPreviewMovimentoManuale();
 });
 
+/* v73 — live leggero.
+   Prima ogni variazione di uno ST rilanciava caricaPubblico(), che rilegge fino
+   a 500 log, più caricaPgStaff(), e in più esisteva un listener globale su
+   staff_token_usi. Una singola spesa dall'Elfo poteva quindi generare centinaia
+   di letture. Il saldo cambia SEMPRE nello stesso commit dello ST: basta ascoltare
+   i quattro documenti staff_token. Per far comparire subito il nuovo movimento
+   ascoltiamo soltanto gli ultimi log, non tutta la collection degli usi. */
 let liveRefreshTimer=null;
-function programmaRefreshLive(){
-  clearTimeout(liveRefreshTimer);
-  liveRefreshTimer=setTimeout(async()=>{
-    try{
-      await caricaPubblico(true);
-      if(document.getElementById('correggiNome')?.value)await caricaSaldoMovimentoManuale();
-      if(staffIdCorrente)await caricaStaffer();
-      await caricaPgStaff();
-    }catch(e){console.warn('Refresh live Staff Token:',e)}
-  },220);
+
+function applicaSnapshotStaffLive(snap){
+  try{
+    const docsById=new Map();
+    snap.forEach(d=>docsById.set(normalizzaStaffId(d.id),{id:d.id,...(d.data()||{})}));
+    saldiPlayer={};
+    STAFF_BALANCE_CACHE={};
+    pgStaffCache=[];
+    LEGACY_STAFFER_PG_CONFIG.forEach(cfg=>{
+      const sid=normalizzaStaffId(cfg.nome),data=docsById.get(sid)||{id:sid,st_totali:0,resti:{}};
+      const saldo=numeroIntero(data.st_totali);
+      saldiPlayer[sid]=saldo;STAFF_BALANCE_CACHE[sid]=saldo;
+      const arr=Array.isArray(data.pgAssociati)?data.pgAssociati:[];
+      arr.forEach(pg=>{
+        const nome=String(pg&&pg.nome||'').trim();if(!nome)return;
+        pgStaffCache.push({staffId:sid,staffNome:cfg.nome,nome:nome,tipo:pg.tipo==='adulti'?'adulti':'studenti'});
+      });
+      const idx=staffPubblici.findIndex(x=>normalizzaStaffId(x.id)===sid);
+      const next={...data,id:sid,nomeVisualizzato:cfg.nome};
+      if(idx>=0)staffPubblici[idx]=next;else staffPubblici.push(next);
+    });
+    aggiornaSaldiPickerAccredito();
+    renderPgStaff();
+    if(staffIdCorrente){
+      const live=docsById.get(normalizzaStaffId(staffIdCorrente));
+      if(live)staffAttuale={...live};
+      mostraStaffInfo();ricalcola();
+    }
+    if(document.getElementById('correggiNome')?.value){
+      clearTimeout(liveRefreshTimer);
+      liveRefreshTimer=setTimeout(()=>caricaSaldoMovimentoManuale().catch(()=>{}),120);
+    }
+    if(document.getElementById('archivioBox')?.dataset.loaded)renderArchivio();
+  }catch(e){console.warn('Aggiornamento live saldi ST:',e)}
 }
-// Il Gestore resta sincronizzato anche se il saldo viene modificato da un altro tool (es. Elfo/Camera Blindata).
-try{db.collection('staff_token').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
-try{db.collection('staff_token_usi').onSnapshot(programmaRefreshLive,()=>{});}catch(e){}
+
+function applicaSnapshotLogLive(snap){
+  try{
+    const byId=new Map(archivioMovimenti.map(m=>[m.id,m]));
+    snap.forEach(d=>{
+      const m={id:d.id,...(d.data()||{})};
+      const sid=normalizzaStaffId(m.staffId||m.nomeVisualizzato||'');
+      if(!isPrimaryStaffId(sid))return;
+      const dataEff=dataEffettivaMovimento(m);if(dataEff)m.data=dataEff;
+      byId.set(m.id,m);
+    });
+    archivioMovimenti=Array.from(byId.values());
+    archivioMovimenti.sort((a,b)=>timestampMs(b.data)-timestampMs(a.data));
+    if(document.getElementById('archivioBox')?.dataset.loaded){
+      renderArchivio();aggiornaAvvisoNovitaStaffToken();
+    }
+  }catch(e){console.warn('Aggiornamento live registro ST:',e)}
+}
+
+// Il listener saldo costa solo i documenti Staffer; ogni spesa Elfo lo attiva perché
+// saldo e uso vengono aggiornati atomicamente. Nessun listener globale su staff_token_usi.
+try{db.collection('staff_token').onSnapshot(applicaSnapshotStaffLive,()=>{});}catch(e){}
+// I nuovi movimenti Elfo hanno registratoIl: gli ultimi 20 bastano per il live.
+// Il registro completo continua a caricarsi una sola volta con caricaPubblico().
+try{db.collection('staff_token_log').orderBy('registratoIl','desc').limit(20).onSnapshot(applicaSnapshotLogLive,()=>{});}catch(e){}
 
 caricaListaStaffer();
 caricaPgStaff();
